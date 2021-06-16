@@ -1,0 +1,26 @@
+# exclude files
+*.ex4
+*.ex5
+*.dat
+log.txt
+
+# exclude directories completely
+Images
+Indicators
+Libraries
+Logs
+Presets
+Profiles
+Services
+"Shared Projects"
+Levels
+Params
+
+# exclude directory contents
+Experts/*
+Files/*
+Include/*
+Scripts/*
+
+# except for directories
+!Include/oslib
