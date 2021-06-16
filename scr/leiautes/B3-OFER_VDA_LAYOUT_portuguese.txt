@@ -1,0 +1,34 @@
+Layout do arquivo OFER_VDA (Ofertas de Venda)
+
+Cabecalho/Rodape
+-----------------------------------------------------------
+Coluna                 Posicao Inicial  Tamanho   Descricao
+-----------------------------------------------------------
+Identificacao                        1        2   RH Cabecalho - RT Rodape
+Nome Arquivo                         4       20   Nome do arquivo
+Data Inicial                        25       10   Data Inicial desse arquivo
+Data Final                          36       10   Data Final desse arquivo
+Total de Linhas                     47        9   No caso do rodape apresenta o total de linhas do arquivo
+
+Detalhes
+-----------------------------------------------------------
+Coluna                 Posicao Inicial  Tamanho   Descricao
+-----------------------------------------------------------
+Data Sessao                          1       10   Data da Sessao
+Simbolo do Instrumento              12       50   Simbolo do Instrumento
+Sentido Of.Venda                    63        1   Indicador de Sentido da Ordem: "1" - compra / "2" - venda
+Sequencia                           65       15   Numero de Sequencia da Oferta
+GenerationID - Of.Venda             81       15   Numero de geracao (GenerationID) da Oferta de Venda. Quando um negocio for gerado por 2 ofertas com quantidade escondida e isso gerar "n" linhas será gravado aqui a maior geracao (para Codigo de Bolsa "Bovespa" valor fixo = 1).
+Cod do Evento da Of.Venda           97        3   Codigo do Evento da Ordem: 1 - New / 2 - Update / 3 - Cancel - Solicitado pelo participante / 4 - Trade / 5 - Reentry - Processo interno (quantidade escondida) / 6 - New Stop Price / 7 - Reject / 8 - Remove - Removida pelo Sistema (final de dia ou quando e totalmente fechada) / 9 - Stop Price Triggered / 11 - Expire - Oferta com validade expirada.
+Hora Prioridade                    101       15   Hora de registro da oferta no sistema (no formato, HH:MM:SS.NNN), utilizada como indicadora de prioridade.
+Ind de Prioridade Of.Venda         117       10   Indicador de Prioridade. Alem do preco e a ordem para aparecer no Order Book.
+Preco Of.Venda                     128       20   Preco da Oferta
+Qtd.Total Of.Venda                 149       18   Quantidade Total da Oferta. Se tiver alteracao ela reflete a nova quantidade.
+Qtd.Negociada Of.Venda             168       18   Quantidade Negociada
+Data Oferta Venda                  187       10   Data de Inclusao da Oferta. Pode ser uma data anterior a Data da Sessao, quando se tratar de uma Oferta com Validade.
+Data de Entrada Of.Venda           198       19   Data/Hora de Entrada da Oferta (formato: DD/MM/AAAA HH:MM:SS)
+Estado Of.Venda                    218        1   Indicador de Estado da Ordem: 0 - Novo / 1 - Negociada parcialmente / 2 - Totalmente executada / 4 - Cancelada / 5 - Modificada / 8  - Rejeitada / C - Expirada
+Condicao Oferta                    220        1   Codigo que identifica a condicao da oferta. Pode ser: 0 - Oferta Neutra - e aquela que entra no mercado e nao fecha com oferta existente. / 1 - Oferta Agressora - e aquela que ingressa no mercado para fechar com uma oferta existente. / 2 - Oferta Agredida - e a oferta (existente) que e fechada com uma oferta agressora.
+Corretora                          222        8   Codigo que identifica univocamente a corretora - Disponivel a partir de 03/2014
+
+Obs: Delimitador das colunas de detalhes ';'

@@ -1,0 +1,36 @@
+Layout do arquivo NEG (Negócios)
+
+Cabeçalho/Rodapé
+-----------------------------------------------------------
+Coluna                 Posição Inicial  Tamanho   Descrição
+-----------------------------------------------------------
+Identificação                        1        2   RH Cabeçalho - RT Rodapé
+Nome Arquivo                         4       20   Nome do arquivo
+Data Inicial                        25       10   Data Inicial desse arquivo
+Data Final                          36       10   Data Final desse arquivo
+Total de Linhas                     47        9   No caso do rodapé apresenta o total de linhas do arquivo
+
+Detalhes
+-----------------------------------------------------------
+Coluna                 Posição Inicial  Tamanho   Descrição
+-----------------------------------------------------------
+Data Sessão                          1       10   Data de sessão
+Símbolo do Instrumento              12       50   Símbolo do Instrumento
+Nr.Negócio                          63       10   Número do negócio
+Preço Negócio                       74       20   Preço do negócio
+Quantidade                          95       18   Quantidade negociada
+Hora                               114       15   Horário da negociação (formato HH:MM:SS.NNN)
+Ind.Anulação                       127        1   Indicador de Anulação: "1" - ativo / "2" - cancelado
+Data Oferta Compra                 129       10   Data da oferta de compra
+Seq.Oferta Compra                  140       15   Número sequencial da oferta de compra
+GenerationID - Of.Compra           156       15   Número de geração (GenerationID) da Oferta de compra. Quando um negócio for gerado por 2 ofertas com quantidade escondida e isso gerar "n" linhas será gravado aqui a maior geração
+Condição Oferta de Compra          172        1   Código que identifica a condição da oferta de compra. Pode ser: 0 - Oferta Neutra - é aquela que entra no mercado e não fecha com oferta existente. / 1 - Oferta Agressora - é aquela que ingressa no mercado para fechar com uma oferta existente. / 2 - Oferta Agredida - é a oferta (existente) que é fechada com uma oferta agressora.
+Data Oferta Venda                  174       10   Data da oferta de venda
+Seq.Oferta Venda                   185       15   Número sequencial da oferta de venda
+GenerationID - Of.Venda            201       15   Número de geração (GenerationID) da Oferta de venda. Quando um negócio for gerado por 2 ofertas com quantidade escondida e isso gerar "n" linhas será gravado aqui a maior geração
+Condição Oferta de Venda           217        1   Código que identifica a condição da oferta de venda. Pode ser: 0 - Oferta Neutra - é aquela que entra no mercado e não fecha com oferta existente. / 1 - Oferta Agressora - é aquela que ingressa no mercado para fechar com uma oferta existente. / 2 - Oferta Agredida - é a oferta (existente) que é fechada com uma oferta agressora.
+Indicador de direto                219        1   Código que identifica se o negócio direto foi intencional: 1 - Intencional / 0 - Não Intencional
+Corretora Compra                   221        8   Código de identificação da corretora de compra - Disponível a partir de 03/2014
+Corretora Venda                    230        8   Código de identificação da corretora de venda - Disponível a partir de 03/2014
+
+Obs: Delimitador das colunas de detalhes ';'
