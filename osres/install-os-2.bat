@@ -9,8 +9,23 @@ rem serah criada a juncao de diretorio oslib dentro da pasta "Shared Projects"
 rem mklink /j oslib ..\..\MQL5\Include\oslib
 
 rem coloque oslib na pasta D:\marcoc68\github\oslib-mql\oslib
-rem execute este comando na pasta "include" do terminal onde ocorrerah a compilacao
+rem 
+rem compilacao: execute este comando na pasta "include" do terminal onde ocorrerah a compilacao
 rem mklink /D oslib D:\marcoc68\github\oslib-mql\oslib
+rem
+rem experts: execute este comando na pasta "Experts" do terminal onde ocorrerah a compilacao
+rem mklink /D oslib-ose D:\marcoc68\github\oslib-mql\oslib\ose
+rem
+rem indicadores: execute este comando na pasta "Indicators" do terminal onde ocorrerah a compilacao
+rem mklink /D oslib-osi D:\marcoc68\github\oslib-mql\oslib\osi
+rem
+rem scripts: execute este comando na pasta "Scripts" do terminal onde ocorrerah a compilacao
+rem mklink /D oslib-scr D:\marcoc68\github\oslib-mql\oslib\scr
+rem mklink /D oslib-tst D:\marcoc68\github\oslib-mql\oslib\tst
+rem
+rem scripts: execute este comando na pasta "Services" do terminal onde ocorrerah a compilacao
+rem mklink /D oslib-svc D:\marcoc68\github\oslib-mql\oslib\svc
+
 
 set TERMINAL_CLEAR=3BA9A43D10A400EE3A5C25C340D7DDC6
 set TERMINAL_CLDES=F2736DC84E60965E8E88F26409B862DA
