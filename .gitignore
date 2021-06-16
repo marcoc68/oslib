@@ -17,10 +17,10 @@ Levels
 Params
 
 # exclude directory contents
-Experts/*
-Files/*
-Include/*
-Scripts/*
+#Experts/*
+#Files/*
+#Include/*
+#Scripts/*
 
 # except for directories
-!Include/oslib
+#!Include/oslib
