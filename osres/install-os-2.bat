@@ -8,6 +8,10 @@ rem execute este comando em "Shared Projects" apos colocar oslib na pasta includ
 rem serah criada a juncao de diretorio oslib dentro da pasta "Shared Projects"
 rem mklink /j oslib ..\..\MQL5\Include\oslib
 
+rem coloque oslib na pasta D:\marcoc68\github\oslib-mql\oslib
+rem execute este comando na pasta "include" do terminal onde ocorrerah a compilacao
+rem mklink /D oslib D:\marcoc68\github\oslib-mql\oslib
+
 set TERMINAL_CLEAR=3BA9A43D10A400EE3A5C25C340D7DDC6
 set TERMINAL_CLDES=F2736DC84E60965E8E88F26409B862DA
 set TERMINAL_MODAL=8204B85248FF5705904F2EEC17F50E0C
