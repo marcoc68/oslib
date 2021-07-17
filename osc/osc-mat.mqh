@@ -548,4 +548,22 @@ public:
                 return  0;
     }
     
+    // preco eficiente em modelos de alta frequencia, segundo modelo de Roll
+    // Plast = Peficiente + (1/2)spread * (+1 no lado bid, ou -1 no lado ask)
+    // Peficiente = Plast + (1/2)spread * (+1 no lado bid, ou -1 no lado ask)
+    // ref: 2017-Quantitative Trading_ Algorithms, Analytics, Data, Models, Optimization
+    static double preco_eficiente_hft(double bid, double ask, double last){
+        return last + ( (ask-bid)/2.0 ) * (last <= bid)?+1:-1;
+    }
+
+    // seja:
+    // Yt o logaritimo do preco de mercado no instante t
+    // Xt o logaritimo do preco eficiente  no instante t
+    // A ampliacao do mdelo de Roll define:
+    // Yt = Xt + vies
+    // vies = Yt - Xt
+    // ref: 2017-Quantitative Trading_ Algorithms, Analytics, Data, Models, Optimization
+    static double vies_microestrutura_hft(double p_last, double p_eficiente){
+        return log(p_last) - log(p_eficiente);
+    }
 };
