@@ -551,7 +551,7 @@ public:
     // preco eficiente em modelos de alta frequencia, segundo modelo de Roll
     // Plast = Peficiente + (1/2)spread * (+1 no lado bid, ou -1 no lado ask)
     // Peficiente = Plast + (1/2)spread * (+1 no lado bid, ou -1 no lado ask)
-    // ref: 2017-Quantitative Trading_ Algorithms, Analytics, Data, Models, Optimization
+    // ref: 2017-Quantitative Trading_ Algorithms, Analytics, Data, Models, Optimization (4.1)
     static double preco_eficiente_hft(double bid, double ask, double last){
         return last + ( (ask-bid)/2.0 ) * (last <= bid)?+1:-1;
     }
@@ -562,7 +562,19 @@ public:
     // A ampliacao do mdelo de Roll define:
     // Yt = Xt + vies
     // vies = Yt - Xt
-    // ref: 2017-Quantitative Trading_ Algorithms, Analytics, Data, Models, Optimization
+    //
+    // Onde VIESi (vies) representa o ruido de microestrutura do mercado, com E(VIESi) = 0, que vem das seguintes fontes:
+    // 
+    // - Salto Bid-ask, mas sem a suposicao excessivamente restritiva de um spread bid-ask constante ao longo do tempo.
+    // - Agregacao em diferentes redes de comunicacao eletrônica que possuem problemas de sincronizacao.
+    // - Atraso de gravacao porque o registro de data e hora para uma transacao pode atrasar o verdadeiro tempo de transacao
+    //   devido a problemas de latência e outros erros de gravacao.
+    // - gradual em vez de resposta instantânea a negociacões em bloco.(3)
+    // - Precos de transacao discretos Yti Considerando que o Xt e uma variavel aleatoria continua.
+    // - Componentes estrategicos de efeitos de fluxo de ordem e controle de inventario.
+    // - Ajustes de pos-processamento durante periodos de atividade subjugada, na bolsa ou no 
+    //   fornecedor de dados, como extrapolacao do preco do ultimo periodo.    
+    // ref: 2017-Quantitative Trading_ Algorithms, Analytics, Data, Models, Optimization (4.4)
     static double vies_microestrutura_hft(double p_last, double p_eficiente){
         return log(p_last) - log(p_eficiente);
     }
