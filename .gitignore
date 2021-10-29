@@ -2,6 +2,7 @@
 *.ex4
 *.ex5
 *.dat
+*.pyc
 log.txt
 
 # exclude directories completely
