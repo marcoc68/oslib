@@ -1,4 +1,4 @@
-//+------------------------------------------------------------------+
+﻿//+------------------------------------------------------------------+
 //|                                                 Adaptive RVI.mq5 |
 //|                        Based on RVI by MetaQuotes Software Corp. |
 //|                        Copyright 2009, MetaQuotes Software Corp. |
