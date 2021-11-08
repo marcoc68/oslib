@@ -1,4 +1,4 @@
-cd C:\Users\marcoc68\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Projects\projetcts\os-ea
+﻿cd C:\Users\marcoc68\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Projects\projetcts\os-ea
 copy ea*.ex5 ..\..\..\Experts\os\
 copy ea*.ex5 ..\..\..\..\..\FB9A56D617EDDDFE29EE54EBEFFE96C1\MQL5\Experts\os\
 move ea*.ex5 ..\..\..\..\..\83D4764E0403A8685E84D6FCAB361879\MQL5\Experts\os\
