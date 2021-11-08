@@ -1,4 +1,4 @@
-class book:
+﻿class book:
 
     '''
     Imagem do book de ofertas.
