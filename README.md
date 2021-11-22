@@ -9,8 +9,10 @@
    
    `mklink /D oslib <PASTA_OSLIB-MQL>\oslib`
     
-    Por exemplo, 
-    supondo que eu tenha colocado a pasta `oslib-mql` em `c:\github\oblib-mql`, o comando seria `mklink /D oslib c:\github\oblib-mql\oslib`
+    
+    Por exemplo, supondo que eu tenha colocado a pasta `oslib-mql` em `c:\github\oblib-mql`, o comando seria 
+    
+    `mklink /D oslib c:\github\oblib-mql\oslib`
 
 2. **Experts**: execute este comando na pasta "Experts" do terminal.
    
