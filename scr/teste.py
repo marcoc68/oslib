@@ -1,4 +1,4 @@
-# Copyright 2020, MetaQuotes Software Corp.
+﻿# Copyright 2020, MetaQuotes Software Corp.
 # https://www.mql5.com
 
 #from datetime import datetime

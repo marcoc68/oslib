@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 rem terminal-clear: novo:3BA9A43D10A400EE3A5C25C340D7DDC6 antigo:EA37C0754F237DDDDEF8384B5002F42E
 rem terminal-modal: novo:8204B85248FF5705904F2EEC17F50E0C antigo:EA13603EB37E6287EDEEDAA079727CB2
 rem terminal-desen: novo:1359089FFD8DE572A105C49A845B99B2 antigo:995BCF30F4F7DC34883107ECA947C5D7 
@@ -26,6 +26,10 @@ rem
 rem scripts: execute este comando na pasta "Services" do terminal onde ocorrerah a compilacao
 rem mklink /D oslib-svc D:\marcoc68\github\oslib-mql\oslib\svc
 
+rem
+rem comando para buscar arquivos binarios que deveria ser utf8 (execute no shell do git)
+rem  find $PWD -type f | grep -E 'py|mq5|mqh'  | xargs file -i * | grep -v -E 'utf-8|ascii|directo|pyc'
+rem
 
 set TERMINAL_CLEAR=3BA9A43D10A400EE3A5C25C340D7DDC6
 set TERMINAL_CLDES=F2736DC84E60965E8E88F26409B862DA
