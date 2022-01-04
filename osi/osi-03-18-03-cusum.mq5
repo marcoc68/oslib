@@ -1,7 +1,16 @@
 ﻿//+------------------------------------------------------------------+
-//|                                           osi-03-18-02-cusum.mq5 |
+//|                                           osi-03-18-03-cusum.mq5 |
 //|                                                           marcoc |
 //|                             https://www.mql5.com/pt/users/marcoc |
+//|                                                                  |
+//| Indicador cusum. Mesmo esquema do osi-03-18-02-cusum, com as     |
+//| seguintes diferencas:                                            |
+//| 1. Usa a nova classe de calculo do cusum c00101cusum;            |
+//| 2. Usa log-retornos no lugar do preco;                           |
+//|                                                                  |
+//|                                                                  |
+//|                                                                  |
+//|                                                                  |
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2020, OS Corp."
 #property link      "http://www.os.org"
@@ -13,7 +22,7 @@
 #include <oslib\os-lib.mq5>
 #include <oslib\osc\est\osc-estatistic3.mqh>
 #include <oslib\osc-tick-util.mqh>
-#include <oslib\osc\data\osc-cusum.mqh>
+#include <oslib\osc\est\c00101cusum.mqh>
 
 input bool   DEBUG                   = false ; // se true, grava informacoes de debug no log.
 input bool   NORMALIZAR_TICK         = false ; // se true, gera volume baseado nos ticks. Usa em papeis que nao informam volume, tais como o DJ30.
@@ -26,7 +35,7 @@ input int    QTD_TICKS_ACUM_CUSUM    = 500   ; // QTD_TICKS_ACUM calcula a cada 
 
 #define LOG(txt)        if(DEBUG){Print("DEBUGINDICATOR:",__FUNCTION__,":linha ",__LINE__,":",(txt));}
 
-#define OSI_FEIRA_SHORT_NAME "osi-03-18-cusum"
+#define OSI_FEIRA_SHORT_NAME "osi-03-18-03-cusum"
 #define DEBUG_TICK     false
 
 #property description "Calcula tendencia baseada no algoritimo CUSUM."
@@ -46,14 +55,14 @@ input int    QTD_TICKS_ACUM_CUSUM    = 500   ; // QTD_TICKS_ACUM calcula a cada 
 //---- plotar linha com o C+ 
 #property indicator_label2  "C+"
 #property indicator_type2   DRAW_LINE
-#property indicator_color2  clrMagenta  //clrDarkViolet //clrFireBrick
-#property indicator_style2  STYLE_SOLID //STYLE_DASH    //STYLE_SOLID
+#property indicator_color2  clrDodgerBlue  //clrDarkViolet //clrFireBrick
+#property indicator_style2  STYLE_SOLID    //STYLE_DASH    //STYLE_SOLID
 #property indicator_width2  2
 
 //---- plotar linha com o C-
 #property indicator_label3  "C-"
 #property indicator_type3   DRAW_LINE
-#property indicator_color3  clrDodgerBlue
+#property indicator_color3  clrMagenta
 #property indicator_style3  STYLE_SOLID
 #property indicator_width3  2
 
@@ -83,7 +92,7 @@ double m_bufStrikeHmenos []; // alteracao na frequencia de cotacoes bid :5
 osc_estatistic3 m_minion   ; // estatisticas de ticks e book de ofertas
 osc_tick_util   m_tick_util; // para simular ticks de trade em bolsas que nao informam last/volume.
 CSymbolInfo     m_symb     ;
-osc_cusum       m_cusum    ; //
+c00101cusum     m_cusum    ; //
 bool            m_prochist ; // para nao reprocessar o historico sempre que mudar de barra;
 
 // apresentacao de depuracao
@@ -141,14 +150,14 @@ int OnInit() {
    IndicatorSetString(INDICATOR_SHORTNAME,OSI_FEIRA_SHORT_NAME);
 
 //--- ticks
- //m_minion.setModoHibrido(NORMALIZAR_TICK)    ; //se opcao eh true, gera volume baseado nos ticks. Usado em papeis que nao informam volume.
+ //m_minion.setModoHibrido(NORMALIZAR_TICK)    ; // se opcao eh true, gera volume baseado nos ticks. Usado em papeis que nao informam volume.
    m_minion.initialize(QTD_SEGUNDOS_CALC_MEDIA); // quantidade de segundos que serao usados no calculo das medias.
- //m_minion.setConsertarTicksSemFlag(true);
    m_minion.setSymbolStr( m_symb.Name() );
    
    m_prochist = false; // indica se deve reprocessar o historico.
    m_tick_util.setTickSize(m_symb.TickSize(), m_symb.Digits() );
-   m_cusum.setAcumularAcadaXTicks(QTD_TICKS_ACUM_CUSUM);
+   //m_cusum.setAcumularAcadaXTicks(QTD_TICKS_ACUM_CUSUM);
+   m_cusum.initialize();
 
 //--- debug
    if( DEBUG ){
@@ -175,11 +184,6 @@ int OnInit() {
 }
 
 MqlBookInfo m_book[];
-//void OnBookEventx(const string &symbol){
-//   MarketBookGet(symbol, m_book);
-//   m_minion.addBook(TimeCurrent(), m_book, m_symb.TicksBookDepth(), BOOK_OUT, m_symb.TickSize() );
-//}
-
 
 // transforma o tick informativo em tick de trade. Usamos em mercados que nao informam volume ou last nos ticks.
 void normalizar2trade(MqlTick& tick){
@@ -237,13 +241,11 @@ int OnCalculate(const int        rates_total,
     //===============================================================================================
     // Processando o hitorico...
     //===============================================================================================
-  //LOG_ONCALC;
     if(!m_prochist){ // para nao reprocessar a ultima barra sempre que mudar de barra.
         setAsSeries(false);
         doOnCalculateHistorico(rates_total, prev_calculated,time);
         setAsSeries(true);
     }
-  //LOG_ONCALC;
 
     //===============================================================================================
     // Processamento o tick da barra atual...
@@ -260,27 +262,11 @@ int OnCalculate(const int        rates_total,
 // T    eh o alvo. Normalmente a media
 // K    eh o desvio minimo para que se acumule em uma das direcoes
 // H    eh o limiar (alarme)
-    //calcC(double xi      , double T, double K, double H, bool& strikeHmais, bool& strikeHmenos, bool& strikeMais, bool& strikeMenos){
-          
-      calcC(m_tick.last, 
-            m_minion.getPrecoMedTrade(), 
-            KK            , //double K, 
-            HH            , //double H, 
-            m_strikeHmais , 
-            m_strikeHmenos, 
-            m_strikeMais  , 
-            m_strikeMenos );
+      calcC(m_minion.getLogRetTrade());
 
-    //m_bufPrecoMedio    [0] = log( m_minion.getPrecoMedTrade() )    ;
-    //m_bufStrikeMais    [0] = log( m_minion.getPrecoMedTrade() ) + ( (m_c_mais >1)?log(m_c_mais ):m_c_mais  );
-    //m_bufStrikeMenos   [0] = log( m_minion.getPrecoMedTrade() ) - ( (m_c_menos>1)?log(m_c_menos):m_c_menos );
-      m_bufPrecoMedio    [0] = 0                                     ;
-      m_bufStrikeMais    [0] = 0                                  + ( (m_c_mais >1)?log(m_c_mais ):m_c_mais  );
-      m_bufStrikeMenos   [0] = 0                                  - ( (m_c_menos>1)?log(m_c_menos):m_c_menos );
-    //m_bufStrikeHmais    [0] = m_minion.getPrecoMedTrade() + HH;
-    //m_bufStrikeHmenos   [0] = m_minion.getPrecoMedTrade() - HH;
-    //m_bufStrikeMais     [0] = m_strikeMais ?m_minion.last():0;
-    //m_bufStrikeMenos    [0] = m_strikeMenos?m_minion.last():0;
+      m_bufPrecoMedio    [0] = 0                                             ;
+      m_bufStrikeMais    [0] = 0 + m_c_mais ; //( (m_c_mais >1)?log(m_c_mais ):m_c_mais  );
+      m_bufStrikeMenos   [0] = 0 - m_c_menos; //( (m_c_menos>1)?log(m_c_menos):m_c_menos );
 
 
      //===============================================================================================
@@ -332,26 +318,20 @@ void doOnCalculateHistorico(const int        p_rates_total    ,
          normalizar2trade(ticks[ind]);
        //printTick(ticks[ind]);
          m_minion.addTick(ticks[ind]);
-         
-      calcC(ticks[ind].last, 
-            m_minion.getPrecoMedTrade(), 
-            KK            , //double K, 
-            HH            , //double H, 
-            m_strikeHmais , 
-            m_strikeHmenos, 
-            m_strikeMais  , 
-            m_strikeMenos );
+      
+      calcC(m_minion.getLogRetTrade());
+//    calcC(m_minion.getLogRetTrade()     , //ticks[ind].last, 
+//          m_minion.getLogRetTradeMedio(), //m_minion.getPrecoMedTrade(), 
+//          KK            , //double K, 
+//          HH            , //double H, 
+//          m_strikeHmais , 
+//          m_strikeHmenos, 
+//          m_strikeMais  , 
+//          m_strikeMenos );
 
-    //m_bufPrecoMedio    [i] = log(m_minion.getPrecoMedTrade())    ;
-    //m_bufStrikeMais    [i] = log(m_minion.getPrecoMedTrade()) + ( (m_c_mais >1)?log(m_c_mais ):m_c_mais  );
-    //m_bufStrikeMenos   [i] = log(m_minion.getPrecoMedTrade()) - ( (m_c_menos>1)?log(m_c_menos):m_c_menos );
       m_bufPrecoMedio    [i] = 0                                     ;
       m_bufStrikeMais    [i] = 0                                  + ( (m_c_mais >1)?log(m_c_mais ):m_c_mais  );
       m_bufStrikeMenos   [i] = 0                                  - ( (m_c_menos>1)?log(m_c_menos):m_c_menos );
-    //m_bufStrikeHmais    [i] = m_minion.getPrecoMedTrade() + HH;
-    //m_bufStrikeHmenos   [i] = m_minion.getPrecoMedTrade() - HH;
-    //m_bufStrikeMais     [i] = m_strikeMais ?m_minion.last():0;
-    //m_bufStrikeMenos    [i] = m_strikeMenos?m_minion.last():0;
 
 
         //===============================================================================================
@@ -369,44 +349,6 @@ void doOnCalculateHistorico(const int        p_rates_total    ,
 
 }//doOnCalculateHistorico.
 
-/*
-double m_fator_df = 1;
-double calcOptmalBid(double bid){
-    
-    double optquote = calcOptmalBid(bid,m_fator_df);
-    int passo = 1;
-    while( !MathIsValidNumber(optquote) ){ 
-        Comment(__FUNCTION__,":-| recalculando diminuicao de frequencia. Passo:", passo, " DF:", m_fator_df );
-        m_fator_df = m_fator_df*log(FATOR_DF); 
-        optquote = calcOptmalBid(bid,m_fator_df);
-        passo++;
-    }
-    return optquote;
-}
-double calcOptmalAsk(double ask){
-    // primeiro calcula com o fator de diminuicao de frequencia atual...
-    double optquote = calcOptmalAsk(ask,m_fator_df);
-    
-    // se deu certo e jah foi ajustado, ajusta pra tras XX vezes tentando calcular com valores mais proximos de 1(ideal).
-    if( MathIsValidNumber(optquote) && m_fator_df < 1 ){
-        for( int i=0; i<2 && MathIsValidNumber(optquote) && m_fator_df < 1; i++ ){
-            m_fator_df = m_fator_df/log(FATOR_DF); // aproximando o fator do 1...
-            if( m_fator_df > 1 ) m_fator_df = 1;
-            optquote = calcOptmalBid(ask,m_fator_df);
-        }
-    }
-    
-    // se entrar no laco eh porque o ultimo calculo deu errado, entao vai afastar do 1 ateh dar certo.
-    //int passo = 1;
-    while( !MathIsValidNumber(optquote) ){ 
-        //Comment(__FUNCTION__,":-| recalculando diminuicao de frequencia. Passo:", passo, " DF:", m_fator_df );
-        m_fator_df = m_fator_df*log(FATOR_DF); // afastando o fator do 1...
-        optquote = calcOptmalBid(ask,m_fator_df); 
-        //passo++;
-    }
-    return optquote;
-}
-*/
 
 //-- 
 double m_c_mais  = 0;
@@ -419,56 +361,15 @@ double m_c_menos_ant = 0;
 // K    eh o desvio minimo para que se acumule em uma das direcoes
 // H    eh o limiar (alarme)
 
-void calcC(const double xi, const double T, const double K, const double H, bool& strikeHmais, bool& strikeHmenos, bool& strikeMais, bool& strikeMenos){
-   m_cusum.calcC(xi, T, K, H, strikeHmais, strikeHmenos, strikeMais, strikeMenos);
+//void calcC(const double xi, const double T, const double K, const double H, bool& strikeHmais, bool& strikeHmenos, bool& strikeMais, bool& strikeMenos){
+void calcC(const double xi){
+   //m_cusum.calcC(xi, T, K, H, strikeHmais, strikeHmenos, strikeMais, strikeMenos);
+   if( xi == 0 ) return;
+   
+   m_cusum.add(xi);
    m_c_mais  = m_cusum.getCmais ();
    m_c_menos = m_cusum.getCmenos();
 }
-/*
-void calcC(const double xi, const double T, const double K, const double H, bool& strikeHmais, bool& strikeHmenos, bool& strikeMais, bool& strikeMenos){
-    
-    if( xi == 0 ) return; //<TODO> VER PORQUE ESTAH CHEGANDO COM ZERO
-    
-    strikeHmais  = false;
-    strikeHmenos = false;
-    strikeMais   = false;
-    strikeMenos  = false;
-
-    m_c_mais = MathMax(0, xi - (T+K) + m_c_mais_ant );
-    if( m_c_mais > m_c_mais_ant) strikeMais  = true;
-    if( m_c_mais > H           ) strikeHmais = true;
-    
-    m_c_menos = MathMax(0, (T-K) - xi + m_c_menos_ant );
-    if( m_c_menos > m_c_menos_ant ) strikeMenos  = true;
-    if( m_c_menos > H             ) strikeHmenos = true;
-    m_c_mais_ant   = m_c_mais;
-    m_c_menos_ant  = m_c_menos;  
-}
-*/
-
-//double calcOptmalBid(double bid, double fator_df){
-//    if(    m_minion.getFreqBid     ()==0
-//      //|| m_minion.getDeltaFreqBid()==0
-//      //|| m_minion.getFreqBid()     == m_minion.getDeltaFreqBid() 
-//      ) return (bid-DISTANCIA_PRECO);
-//    
-//    return (bid-DISTANCIA_PRECO) - (1/AVERSAO_RISCO)*log( 1- AVERSAO_RISCO*( oneIfZero(m_minion.getFreqBid()*fator_df)/oneIfZero(m_minion.getDeltaFreqBid()) ) );
-//}
-
-//double calcOptmalAsk(double ask, double fator_df){
-//    if(    m_minion.getFreqAsk     () == 0
-//      //|| m_minion.getDeltaFreqAsk() == 0 
-//      //|| m_minion.getFreqAsk     () == m_minion.getDeltaFreqAsk() ]
-//      ) return (ask+DISTANCIA_PRECO);
-//        
-//    return (ask+DISTANCIA_PRECO) - (1/AVERSAO_RISCO)*log( 1- AVERSAO_RISCO*( oneIfZero(m_minion.getFreqAsk()*fator_df)/oneIfZero(m_minion.getDeltaFreqAsk()) ) );
-//}
-
-//double naoMaiorQue(double ori, double maior){
-//    if( ori < maior ) return ori  ;
-//                      return maior;
-//}
-
 
 string m_deslocamento = ""+
                   //    "                                                                   "+
@@ -478,7 +379,7 @@ string m_deslocamento = ""+
 int m_qtdImpressao = 0;                        
 void imprimirComment(){
 
-  return;
+  //return;
   
   // imprimir a cada 2 ticks...
   if( m_qtdImpressao++ > 2 ){ m_qtdImpressao = 0; return; }
@@ -487,36 +388,15 @@ void imprimirComment(){
   // Imprimindo dados de depuracao...
   //===============================================================================================
    m_tick_txt =
-//         m_deslocamento+"PMEDBUY: " + DoubleToString (m_minion.getPrecoMedTradeBuy()   ,_Digits )+ "\n" +
-//         m_deslocamento+"PMEDSEL: " + DoubleToString (m_minion.getPrecoMedTradeSel()   ,_Digits )+ "\n" +
-//         m_deslocamento+"PMED===: " + DoubleToString (m_minion.getPrecoMedTrade()      ,_Digits )+ "\n" +
-//
-//   "\n" +m_deslocamento+"=== VOL/VOL MEDIO/ACEL VOL ====\n" +
-//         m_deslocamento+"TOT: " + DoubleToString(m_minion.getVolTrade      ()    ,_Digits)+ "/"+
-//                                  DoubleToString(m_bufVol[0]                     ,_Digits)+ "/"+
-//                                  DoubleToString(m_minion.getVolMedTrade   ()    ,1      )+ "/"+
-//         m_deslocamento+"BUY: " + DoubleToString(m_minion.getVolTradeBuy   ()    ,_Digits)+ "/"+
-//                                  DoubleToString(m_minion.getVolMedTradeBuy()    ,1      )+ "/"+
-//         m_deslocamento+"SEL: " + DoubleToString(m_minion.getVolTradeSel   ()    ,_Digits)+ "/"+
-//                                  DoubleToString(m_minion.getVolMedTradeSel()    ,1      )+ "/n"+
-//
-
-//   "\n" +m_deslocamento+"=== INCLINACAO PRECO MED/BUY/SELL ====\n" +
-//         m_deslocamento+"MED: " + DoubleToString(m_minion.getInclinacaoTrade   (), 9)+ "/"+
-//                                  DoubleToString(m_minion.getInclinacaoTradeBuy(), 9)+ "/"+
-//                                  DoubleToString(m_minion.getInclinacaoTradeSel(), 9)+ "\n" +
-//         m_deslocamento+"MED: " + DoubleToString(log1p( oneIfZero(m_minion.getInclinacaoTrade   ()) ), 5)+ "/"+
-//                                  DoubleToString(log1p( oneIfZero(m_minion.getInclinacaoTradeBuy()) ), 5)+ "/"+
-//                                  DoubleToString(log1p( oneIfZero(m_minion.getInclinacaoTradeSel()) ), 5)+ "\n" 
-
      "\n" +m_deslocamento+"=== ASSIMETRIA DO MERCADO FASK/FBID/DASK/DBID ====\n"     +
-           m_deslocamento+"PMT:"+DoubleToString(m_minion.getPrecoMedTrade(), 2)+ "\n"+
-           m_deslocamento+"C+/H+ :"+DoubleToString(m_c_mais                , 2)+ "/" +
-                                    DoubleToString(m_strikeMais            , 2)+ "/" +
-                                    DoubleToString(m_strikeHmais           , 2)+ "\n"+
-           m_deslocamento+"C-/H- :"+DoubleToString(m_c_menos               , 2)+ "/" +
-                                    DoubleToString(m_strikeMenos           , 2)+ "/" +
-                                    DoubleToString(m_strikeHmenos          , 2)+ "\n"+
+           m_deslocamento+"LOGRET:"+DoubleToString(m_minion.getLogRetTrade()     )+ "\n"+
+           m_deslocamento+"PMT   :"+DoubleToString(m_minion.getPrecoMedTrade(), 2)+ "\n"+
+           m_deslocamento+"C+/H+ :"+DoubleToString(m_c_mais                   , 2)+ "/" +
+                                    DoubleToString(m_strikeMais               , 2)+ "/" +
+                                    DoubleToString(m_strikeHmais              , 2)+ "\n"+
+           m_deslocamento+"C-/H- :"+DoubleToString(m_c_menos                  , 2)+ "/" +
+                                    DoubleToString(m_strikeMenos              , 2)+ "/" +
+                                    DoubleToString(m_strikeHmenos             , 2)+ "\n"+
 
    "\n"+ m_deslocamento+"=== BARRAS ACUMULADAS ========================\n"                                           +
          m_deslocamento+"TOT/BUY/SEL====:"+ DoubleToString(double(m_minion.getTempoAcumTrade     ())/(double)m_qtd_sec_periodo, 2 )+ "/" +
@@ -525,11 +405,6 @@ void imprimirComment(){
          m_deslocamento+"TOT/ASK/BID====:"+ DoubleToString(double(m_minion.getTempoAcumBook      ())/(double)m_qtd_sec_periodo, 2 )+ "/" +
                                             DoubleToString(double(m_minion.getTempoAcumBookAsk   ())/(double)m_qtd_sec_periodo, 2 )+ "/" +
                                             DoubleToString(double(m_minion.getTempoAcumBookBid   ())/(double)m_qtd_sec_periodo, 2 )+ "\n"+
-       //m_deslocamento+"ACE TOT/BUY/SEL:"+ DoubleToString(double(m_minion.getTempoAcumAceVol    ())/(double)m_qtd_sec_periodo, 2 )+ "/" +
-       //                                   DoubleToString(double(m_minion.getTempoAcumAceVolBuy ())/(double)m_qtd_sec_periodo, 2 )+ "/" +
-       //                                   DoubleToString(double(m_minion.getTempoAcumAceVolSel ())/(double)m_qtd_sec_periodo, 2 )+ "\n"+
-  //     m_deslocamento+"TEND/REV=======:"+ DoubleToString(double(m_minion.getTempoAcumTendencia ())/(double)m_qtd_sec_periodo, 2 )+ "/" +
-  //                                        DoubleToString(double(m_minion.getTempoAcumRversao   ())/(double)m_qtd_sec_periodo, 2 )+ "\n"+
          m_deslocamento+"TATU/BAR: "      + DoubleToString (m_sec_barra                    ,0 ) + "/"  +
                                             DoubleToString (m_qtd_sec_periodo              ,0 ) + "\n" +
 
@@ -540,15 +415,10 @@ void imprimirComment(){
          m_deslocamento+"BOOK TOT/ASK/BID=:" + IntegerToString(m_minion.getLenVetAcumBook     ()) + "/"  +
                                                IntegerToString(m_minion.getLenVetAcumBookAsk  ()) + "/"  +
                                                IntegerToString(m_minion.getLenVetAcumBookBid  ()) + "\n"  
-     //  m_deslocamento+"ACEVO TOT/BUY/SEL:" + IntegerToString(m_minion.getLenVetAcumAceVol   ()) + "/"  +
-     //                                        IntegerToString(m_minion.getLenVetAcumAceVolBuy()) + "/"  +
-     //                                        IntegerToString(m_minion.getLenVetAcumAceVolSel()) + "\n" 
                                                                                                          ;
 
    Comment(       m_deslocamento+"TICK ===========================\n"+
                   m_tick_txt+
-         //   "\n" + m_deslocamento+"TERMINAL ===============================\n"+
-         //          terminal_txt+
            "\n" + m_deslocamento+"FIM ================================"  );
   //===============================================================================================
 }
@@ -557,39 +427,17 @@ void setAsSeries(bool modo){
     ArraySetAsSeries(m_bufPrecoMedio  , modo );
     ArraySetAsSeries(m_bufStrikeMais  , modo );
     ArraySetAsSeries(m_bufStrikeMenos , modo );
-    //ArraySetAsSeries(m_bufStrikeHmais , modo );
-    //ArraySetAsSeries(m_bufStrikeHmenos, modo );
+  //ArraySetAsSeries(m_bufStrikeHmais , modo );
+  //ArraySetAsSeries(m_bufStrikeHmenos, modo );
 }
 
 void zerarBufAll(uint i){
    m_bufPrecoMedio      [i] = 0;
    m_bufStrikeMais      [i] = 0;
    m_bufStrikeMenos     [i] = 0;
-   //m_bufStrikeHmais     [i] = 0;
-   //m_bufStrikeHmenos    [i] = 0;
+ //m_bufStrikeHmais     [i] = 0;
+ //m_bufStrikeHmenos    [i] = 0;
 }
-
-//////--------------------------------------------------------------------------------------
-////// calcula a quantidade de segundos da barra atual e bem como a % de tempo decorrido...
-//////--------------------------------------------------------------------------------------
-////uint   m_sec_barra_pro_fim        ;
-////double m_porcTempoDesdeInicioBarra;
-////double m_porcTempoToFimBarra      ;
-//////--------------------------------------------------------------------------------------
-////void calcTempoBarraAtual(const datetime&  time[]){
-////    // segundos na barra atual...
-////     bool tipo = ArrayIsSeries(time);
-////     ArraySetAsSeries(time,true);
-////     m_sec_barraAtu =   TimeCurrent();
-////     m_sec_barraAnt =   time[0];
-////     m_sec_barra            =   (int)(m_sec_barraAtu    - m_sec_barraAnt);
-////     m_sec_barra_pro_fim    =   (int)(m_qtd_sec_periodo - m_sec_barra   );
-////     ArraySetAsSeries(time,tipo);
-////     m_porcTempoDesdeInicioBarra = (m_sec_barra        /m_qtd_sec_periodo)*100.0;
-////     m_porcTempoToFimBarra       = (m_sec_barra_pro_fim/m_qtd_sec_periodo)*100.0;
-////}
-//////--------------------------------------------------------------------------------------
-
 
 void openLogFileTick(string arqLog){m_log_tick=FileOpen(arqLog, FILE_WRITE             );                      }
 void flushLogTick()                 { if( DEBUG || DEBUG_TICK ){ FileFlush(m_log_tick                                   ); } }

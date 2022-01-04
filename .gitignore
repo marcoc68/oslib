@@ -4,6 +4,8 @@
 *.dat
 *.pyc
 log.txt
+.project
+.*
 
 # exclude directories completely
 Images

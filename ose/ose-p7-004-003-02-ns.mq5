@@ -2173,8 +2173,8 @@ bool fecharPosicaoHFTCusumSimples(){
 
 //void abrirPosicaoHFTFormadorDeMercado    (){     abrirPosicaoHFTFormadorDeMercadoCusumV3();}
 //void gerenciarPosicaoHFTFormadorDeMercado(){ gerenciarPosicaoHFTFormadorDeMercadoCusumV4();}
-//void abrirPosicaoHFTFormadorDeMercado    (){     abrirPosicaoHFTFormadorDeMercadoSimplesNaMediaDoTrade();}
-  void abrirPosicaoHFTFormadorDeMercado    (){     abrirPosicaoHFTFormadorDeMercadoSimplesNaMediaDoBook();}
+  void abrirPosicaoHFTFormadorDeMercado    (){     abrirPosicaoHFTFormadorDeMercadoSimplesNaMediaDoTrade();}
+//void abrirPosicaoHFTFormadorDeMercado    (){     abrirPosicaoHFTFormadorDeMercadoSimplesNaMediaDoBook();}
 //void gerenciarPosicaoHFTFormadorDeMercado(){     abrirPosicaoHFTFormadorDeMercadoV5     ();}
 bool fecharPosicaoHFTCusum               (){ return fecharPosicaoHFTCusumSimples          ();}
 bool stopGainParcial                     (){ return stopGainParcialSimples                ();}

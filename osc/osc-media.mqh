@@ -1,13 +1,13 @@
 ﻿//+------------------------------------------------------------------+
 //|                                                    osc-media.mqh |
-//|                        Copyright 2019, MetaQuotes Software Corp. |
+//|                             Copyright 2020, Oficina de Software. |
 //|                                             https://www.mql5.com |
 //+------------------------------------------------------------------+
 #property copyright "2020, Oficina de Software."
 #property link      "http://www.os.net"
 
 #include <oslib/osc/est/CStat.mqh>
-#include <Math\Stat\Math.mqh>
+#include <Math/Stat/Math.mqh>
 
 // calculo de media simples baseada em quantidade fixa de elementos. A medida que o vetor de valores enche, despreza o valor mais antigo,
 // adiciona o mais novo e reclacula a media.
@@ -59,7 +59,7 @@ public:
     // Adiciona um item a media, retira o mais antigo (se for maior que o tamanho do vetor de medias) e retorna o valor da media.
     // Se nao tiver passado o time_frame informado na inicializacao, nao adiciona e retorna falso.
     //----------------------------------------------------------------------------------------------------
-    bool add(const double val, datetime time){
+    bool add(const double val, datetime time, bool calc_var=false){
          //Print("m_len:",m_len," ind:",m_ind," time:",time," val:",val," m_mean:",m_mean);
          // se nao passou o time_frame minimo para acumular, nao faz nada e retorna falso.
          if( (time - m_dt_ult_add) < m_tf ) return false;
@@ -70,13 +70,15 @@ public:
          // adicionando...
          add(val);
          
+         if(calc_var){ calcVar(); }
+         
          return true;
     }
     
     //----------------------------------------------------------------------------------------------------
     // Adiciona um item a media, retira o mais antigo (se for maior que o tamanho do vetor de medias) e retorna o valor da media.
     //----------------------------------------------------------------------------------------------------
-    double add(const double val){
+    double add(const double val, bool calc_var=false){
     
         if( m_len_calc < m_len ) m_len_calc++;
          
@@ -86,7 +88,11 @@ public:
          
         if( ++m_ind == m_len_calc ){ m_ind=0; }   // atualizando o indice
          
-        return m_mean = ( m_tot/(double)m_len_calc );       
+        m_mean = ( m_tot/(double)m_len_calc );       
+        
+        if(calc_var){ calcVar(); }
+
+        return m_mean;
     }
 
     //----------------------------------------------------------------------------------------------------

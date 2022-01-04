@@ -288,7 +288,7 @@ private:
 
     bool create_table_acum_feature(){
     
-    //--- check if the table exists 
+    //--- check if the table exists 1
        if(!DatabaseTableExists(m_db, "acum_feature")){
           //--- create the table 
           if(!DatabaseExecute(m_db, "CREATE TABLE acum_feature(" 

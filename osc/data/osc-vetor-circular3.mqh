@@ -113,7 +113,7 @@ public:
     bool initialize(int seconds, string name, bool relogio_por_evento);
     
     bool add1(double val, double peso, datetime time, double logRet=0);
-    bool add (double val, double peso, datetime time);
+    bool add (double val, double peso, datetime time, double retMin=10);
     bool add (double val, double peso               ){return add(val,peso,TimeCurrent());}
     bool add (double val                            ){return add(val, 1                );}
 
@@ -373,7 +373,13 @@ bool osc_vetor_circular2::add1(double val, double peso, datetime time, double lo
     return true;
 }
 
-bool osc_vetor_circular2::add(double val, double peso, datetime time){
+// val    = valor a ser computado estatisticamente. Normalment o preco do ativo.
+// peso   = normalmente o volume.
+// time   = data da ocorrencia do preco.
+// retMin = retorno minimo, em relacao ao ultimo preco neociado, alem do qual,
+//          deverah ser calculado novo retorno. Ou seja, se o retorno for menor que 
+//          retMin, nao eh calculado um novo retorno.
+bool osc_vetor_circular2::add(double val, double peso, datetime time, double retMin=10){
 
     if(m_vet.Count() == 0){ return add1(val,peso,time);}
 
@@ -458,25 +464,33 @@ bool osc_vetor_circular2::add(double val, double peso, datetime time){
     m_o2            = (pow( (val-m_media), 2 )*peso)/( oneIfZero(m_somaPeso-1) ); // <TODO> testar
     m_time          = time      ; // atualizando a data do ultimo registro inserido na fila.
     
-    m_logRet           = log(val)-log(m_ultVal);
-    m_logRetSoma      += m_logRet;
-    m_logRetxPesoSoma += (peso*m_logRet);
-    m_logRetMedio      = (m_logRetxPesoSoma)/oneIfZero(m_somaPeso);
-    m_o2LogRet         = (pow( (m_logRet-m_logRetMedio), 2 )*peso)/ ( oneIfZero(m_somaPeso-1) ); // <TODO> testar
-    
-    if( val != m_ultVal && val != 0){ 
-        //m_freqVal++; 
-        m_ultVal = val; 
+    if( fabs(val-m_ultVal) >= retMin ){
+        m_logRet           = log(val)-log(m_ultVal);
+        m_logRetSoma      += m_logRet;
+        m_logRetxPesoSoma += (peso*m_logRet);
+        m_logRetMedio      = (m_logRetxPesoSoma)/oneIfZero(m_somaPeso);
+        m_o2LogRet         = (pow( (m_logRet-m_logRetMedio), 2 )*peso)/ ( oneIfZero(m_somaPeso-1) ); // <TODO> testar
         
-        //m_alterVal = 1;  
+        if( val != m_ultVal && val != 0){ 
+            //m_freqVal++; 
+            m_ultVal = val; 
+            
+            //m_alterVal = 1;  
+            
+            // para que alterval passe a capturar o fluxo de agressoes
+            m_alterVal  = val>m_ultVal?peso:-peso; 
+            m_freqVal  += m_alterVal; 
         
-        // para que alterval passe a capturar o fluxo de agressoes
-        m_alterVal  = val>m_ultVal?peso:-peso; 
-        m_freqVal  += m_alterVal; 
-    
+        }else{
+            m_alterVal=0;
+        } // alterou o valor acumulado, adiconamos 1 a frequencia.
     }else{
-        m_alterVal=0;
-    } // alterou o valor acumulado, adiconamos 1 a frequencia.
+        m_logRet          = 0;
+        m_logRetSoma      = 0;
+        m_logRetxPesoSoma = 0;
+        m_logRetMedio     = 0;
+        m_o2LogRet        = 0;
+    }
 
   //m_vet.peek(m_item);
     itemP = m_vet.Peek();
