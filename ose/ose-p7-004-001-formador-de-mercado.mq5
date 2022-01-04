@@ -2165,8 +2165,8 @@ void abrirPosicaoHFTPrioridadeNoBook(){
    
  //if( m_qtdPosicoes>0|| ( estouSemPosicao() && podeEntrarVendendo() ) ){
    if( estouVendido() || ( estouSemPosicao() && podeEntrarVendendo() ) ){ // testando a entrada em sentido unico quando estah posicionado
-       if(m_precoOrdem!=0) m_trade.preencherOrdensLimitadasDeVendaAcimaComLag (m_precoOrdem,EA_TAMANHO_RAJADA,m_symb_str,m_apmb_sel,vol,m_tick_size,lag_rajada);
-     //if(m_precoOrdem!=0) m_trade.preencherOrdensLimitadasDeVendaAcimaComLag2(m_precoOrdem,EA_TAMANHO_RAJADA,m_symb_str,m_apmb_sel,vol,m_tick_size,lag_rajada);
+     //if(m_precoOrdem!=0) m_trade.preencherOrdensLimitadasDeVendaAcimaComLag (m_precoOrdem,EA_TAMANHO_RAJADA,m_symb_str,m_apmb_sel,vol,m_tick_size,lag_rajada);
+       if(m_precoOrdem!=0) m_trade.preencherOrdensLimitadasDeVendaAcimaComLag2(m_precoOrdem,EA_TAMANHO_RAJADA,m_symb_str,m_apmb_sel,vol,m_tick_size,lag_rajada);
    }else{
        m_trade.cancelarOrdensComentadasDeVenda(m_symb_str ,m_apmb_sel);
    }
@@ -2197,8 +2197,8 @@ void abrirPosicaoHFTPrioridadeNoBook(){
 
  //if( m_qtdPosicoes>0 || ( estouSemPosicao() && podeEntrarComprando() ) ){
    if( estouComprado() || ( estouSemPosicao() && podeEntrarComprando() ) ){ // testando a entrada em sentido unico quando estah posicionado
-       if(m_precoOrdem!=0) m_trade.preencherOrdensLimitadasDeCompraAbaixoComLag (m_precoOrdem,EA_TAMANHO_RAJADA,m_symb_str,m_apmb_buy,vol,m_tick_size,lag_rajada);
-     //if(m_precoOrdem!=0) m_trade.preencherOrdensLimitadasDeCompraAbaixoComLag2(m_precoOrdem,EA_TAMANHO_RAJADA,m_symb_str,m_apmb_buy,vol,m_tick_size,lag_rajada);
+     //if(m_precoOrdem!=0) m_trade.preencherOrdensLimitadasDeCompraAbaixoComLag (m_precoOrdem,EA_TAMANHO_RAJADA,m_symb_str,m_apmb_buy,vol,m_tick_size,lag_rajada);
+       if(m_precoOrdem!=0) m_trade.preencherOrdensLimitadasDeCompraAbaixoComLag2(m_precoOrdem,EA_TAMANHO_RAJADA,m_symb_str,m_apmb_buy,vol,m_tick_size,lag_rajada);
    }else{
      m_trade.cancelarOrdensComentadasDeCompra(m_symb_str ,m_apmb_buy);
    }
