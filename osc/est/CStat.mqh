@@ -190,6 +190,7 @@ class CStat{
         }
 
         if(sx2==0){msg=":-( somatorio de x2 eh zero. Nao eh possivel estimar a regressao";
+                   Print(msg);
                    Print("Eixo Y"); ArrayPrint(y);
                    Print("Eixo X"); ArrayPrint(x);
                    return false;}
@@ -223,6 +224,7 @@ class CStat{
         }
 
         if(sqt==0){msg=":-( SQT eh zero. Nao eh possivel calcular r2";
+                   Print(msg);
                    Print("Eixo Y"); ArrayPrint(y);
                    Print("Eixo X"); ArrayPrint(x);
                    return false;}
