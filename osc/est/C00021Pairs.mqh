@@ -48,7 +48,7 @@ public:
     int    getQtdSegMedia() { return m_qtd_seg_media; }
 
     // inicializacao antes de comecar a acumular.
-    // deve infirmar a quantidade de segundos usados do calculo da media dos spreads.
+    // deve informar a quantidade de segundos usados do calculo da media dos spreads.
     // se nao informar, calcularah a media da ultima hora de spreads.
     void initialize(int qtdSegMedia=60*60){ 
         setQtdSegMedia(qtdSegMedia);

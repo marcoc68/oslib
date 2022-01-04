@@ -9,7 +9,7 @@
 //+---------------------------------------------------------------------+
 //| Implementacoes CUSUM - Cumulative Sum.                              |
 //+---------------------------------------------------------------------+
-#property description "Vetor circular baseado em filas visando rapido calculo de medias."
+#property description "Soma cumulativa."
 
 #include <Object.mqh>
 #include <Generic\Queue.mqh>

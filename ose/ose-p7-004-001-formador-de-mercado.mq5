@@ -459,7 +459,7 @@ int OnInit(){
 
     m_posicao.Select( m_symb_str ); // selecao da posicao por simbolo.
 
-    m_canal.inicializar(m_tick_size,EA_TAMANHO_CANAL, EA_PORC_REGIAO_OPERACIONAL_CANAL);
+    m_canal.inicializar(m_symb,EA_TAMANHO_CANAL, EA_PORC_REGIAO_OPERACIONAL_CANAL);
     m_canal.setShowCanalPrecos(EA_SHOW_CANAL_PRECOS);
     m_canal.setRegiaoBuySellUsaCanalDia(EA_CANAL_DIARIO);
     
