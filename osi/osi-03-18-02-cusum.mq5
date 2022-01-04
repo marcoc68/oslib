@@ -512,11 +512,11 @@ void imprimirComment(){
      "\n" +m_deslocamento+"=== ASSIMETRIA DO MERCADO FASK/FBID/DASK/DBID ====\n"     +
            m_deslocamento+"PMT:"+DoubleToString(m_minion.getPrecoMedTrade(), 2)+ "\n"+
            m_deslocamento+"C+/H+ :"+DoubleToString(m_c_mais                , 2)+ "/" +
-                                                   m_strikeMais                + "/" +
-                                                   m_strikeHmais               + "\n"+
+                                    DoubleToString(m_strikeMais            , 2)+ "/" +
+                                    DoubleToString(m_strikeHmais           , 2)+ "\n"+
            m_deslocamento+"C-/H- :"+DoubleToString(m_c_menos               , 2)+ "/" +
-                                                   m_strikeMenos               + "/" +
-                                                   m_strikeHmenos              + "\n"+
+                                    DoubleToString(m_strikeMenos           , 2)+ "/" +
+                                    DoubleToString(m_strikeHmenos          , 2)+ "\n"+
 
    "\n"+ m_deslocamento+"=== BARRAS ACUMULADAS ========================\n"                                           +
          m_deslocamento+"TOT/BUY/SEL====:"+ DoubleToString(double(m_minion.getTempoAcumTrade     ())/(double)m_qtd_sec_periodo, 2 )+ "/" +
