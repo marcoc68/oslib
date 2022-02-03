@@ -74,6 +74,7 @@ private:
     double              m_logRetSoma     ; // soma dos log retornos no vetor circular;
     double              m_logRetxPesoSoma; // soma dos logRetornos multiplicados pelos respectivos pesos(volumes)
     double              m_logRetMedio    ; // media dos log retornos
+    double              m_logRetPeso     ; // volume acumulado ateh chegar ao valor do retorno
 
     //-- variancia movel (tenho feh que serah significativo e ajudara)
     // o2 serah variavel a cada valor acumulado. Isto difere do conceito normal de variancia no qual
@@ -113,7 +114,7 @@ public:
     bool initialize(int seconds, string name, bool relogio_por_evento);
     
     bool add1(double val, double peso, datetime time, double logRet=0);
-    bool add (double val, double peso, datetime time, double retMin=10);
+    bool add (double val, double peso, datetime time, double retMin=15);
     bool add (double val, double peso               ){return add(val,peso,TimeCurrent());}
     bool add (double val                            ){return add(val, 1                );}
 
@@ -282,6 +283,7 @@ bool osc_vetor_circular2::initialize(int seconds, string name, bool relogio_por_
     m_logRetSoma      = 0;
     m_logRetxPesoSoma = 0;
     m_logRetMedio     = 0;
+    m_logRetPeso      = 0;
    //----------------
     //m_volat           = 0;
     //m_time_ant        = 0;
@@ -327,6 +329,7 @@ bool osc_vetor_circular2::add1(double val, double peso, datetime time, double lo
     m_logRetSoma      = logRet;
     m_logRetxPesoSoma = logRet*peso; 
     m_logRetMedio     = m_logRetxPesoSoma/oneIfZero(m_somaPeso);
+    m_logRetPeso      = peso;
 
     // acrescentando o novo elemento a fila...
     Item* newItem    = new Item;
@@ -379,7 +382,7 @@ bool osc_vetor_circular2::add1(double val, double peso, datetime time, double lo
 // retMin = retorno minimo, em relacao ao ultimo preco neociado, alem do qual,
 //          deverah ser calculado novo retorno. Ou seja, se o retorno for menor que 
 //          retMin, nao eh calculado um novo retorno.
-bool osc_vetor_circular2::add(double val, double peso, datetime time, double retMin=10){
+bool osc_vetor_circular2::add(double val, double peso, datetime time, double retMin=15){
 
     if(m_vet.Count() == 0){ return add1(val,peso,time);}
 
@@ -396,20 +399,17 @@ bool osc_vetor_circular2::add(double val, double peso, datetime time, double ret
     // algumas vezes retira um item do periodo atual <TODO: corrigir>
     m_tamanhoFila = m_vet.Count();
     m_atuMinMax   = false;
-  //Item itemD;
-  //while(elapsed > m_secondsMax && m_tamanhoFila>0){
     while( getComQuemDevoCompararMeuTamanho(elapsed,m_tamanhoFila) > m_secondsMax && m_tamanhoFila>0){
 
 
-        Item* itemD = m_vet.Dequeue();
-        elapsed = time - itemD.time;
+        Item* itemD     = m_vet.Dequeue();
+        elapsed         = time - itemD.time;
         m_tamanhoFila--;
 
         m_orderFlowRet  = m_freqVal-itemD.freqVal; // retorno de orderFlow
 
         m_somaVal      -= itemD.val;
         m_somaPeso     -= itemD.peso;
-      //m_somaValxPeso -= itemD.valxPeso;
         m_somaValxPeso -= ( itemD.val * itemD.peso );
         m_freqVal      -= itemD.alterVal;
         
@@ -459,37 +459,41 @@ bool osc_vetor_circular2::add(double val, double peso, datetime time, double ret
     m_somaVal      +=  val      ;
     m_somaPeso     +=  peso     ;
     m_somaValxPeso += (peso*val);
-  //m_media         = NormalizeDouble(m_somaValxPeso/oneIfZero(m_somaPeso),1);
-    m_media         =                 m_somaValxPeso/oneIfZero(m_somaPeso)   ;
+    m_media         =  m_somaValxPeso/oneIfZero(m_somaPeso);
     m_o2            = (pow( (val-m_media), 2 )*peso)/( oneIfZero(m_somaPeso-1) ); // <TODO> testar
     m_time          = time      ; // atualizando a data do ultimo registro inserido na fila.
     
     if( fabs(val-m_ultVal) >= retMin ){
-        m_logRet           = log(val)-log(m_ultVal);
+      //m_logRet           = log(val)-log(m_ultVal);
+        m_logRet           =     val -    m_ultVal ;
         m_logRetSoma      += m_logRet;
         m_logRetxPesoSoma += (peso*m_logRet);
         m_logRetMedio      = (m_logRetxPesoSoma)/oneIfZero(m_somaPeso);
         m_o2LogRet         = (pow( (m_logRet-m_logRetMedio), 2 )*peso)/ ( oneIfZero(m_somaPeso-1) ); // <TODO> testar
         
-        if( val != m_ultVal && val != 0){ 
+        //Print(__FUNCTION__," :-| ", getName(), " ret=",val-m_ultVal, " ultVal= ",m_ultVal, " val=", val, " loRet=", m_logRet);
+        
+    //  if( val != m_ultVal && val != 0){ 
             //m_freqVal++; 
-            m_ultVal = val; 
             
             //m_alterVal = 1;  
             
             // para que alterval passe a capturar o fluxo de agressoes
             m_alterVal  = val>m_ultVal?peso:-peso; 
             m_freqVal  += m_alterVal; 
+            m_ultVal    = val; 
         
-        }else{
-            m_alterVal=0;
-        } // alterou o valor acumulado, adiconamos 1 a frequencia.
+    //  }else{
+    //      m_alterVal=0;
+    //  } // alterou o valor acumulado, adiconamos 1 a frequencia.
     }else{
         m_logRet          = 0;
         m_logRetSoma      = 0;
         m_logRetxPesoSoma = 0;
         m_logRetMedio     = 0;
         m_o2LogRet        = 0;
+        m_alterVal        = 0;
+        m_logRetPeso     += peso;
     }
 
   //m_vet.peek(m_item);

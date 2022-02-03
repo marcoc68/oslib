@@ -86,13 +86,22 @@ public:
         m_tot       -= m_vet[m_ind]; // retirando o que estava na posicao atual do vetor
         m_vet[m_ind] = val         ; // e colocando o ultimo valor calculado
          
-        if( ++m_ind == m_len_calc ){ m_ind=0; }   // atualizando o indice
+        if( ++m_ind == m_len ){ m_ind=0; }   // atualizando o indice
          
         m_mean = ( m_tot/(double)m_len_calc );       
         
         if(calc_var){ calcVar(); }
 
         return m_mean;
+    }
+    
+    // retorna o ultimo valor adicionado ao vetor;
+    double getXi(){ return m_vet[m_ind]; }
+    
+    // metodo print util para debug;
+    void print(string nome=""){
+        Print(__FUNCTION__, " :-| Logando vetor ", nome, ": media:", m_mean, " var:", getVar(), " ind=", m_ind, " len_calc=",m_len_calc, " tot=", m_tot );
+        ArrayPrint(m_vet);
     }
 
     //----------------------------------------------------------------------------------------------------
