@@ -264,9 +264,9 @@ int OnCalculate(const int        rates_total,
 // H    eh o limiar (alarme)
       calcC(m_minion.getLogRetTrade());
 
-      m_bufPrecoMedio    [0] = 0                                             ;
-      m_bufStrikeMais    [0] = 0 + m_c_mais ; //( (m_c_mais >1)?log(m_c_mais ):m_c_mais  );
-      m_bufStrikeMenos   [0] = 0 - m_c_menos; //( (m_c_menos>1)?log(m_c_menos):m_c_menos );
+      m_bufPrecoMedio    [0] = 0            ;
+      m_bufStrikeMais    [0] = 0 + m_c_mais ;  // log(m_c_mais ); //( (m_c_mais >1)?log(m_c_mais ):m_c_mais  );
+      m_bufStrikeMenos   [0] = 0 - m_c_menos; // log(m_c_menos); //( (m_c_menos>1)?log(m_c_menos):m_c_menos );
 
 
      //===============================================================================================
@@ -329,9 +329,9 @@ void doOnCalculateHistorico(const int        p_rates_total    ,
 //          m_strikeMais  , 
 //          m_strikeMenos );
 
-      m_bufPrecoMedio    [i] = 0                                     ;
-      m_bufStrikeMais    [i] = 0                                  + ( (m_c_mais >1)?log(m_c_mais ):m_c_mais  );
-      m_bufStrikeMenos   [i] = 0                                  - ( (m_c_menos>1)?log(m_c_menos):m_c_menos );
+      m_bufPrecoMedio    [i] = 0                   ;
+      m_bufStrikeMais    [i] = 0   + m_c_mais      ; //log(m_c_mais ); // ( (m_c_mais >1)?log(m_c_mais ):m_c_mais  );
+      m_bufStrikeMenos   [i] = 0   - m_c_menos     ; // log(m_c_menos); // ( (m_c_menos>1)?log(m_c_menos):m_c_menos );
 
 
         //===============================================================================================
@@ -369,6 +369,7 @@ void calcC(const double xi){
    m_cusum.add(xi);
    m_c_mais  = m_cusum.getCmais ();
    m_c_menos = m_cusum.getCmenos();
+   //m_cusum.print();
 }
 
 string m_deslocamento = ""+
