@@ -30,14 +30,14 @@ public:
         }
     }
 
-    string toString(Vprof &vprof){
+    string toString(Vprof &_vprof){
     
         double chave[]; volume_profile_item* item[];
         int   qtd = CopyTo(chave,item);
         
         string str;
         for(int i=qtd-1; i>-1; i--){
-            StringConcatenate( str, str, item[i].toString(),vprof.str_tip(chave[i]), "\n" );
+            StringConcatenate( str, str, item[i].toString(),_vprof.str_tip(chave[i]), "\n" );
         }
         return str;
     }

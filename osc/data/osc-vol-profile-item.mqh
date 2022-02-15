@@ -31,7 +31,7 @@ public:
         StringConcatenate(str
                              ,"|p " , price
                              ,"|v " , vol
-                             ,"|t " , time
+                             ,"|t " , TimeToString( time, TIME_SECONDS )
                           );
         return str;
     }

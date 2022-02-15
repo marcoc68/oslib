@@ -20,7 +20,7 @@
 #include <oslib\os-lib.mq5>
 #include <oslib\osc-estatistic2.mqh>
 #include <oslib\osc-tick-util.mqh>
-#include <oslib\osc\osc_db.mqh>
+#include <oslib\osc\data\osc_db.mqh>
 
 input bool   DEBUG                 = false ; // se true, grava informacoes de debug no log.
 input bool   GERAR_VOLUME          = false ; // se true, gera volume baseado nos ticks. Usa em papeis que nao informam volume, tais como o DJ30.
