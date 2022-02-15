@@ -42,5 +42,14 @@ Este indicador mostra 3 linhas no gráfico de preços:
 ![image](https://user-images.githubusercontent.com/5843284/154157848-4298c217-b3a8-4717-9a7a-9e702c714f90.png)
 
 
-1. **Preparando Volume Profile para execução**:
-No terminal metatrader, clique no icone do metaeditor na barra de tarefas: .
+### Preparando Volume Profile para execução:
+
+1. No terminal metatrader, clique no icone do metaeditor na barra de tarefas:
+![image](https://user-images.githubusercontent.com/5843284/154162731-d53b6284-7f81-4e35-8db6-3945bc0b8008.png).
+
+2. No painel lateral esquerdo do Metaeditor, acesse a pasta `MQL5\Include\oslib\osi\`:
+![image](https://user-images.githubusercontent.com/5843284/154161392-e9d7b7fb-8e91-473b-8ecf-7d50d4b6c01e.png)
+ 
+3. Dentro da pasta `osi`, clique com o botão direito no arquivo `osi-03-22-00-vol-profile.mq5` e escolha a opção `Compilar`.
+![image](https://user-images.githubusercontent.com/5843284/154162012-84c92a95-2824-4c2e-aaf4-e70bfd063e71.png)
+
