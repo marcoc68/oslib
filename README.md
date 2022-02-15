@@ -35,7 +35,7 @@
    `mklink /D oslib-tst c:\git\oslib\tst`
 
 ## Indicador Volume Profile.
-Este inicador mostra 3 linhas no gráfico de preços:
+Este indicador mostra 3 linhas no gráfico de preços:
 1. **POC ou Point of Control:** Linha amarela com o maior volume negociado no periodo configurado. 
 2. **VAH ou Value Area High:**  Linha verde definindo o limite superior de 68% do volume negociado no período configurado. 
 3. **VAL ou Value Area Low:**   Linha vermelha definindo o limite inferior de 68% do volume negociado no período configurado. 
@@ -43,4 +43,4 @@ Este inicador mostra 3 linhas no gráfico de preços:
 
 
 1. **Preparando Volume Profile para execução**:
-No terminal metatrader, acesse o metaeditor. Basta clicar neste icone da barra de tarefas: .
+No terminal metatrader, clique no icone do metaeditor na barra de tarefas: .
