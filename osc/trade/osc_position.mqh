@@ -29,9 +29,9 @@ class OsOrdem : public CObject{
 public:
     int   inOut   ; // 1(in); -1(out) ; 0(desconhecida)
     
-    ulong idOrd   ; // ticket da ordem
-    ulong idDea   ; // ticket da negociacao;
-    ulong idPos   ; // ticket da posicao a qual pertence a ordem;
+    ulong idOrd    ; // ticket da ordem
+    ulong idDea    ; // ticket da negociacao;
+    ulong idPos    ; // ticket da posicao a qual pertence a ordem;
     ulong idToClose; // id deal da ordem que esta ordem estah fechando.
     
     ulong mag       ; // numero magico desta ordem;

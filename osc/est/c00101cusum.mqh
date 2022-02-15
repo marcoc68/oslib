@@ -44,12 +44,12 @@ private:
         m_c_menos_ant = m_c_menos;
 
         // adicionando  C+ e C- aos vetores. serve para calcular a tendencia de C+ e C- ...
-        m_vet_cmais .add(m_c_mais );
-        m_vet_cmenos.add(m_c_menos);
+        m_vet_cmais .add(m_c_mais ); //m_vet_cmais.print("cmais");
+        m_vet_cmenos.add(m_c_menos); //m_vet_cmais.print("cmenos");
         
         // calculando a direcao da tendencia de C+ e C- ...
-        m_vet_cmais .regLinFit();
-        m_vet_cmenos.regLinFit();
+        //m_vet_cmais .regLinFit();
+        //m_vet_cmenos.regLinFit();
     }
 
 protected:
@@ -78,12 +78,13 @@ public:
 
     // adiciona uma ocorrencia (xi)...
     void add(double xi){
-        
+    
         // adicionando ao vetor de ocorrencias e jah deixa a variancia calculada (segundo parametro igual a true)...
-        m_vet_x.add(xi,true);
+        m_vet_x.add(xi,true); //m_vet_x.print("xi");
 
         // calculando C+ e C- ...
         calc_cusum(xi);
+        //print();
     }
 
     // adiciona uma ocorrencia (xi) com timeframe. Como usa timeframe, deve informar a hora da ocorrencia (ti).
@@ -105,5 +106,15 @@ public:
     // coeficientes lineares dos vetores de acumulacao. servem para saber a tendencia do C+ e C- ...
     double get_slope_cmais (){ return m_vet_cmais .regLinGetSlope(); }
     double get_slope_cmenos(){ return m_vet_cmenos.regLinGetSlope(); }
+    
+    // print da situacao atual...
+    void print(){
+        Print(__FUNCTION__,      " xi:", m_vet_x.getXi(),
+                              " cmais:", m_c_mais       , 
+                             " cmenos:", m_c_menos      , 
+                          " media(xi):", m_vet_x.getMed()
+                          
+                          );
+    }
 
 };
