@@ -42,5 +42,5 @@ Este inicador mostra 3 linhas no gráfico de preços:
 ![image](https://user-images.githubusercontent.com/5843284/154157848-4298c217-b3a8-4717-9a7a-9e702c714f90.png)
 
 
-
-Para compilar o indicador Volume 
+1. **Preparando Volume Profile para execução**:
+No terminal metatrader, acesse o metaeditor. Basta clicar neste icone da barra de tarefas: .
