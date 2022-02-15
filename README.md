@@ -39,7 +39,8 @@ Este inicador mostra 3 linhas no gráfico de preços:
 1. **POC ou Point of Control:** Linha amarela com o maior volume negociado no periodo configurado. 
 2. **VAH ou Value Area High:**  Linha verde definindo o limite superior de 68% do volume negociado no período configurado. 
 3. **VAL ou Value Area Low:**   Linha vermelha definindo o limite inferior de 68% do volume negociado no período configurado. 
-![image](https://user-images.githubusercontent.com/5843284/154153485-43d439f7-da55-4506-93db-109c9c63f9cd.png)
+![image](https://user-images.githubusercontent.com/5843284/154157848-4298c217-b3a8-4717-9a7a-9e702c714f90.png)
+
 
 
 Para compilar o indicador Volume 
