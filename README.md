@@ -69,6 +69,6 @@ Após a compilação ter ocorrido com sucesso, o indicador estará disponível p
 2. Abaixo aparece a lista de parâmetros que podem ser modificados.
 ![image](https://user-images.githubusercontent.com/5843284/154869292-0c10eb46-9021-46cf-b89f-ead30818ba33.png)
 
-**Qtd barras historicas a processar:** Até que a performance do indicador seja melhorada, rcomendamos não usar um valor maior que 60 para este parâmetro.
+**Qtd barras historicas a processar:** Até que a performance do indicador seja melhorada, rcomendamos não usar valores maiores que 60 neste parâmetro.
 
 **Qtd barras acumuladas usadas no calculo do volume profile:** O cálculo do volume profile de cada barra é feito sobre esta quantidade de barras anteriores.
