@@ -53,3 +53,6 @@ Este indicador mostra 3 linhas no gráfico de preços:
 3. Dentro da pasta `osi`, clique com o botão direito no arquivo `osi-03-22-00-vol-profile.mq5` e escolha a opção `Compilar`.
 ![image](https://user-images.githubusercontent.com/5843284/154162012-84c92a95-2824-4c2e-aaf4-e70bfd063e71.png)
 
+4. O resultado esperado da 
+![image](https://user-images.githubusercontent.com/5843284/154847012-14ceba48-e802-4449-b85d-dc96400f0d03.png)
+
