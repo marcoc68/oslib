@@ -6,10 +6,12 @@
 
 ## Obtenha os fontes do projeto.
 1. Instale o git no computador ou baixe o projeto no gitHub.
-2. Os comandos abaixo supõe que a pasta onde você guarda seus projetos do github é `c:\git\`
-`c:`
-`cd c:\git\`
-`git clone https://github.com/marcoc68/oslib.git`
+2. Os comandos abaixo supõe que a pasta onde você guarda seus projetos do github é `c:\git\`. Execute-os nesta sequência:
+<pre><code>
+    c:
+    cd c:\git\
+    git clone https://github.com/marcoc68/oslib.git
+</code></pre>
 
 ## Como configurar o projeto.
 1. **Compilação**: execute este comando na pasta `Include` do terminal metatrader.
