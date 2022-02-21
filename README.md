@@ -36,7 +36,16 @@
    
    `mklink /D oslib-tst c:\git\oslib\tst`
 
-## Indicador Volume Profile.
+## Documentação
+### Indicadores
+[Indicador Volume Profile.](https://github.com/marcoc68/oslib/blob/sprint-202202/doc/indicador-volume-profile.pdf)
+
+
+
+
+
+
+
 Este indicador mostra 3 linhas no gráfico de preços:
 1. **POC ou Point of Control:** Linha amarela com o maior volume negociado no periodo configurado. 
 2. **VAH ou Value Area High:**  Linha verde definindo o limite superior de 68% do volume negociado no período configurado. 
