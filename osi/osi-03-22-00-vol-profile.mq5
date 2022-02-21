@@ -29,9 +29,10 @@
 #property indicator_plots   3
 
 
-input int QTD_BAR_PROC_HIST      = 5   ; // Qtd barras historicas a processar. Em modo DEBUG, convem deixar este valor baixo pra nao sobrecarregar o arquivo de log.
+input int QTD_BAR_PROC_HIST      = 15  ; // Qtd barras historicas a processar.
 input int QTD_BAR_ACUM_VPROFILE  = 5   ; // Qtd barras acumuladas usadas no calculo do volume profile.
-input int SLEEP_ENTRE_TICKS      = 250 ; // Milisegundos entre ticks.
+//input int SLEEP_ENTRE_TICKS    = 250 ; // Milisegundos entre ticks.
+#define     SLEEP_ENTRE_TICKS      250  
 
 
 //---- plotar VAH
