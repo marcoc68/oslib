@@ -25,40 +25,57 @@
 #property description "Calcula volume profile por barra no grafico."
 
 #property indicator_chart_window
-#property indicator_buffers 3
-#property indicator_plots   3
+#property indicator_buffers 5
+#property indicator_plots   5
 
 
-input int QTD_BAR_PROC_HIST      = 5   ; // Qtd barras historicas a processar. Em modo DEBUG, convem deixar este valor baixo pra nao sobrecarregar o arquivo de log.
-input int QTD_BAR_ACUM_VPROFILE  = 5   ; // Qtd barras acumuladas usadas no calculo do volume profile.
-input int SLEEP_ENTRE_TICKS      = 250 ; // Milisegundos entre ticks.
+input int QTD_BAR_PROC_HIST      = 60  ; // Qtd barras historicas a processar.
+input int QTD_BAR_ACUM_VPROFILE  = 15  ; // Qtd barras acumuladas usadas no calculo do volume profile.
+//input int SLEEP_ENTRE_TICKS    = 250 ; // Milisegundos entre ticks.
+#define     SLEEP_ENTRE_TICKS       5  
 
 
-//---- plotar VAH
-#property indicator_label1  "vah"
+//---- plotar PMAX
+#property indicator_label1  "pmax"
 #property indicator_type1   DRAW_LINE
 #property indicator_color1  clrLime
-#property indicator_style1  STYLE_DASH
-#property indicator_width1  2
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
 
-//---- plotar POC
-#property indicator_label2  "poc"
+//---- plotar VAH
+#property indicator_label2  "vah"
 #property indicator_type2   DRAW_LINE
-#property indicator_color2  clrYellow
+#property indicator_color2  clrLime
 #property indicator_style2  STYLE_DASH
 #property indicator_width2  2
 
-//---- plotar VAL
-#property indicator_label3  "val"
+//---- plotar POC
+#property indicator_label3  "poc"
 #property indicator_type3   DRAW_LINE
-#property indicator_color3  clrRed  
+#property indicator_color3  clrYellow
 #property indicator_style3  STYLE_DASH
 #property indicator_width3  2
 
+//---- plotar VAL
+#property indicator_label4  "val"
+#property indicator_type4   DRAW_LINE
+#property indicator_color4  clrRed  
+#property indicator_style4  STYLE_DASH
+#property indicator_width4  2
+
+//---- plotar PMIN
+#property indicator_label5  "pmin"
+#property indicator_type5   DRAW_LINE
+#property indicator_color5  clrRed  
+#property indicator_style5  STYLE_SOLID
+#property indicator_width5  1
+
 //--- buffers do indicador
+double m_bufPma            []; // PAMX
 double m_bufVah            []; // VAH
 double m_bufPoc            []; // POC
 double m_bufVal            []; // VAL
+double m_bufPmi            []; // PMIN
 
 CSymbolInfo     m_symb ;
 osc_vol_profile m_vprof;
@@ -74,14 +91,18 @@ int OnInit() {
    m_vprof.m_param.qtd_seg_acum_vprof = QTD_BAR_ACUM_VPROFILE * PeriodSeconds(); // qtd segundos acumulados no calculo do volume_profile.
    
    Print("Definindo buffers do indicador...");
-   SetIndexBuffer( 0,m_bufVah       , INDICATOR_DATA  );
-   SetIndexBuffer( 1,m_bufPoc       , INDICATOR_DATA  );
-   SetIndexBuffer( 2,m_bufVal       , INDICATOR_DATA  );
+   SetIndexBuffer( 0,m_bufPma       , INDICATOR_DATA  );
+   SetIndexBuffer( 1,m_bufVah       , INDICATOR_DATA  );
+   SetIndexBuffer( 2,m_bufPoc       , INDICATOR_DATA  );
+   SetIndexBuffer( 3,m_bufVal       , INDICATOR_DATA  );
+   SetIndexBuffer( 4,m_bufPmi       , INDICATOR_DATA  );
 
    Print("Definindo valores para nao plotar...");
-   PlotIndexSetDouble( 0 ,PLOT_EMPTY_VALUE,0); // m_bufVah
-   PlotIndexSetDouble( 1 ,PLOT_EMPTY_VALUE,0); // m_bufPoc
-   PlotIndexSetDouble( 2 ,PLOT_EMPTY_VALUE,0); // m_bufVal   
+   PlotIndexSetDouble( 0 ,PLOT_EMPTY_VALUE,0); // m_bufPma
+   PlotIndexSetDouble( 1 ,PLOT_EMPTY_VALUE,0); // m_bufVah
+   PlotIndexSetDouble( 2 ,PLOT_EMPTY_VALUE,0); // m_bufPoc
+   PlotIndexSetDouble( 3 ,PLOT_EMPTY_VALUE,0); // m_bufVal   
+   PlotIndexSetDouble( 4 ,PLOT_EMPTY_VALUE,0); // m_bufPmi   
 
 //---- o nome do indicador a ser exibido na DataWindow e na subjanela
    IndicatorSetString(INDICATOR_SHORTNAME,OSI_INDICATOR_NAME);
@@ -101,6 +122,9 @@ MqlTick m_tick;
 bool    m_prochist = false;
 int     m_i = 0;
 
+long    m_time_desde_ultimo_calculo = 0;
+long    m_time_atual                = 0;
+long    m_time_ultimo_calculo       = 0;
 int OnCalculate( const int rates_total,       // tamanho do array price[] 
                  const int prev_calculated,   // barras tratadas na chamada anterior 
                  const datetime&  time[],
@@ -124,7 +148,14 @@ int OnCalculate( const int rates_total,       // tamanho do array price[]
         return (rates_total);
     }
     
-    Sleep(SLEEP_ENTRE_TICKS); // aguardando milisegundos antes do proximo tick...
+    // aguardando milisegundos antes do proximo tick...
+    m_time_atual = GetTickCount()                                     ;
+    m_time_desde_ultimo_calculo = m_time_atual - m_time_ultimo_calculo;
+    m_time_ultimo_calculo = m_time_atual                              ;
+    if(m_time_desde_ultimo_calculo < SLEEP_ENTRE_TICKS) return (rates_total);
+            
+    //Sleep(SLEEP_ENTRE_TICKS); // aguardando milisegundos antes do proximo tick...
+   
     m_i++;
     SymbolInfoTick(_Symbol,m_tick);
     m_vprof.add( m_tick );
@@ -170,16 +201,24 @@ void doOnCalculateHistorico(const int        p_rates_total    ,
          continue;
       }
 
-      ///m_minion.fecharPeriodo(); // fechando o periodo anterior de coleta de estatisticas
-      qtdTicks = CopyTicksRange( _Symbol         , //const string     symbol_name,          // nome do símbolo
-                                 ticks           , //MqlTick&         ticks_array[],        // matriz para recebimento de ticks
-                                 COPY_TICKS_ALL  , //uint             flags=COPY_TICKS_ALL, // sinalizador que define o tipo de ticks obtidos
-                                 p_time[i-1]*1000, //ulong            from_msc=0,           // data a partir da qual são solicitados os ticks
-                                 p_time[i  ]*1000  //ulong            to_msc=0              // data ate a qual são solicitados os ticks
-                 );
-      Print(__FUNCTION__, qtdTicks, " selecionados no historico...");
+      Print(__FUNCTION__,":" ," Obtendo ticks no historico desde ", p_time[i-1], " ateh ", p_time[i], "..." );
+
+      qtdTicks = 0;
+      while(qtdTicks < 1){
+          qtdTicks = CopyTicksRange( _Symbol         , //const string     symbol_name,          // nome do símbolo
+                                     ticks           , //MqlTick&         ticks_array[],        // matriz para recebimento de ticks
+                                     COPY_TICKS_TRADE, //uint             flags=COPY_TICKS_ALL, // sinalizador que define o tipo de ticks obtidos
+                                     p_time[i-1]*1000, //ulong            from_msc=0,           // data a partir da qual são solicitados os ticks
+                                     p_time[i  ]*1000  //ulong            to_msc=0              // data ate a qual são solicitados os ticks
+                     );
+          if(qtdTicks == 0){
+              mySleep(1000);
+              Print(__FUNCTION__, ":", qtdTicks, " ticks obtidos :-( Aguardando 1seg e tentando novamente..." );
+          }
+      }
+      Print(__FUNCTION__, ":", qtdTicks, " ticks obtidos no historico desde ", p_time[i-1], " ateh ", p_time[i], "..." );
+
       for(int ind=0; ind<qtdTicks; ind++){
-//       normalizar2trade(ticks[ind]);
          m_vprof.add(ticks[ind]);
 
         //===============================================================================================
@@ -200,28 +239,42 @@ void doOnCalculateHistorico(const int        p_rates_total    ,
 
 void plotar(int i){
     // plotando no grafico
+    m_bufPma[i] = m_vprof.m_vprof.pmax;
     m_bufVah[i] = m_vprof.m_vprof.pvah;
     m_bufPoc[i] = m_vprof.m_vprof.ppoc;
     m_bufVal[i] = m_vprof.m_vprof.pval;
+    m_bufPmi[i] = m_vprof.m_vprof.pmin;
 }
 
 void plotar_zero(int i){
     // plotando no grafico
+    m_bufPma[i] = 0;
     m_bufVah[i] = 0;
     m_bufPoc[i] = 0;
     m_bufVal[i] = 0;
+    m_bufPmi[i] = 0;
 }
 
 void comentar_na_tela(datetime dt){
     Comment("dt              :",dt                       ,"\n",
+            "m_vprof.m_vprof.pmax: ",m_vprof.m_vprof.pmax,"\n",
             "m_vprof.m_vprof.pvah: ",m_vprof.m_vprof.pvah,"\n",
             "m_vprof.m_vprof.ppoc: ",m_vprof.m_vprof.ppoc,"\n",
-            "m_vprof.m_vprof.pval: ",m_vprof.m_vprof.pval     );
+            "m_vprof.m_vprof.pval: ",m_vprof.m_vprof.pval,"\n",
+            "m_vprof.m_vprof.pmin: ",m_vprof.m_vprof.pmin     );
 }
 
 void setAsSeries(bool modo){
+     ArraySetAsSeries(m_bufPma, modo );
      ArraySetAsSeries(m_bufVah, modo );
      ArraySetAsSeries(m_bufPoc, modo );
      ArraySetAsSeries(m_bufVal, modo );
+     ArraySetAsSeries(m_bufPmi, modo );
 }
 
+// Sleep nao funciona com indcadores... Cuidado ao usar este sleep em indicadores...
+void mySleep(int sleep){
+    long ini = GetTickCount();
+    long fim = ini + sleep;
+    while( GetTickCount() < fim ){}
+}

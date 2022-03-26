@@ -18,6 +18,7 @@ Services
 "Shared Projects"
 Levels
 Params
+.vscode
 
 # exclude directory contents
 #Experts/*
