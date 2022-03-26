@@ -39,4 +39,4 @@ Após configurar o projeto, você poderá compilar e executar seus Indicadores, 
 
 ## Documentação
 ### Indicadores
-[Indicador Volume Profile.](https://github.com/marcoc68/oslib/blob/sprint-202202/doc/indicador-volume-profile.pdf)
+[Indicador Volume Profile.](https://github.com/marcoc68/oslib/blob/master/doc/indicador-volume-profile.pdf)
