@@ -125,7 +125,6 @@ int     m_i = 0;
 long    m_time_desde_ultimo_calculo = 0;
 long    m_time_atual                = 0;
 long    m_time_ultimo_calculo       = 0;
-
 int OnCalculate( const int rates_total,       // tamanho do array price[] 
                  const int prev_calculated,   // barras tratadas na chamada anterior 
                  const datetime&  time[],
@@ -154,7 +153,6 @@ int OnCalculate( const int rates_total,       // tamanho do array price[]
     m_time_desde_ultimo_calculo = m_time_atual - m_time_ultimo_calculo;
     m_time_ultimo_calculo = m_time_atual                              ;
     if(m_time_desde_ultimo_calculo < SLEEP_ENTRE_TICKS) return (rates_total);
-    
             
     //Sleep(SLEEP_ENTRE_TICKS); // aguardando milisegundos antes do proximo tick...
    
