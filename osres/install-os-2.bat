@@ -85,19 +85,19 @@ xcopy /s /d /y "oslib-svc" "%TERMINAL_MODES%\MQL5\Services\"
 
 rem copiando templates...
 :copy-templates
-xcopy /d /y %TERMINAL_DESEN%\MQL5\Profiles\Templates\my*.tpl %TERMINAL_CLEAR%\MQL5\Profiles\Templates
-xcopy /d /y %TERMINAL_DESEN%\MQL5\Profiles\Templates\my*.tpl %TERMINAL_CLDES%\MQL5\Profiles\Templates
-xcopy /d /y %TERMINAL_DESEN%\MQL5\Profiles\Templates\my*.tpl %TERMINAL_MODAL%\MQL5\Profiles\Templates
-xcopy /d /y %TERMINAL_DESEN%\MQL5\Profiles\Templates\my*.tpl %TERMINAL_MODES%\MQL5\Profiles\Templates
+xcopy /d /y %TERMINAL_DESEN%\MQL5\Profiles\Templates\my*.tpl %TERMINAL_CLEAR%\MQL5\Profiles\Templates\
+xcopy /d /y %TERMINAL_DESEN%\MQL5\Profiles\Templates\my*.tpl %TERMINAL_CLDES%\MQL5\Profiles\Templates\
+xcopy /d /y %TERMINAL_DESEN%\MQL5\Profiles\Templates\my*.tpl %TERMINAL_MODAL%\MQL5\Profiles\Templates\
+xcopy /d /y %TERMINAL_DESEN%\MQL5\Profiles\Templates\my*.tpl %TERMINAL_MODES%\MQL5\Profiles\Templates\
 
 rem copiando configuracoes de EA...
 :copy-ea-config
-xcopy /d /y %TERMINAL_DESEN%\MQL5\Presets\*.set %TERMINAL_CLEAR%\MQL5\Presets
-xcopy /d /y %TERMINAL_DESEN%\MQL5\Presets\*.set %TERMINAL_CLDES%\MQL5\Presets
-xcopy /d /y %TERMINAL_DESEN%\MQL5\Presets\*.set %TERMINAL_MODAL%\MQL5\Presets
-xcopy /d /y %TERMINAL_DESEN%\MQL5\Presets\*.set %TERMINAL_MODES%\MQL5\Presets
-xcopy /d /y %TERMINAL_DESEN%\MQL5\Presets\*.set %TERMINAL_ACDES%\MQL5\Presets
+xcopy /d /y %TERMINAL_DESEN%\MQL5\Presets\*.set %TERMINAL_CLEAR%\MQL5\Presets\
+xcopy /d /y %TERMINAL_DESEN%\MQL5\Presets\*.set %TERMINAL_CLDES%\MQL5\Presets\
+xcopy /d /y %TERMINAL_DESEN%\MQL5\Presets\*.set %TERMINAL_MODAL%\MQL5\Presets\
+xcopy /d /y %TERMINAL_DESEN%\MQL5\Presets\*.set %TERMINAL_MODES%\MQL5\Presets\
+xcopy /d /y %TERMINAL_DESEN%\MQL5\Presets\*.set %TERMINAL_ACDES%\MQL5\Presets\
 
-cd %TERMINAL_DESEN%\MQL5\\Shared Projects\oslib\osres
+cd %TERMINAL_DESEN%\MQL5\include\oslib\osres
 
 :EOF

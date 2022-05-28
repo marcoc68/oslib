@@ -123,6 +123,23 @@ struct ost_bookh{
    double   ap16     ;
    double   av16     ;
    double   av16a    ;
+   //
+   double   imb01,iwfv01,tlfv01;
+   double   imb02,iwfv02,tlfv02;
+   double   imb03,iwfv03,tlfv03;
+   double   imb04,iwfv04,tlfv04;
+   double   imb05,iwfv05,tlfv05;
+   double   imb06,iwfv06,tlfv06;
+   double   imb07,iwfv07,tlfv07;
+   double   imb08,iwfv08,tlfv08;
+   double   imb09,iwfv09,tlfv09;
+   double   imb10,iwfv10,tlfv10;
+   double   imb11,iwfv11,tlfv11;
+   double   imb12,iwfv12,tlfv12;
+   double   imb13,iwfv13,tlfv13;
+   double   imb14,iwfv14,tlfv14;
+   double   imb15,iwfv15,tlfv15;
+   double   imb16,iwfv16,tlfv16;
 };
 
 struct ost_acum_feature{
@@ -176,7 +193,7 @@ private:
        if(!DatabaseTableExists(m_db, "bookh")){
           //--- create the table 
           if(!DatabaseExecute(m_db, "create table bookh(" 
-                              "id          int             ," 
+                              "id          int             primary key," 
                               "symbol      char(10)        ,"
                               "tatu        int             ,"
                               //
@@ -276,7 +293,56 @@ private:
                               "av15a       real            ,"
                               "ap16        real            ," 
                               "av16        real            ," 
-                              "av16a       real             "
+                              "av16a       real            ,"
+                              //
+                              "imb01       real            ,"
+                              "iwfv01      real            ,"
+                              "tlfv01      real            ,"
+                              "imb02       real            ,"
+                              "iwfv02      real            ,"
+                              "tlfv02      real            ,"
+                              "imb03       real            ,"
+                              "iwfv03      real            ,"
+                              "tlfv03      real            ,"
+                              "imb04       real            ,"
+                              "iwfv04      real            ,"
+                              "tlfv04      real            ,"
+                              "imb05       real            ,"
+                              "iwfv05      real            ,"
+                              "tlfv05      real            ,"
+                              "imb06       real            ,"
+                              "iwfv06      real            ,"
+                              "tlfv06      real            ,"
+                              "imb07       real            ,"
+                              "iwfv07      real            ,"
+                              "tlfv07      real            ,"
+                              "imb08       real            ,"
+                              "iwfv08      real            ,"
+                              "tlfv08      real            ,"
+                              "imb09       real            ,"
+                              "iwfv09      real            ,"
+                              "tlfv09      real            ,"
+                              "imb10       real            ,"
+                              "iwfv10      real            ,"
+                              "tlfv10      real            ,"
+                              "imb11       real            ,"
+                              "iwfv11      real            ,"
+                              "tlfv11      real            ,"
+                              "imb12       real            ,"
+                              "iwfv12      real            ,"
+                              "tlfv12      real            ,"
+                              "imb13       real            ,"
+                              "iwfv13      real            ,"
+                              "tlfv13      real            ,"
+                              "imb14       real            ,"
+                              "iwfv14      real            ,"
+                              "tlfv14      real            ,"
+                              "imb15       real            ,"
+                              "iwfv15      real            ,"
+                              "tlfv15      real            ,"
+                              "imb16       real            ,"
+                              "iwfv16      real            ,"
+                              "tlfv16      real             "
                               ");")){
              Print(__FUNCTION__, " DBERROR: create the BOOKH table failed with code ", GetLastError()); 
              return(false); 
@@ -318,6 +384,7 @@ public:
     //| Abre o banco de dados...                                             |
     //| Tabelas ainda nao criadas, sao criadas automaticamente na abertura.  |
     //|+--------------------------------------------------------------------+|
+    //bool create_or_open_mydb(string dbname="D:\\programs\\metatrader\\desen\\MQL5\\Files\\oslib.db"){
     bool create_or_open_mydb(string dbname="oslib.db"){
     //--- create the file name 
      //string filename="mydb.sqlite"; 
@@ -331,7 +398,7 @@ public:
           Print(__FUNCTION__," DBERROR: ", filename, " open failed with code ", GetLastError()); 
           return false; 
        } 
-       Print(__FUNCTION__, " Banco de dados ",filename, " aberto sucesso!! manipulador eh:",m_db, "...");
+       Print(__FUNCTION__, " Banco de dados ",filename, " aberto com sucesso!! manipulador eh:",m_db, "...");
 
     //--- create the BOOK table... 
        Print(__FUNCTION__, " Criando a tabela BOOK caso ainda nao exista...");
@@ -383,47 +450,62 @@ public:
     bool insert_table_bookh( ost_bookh &bookh ){
     
       bookh.id = m_seq++; // chave primaria
-      //string request_text=StringFormat("INSERT INTO bookh(id,symbol,tatu,bp01,bv01,bp02,bv02,bp03,bv03,bp04,bv04,bp05,bv05,bp06,bv06,bp07,bv07,bp08,bv08,bp09,bv09,bp10,bv10,bp11,bv11,bp12,bv12,bp13,bv13,bp14,bv14,bp15,bv15,bp16,bv16,ap01,av01,ap02,av02,ap03,av03,ap04,av04,ap05,av05,ap06,av06,ap07,av07,ap08,av08,ap09,av09,ap10,av10,ap11,av11,ap12,av12,ap13,av13,ap14,av14,ap15,av15,ap16,av16)"+
-        //                               "VALUES (%d, '%s', '%s', %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e, %e);",
-                            //string request_text="INSERT INTO bookh(id,symbol,tatu,bp01,bv01,bp02,bv02,bp03,bv03,bp04,bv04,bp05,bv05,bp06,bv06,bp07,bv07,bp08,bv08,bp09,bv09,bp10,bv10,bp11,bv11,bp12,bv12,bp13,bv13,bp14,bv14,bp15,bv15,bp16,bv16,ap01,av01,ap02,av02,ap03,av03,ap04,av04,ap05,av05,ap06,av06,ap07,av07,ap08,av08,ap09,av09,ap10,av10,ap11,av11,ap12,av12,ap13,av13,ap14,av14,ap15,av15,ap16,av16)VALUES(" +
-                              string request_text="INSERT INTO bookh VALUES(" +
-                                           IntegerToString(bookh.id) +","+
-                                           "'"+bookh.symbol+"',"+
-                              "'"+TimeToString(bookh.tatu  , TIME_DATE|TIME_MINUTES|TIME_SECONDS)+"',"+
-                                           //
-                                           DoubleToString(bookh.bp01)+","+ DoubleToString(bookh.bv01)+","+ DoubleToString(bookh.bv01a)+","+
-                                           DoubleToString(bookh.bp02)+","+ DoubleToString(bookh.bv02)+","+ DoubleToString(bookh.bv02a)+","+
-                                           DoubleToString(bookh.bp03)+","+ DoubleToString(bookh.bv03)+","+ DoubleToString(bookh.bv03a)+","+
-                                           DoubleToString(bookh.bp04)+","+ DoubleToString(bookh.bv04)+","+ DoubleToString(bookh.bv04a)+","+
-                                           DoubleToString(bookh.bp05)+","+ DoubleToString(bookh.bv05)+","+ DoubleToString(bookh.bv05a)+","+
-                                           DoubleToString(bookh.bp06)+","+ DoubleToString(bookh.bv06)+","+ DoubleToString(bookh.bv06a)+","+
-                                           DoubleToString(bookh.bp07)+","+ DoubleToString(bookh.bv07)+","+ DoubleToString(bookh.bv07a)+","+
-                                           DoubleToString(bookh.bp08)+","+ DoubleToString(bookh.bv08)+","+ DoubleToString(bookh.bv08a)+","+
-                                           DoubleToString(bookh.bp09)+","+ DoubleToString(bookh.bv09)+","+ DoubleToString(bookh.bv09a)+","+
-                                           DoubleToString(bookh.bp10)+","+ DoubleToString(bookh.bv10)+","+ DoubleToString(bookh.bv10a)+","+
-                                           DoubleToString(bookh.bp11)+","+ DoubleToString(bookh.bv11)+","+ DoubleToString(bookh.bv11a)+","+
-                                           DoubleToString(bookh.bp12)+","+ DoubleToString(bookh.bv12)+","+ DoubleToString(bookh.bv12a)+","+
-                                           DoubleToString(bookh.bp13)+","+ DoubleToString(bookh.bv13)+","+ DoubleToString(bookh.bv13a)+","+
-                                           DoubleToString(bookh.bp14)+","+ DoubleToString(bookh.bv14)+","+ DoubleToString(bookh.bv14a)+","+
-                                           DoubleToString(bookh.bp15)+","+ DoubleToString(bookh.bv15)+","+ DoubleToString(bookh.bv15a)+","+
-                                           DoubleToString(bookh.bp16)+","+ DoubleToString(bookh.bv16)+","+ DoubleToString(bookh.bv16a)+","+
-                                           //                                                              
-                                           DoubleToString(bookh.ap01)+","+ DoubleToString(bookh.av01)+","+ DoubleToString(bookh.av01a)+","+
-                                           DoubleToString(bookh.ap02)+","+ DoubleToString(bookh.av02)+","+ DoubleToString(bookh.av02a)+","+
-                                           DoubleToString(bookh.ap03)+","+ DoubleToString(bookh.av03)+","+ DoubleToString(bookh.av03a)+","+
-                                           DoubleToString(bookh.ap04)+","+ DoubleToString(bookh.av04)+","+ DoubleToString(bookh.av04a)+","+
-                                           DoubleToString(bookh.ap05)+","+ DoubleToString(bookh.av05)+","+ DoubleToString(bookh.av05a)+","+
-                                           DoubleToString(bookh.ap06)+","+ DoubleToString(bookh.av06)+","+ DoubleToString(bookh.av06a)+","+
-                                           DoubleToString(bookh.ap07)+","+ DoubleToString(bookh.av07)+","+ DoubleToString(bookh.av07a)+","+
-                                           DoubleToString(bookh.ap08)+","+ DoubleToString(bookh.av08)+","+ DoubleToString(bookh.av08a)+","+
-                                           DoubleToString(bookh.ap09)+","+ DoubleToString(bookh.av09)+","+ DoubleToString(bookh.av09a)+","+
-                                           DoubleToString(bookh.ap10)+","+ DoubleToString(bookh.av10)+","+ DoubleToString(bookh.av10a)+","+
-                                           DoubleToString(bookh.ap11)+","+ DoubleToString(bookh.av11)+","+ DoubleToString(bookh.av11a)+","+
-                                           DoubleToString(bookh.ap12)+","+ DoubleToString(bookh.av12)+","+ DoubleToString(bookh.av12a)+","+
-                                           DoubleToString(bookh.ap13)+","+ DoubleToString(bookh.av13)+","+ DoubleToString(bookh.av13a)+","+
-                                           DoubleToString(bookh.ap14)+","+ DoubleToString(bookh.av14)+","+ DoubleToString(bookh.av14a)+","+
-                                           DoubleToString(bookh.ap15)+","+ DoubleToString(bookh.av15)+","+ DoubleToString(bookh.av15a)+","+
-                                           DoubleToString(bookh.ap16)+","+ DoubleToString(bookh.av16)+","+ DoubleToString(bookh.av16a)+ ");";
+      string request_text="INSERT INTO bookh VALUES(" +
+                   IntegerToString(bookh.id) +","+
+                   "'"+bookh.symbol+"',"+
+                   "strftime('%Y-%m-%d %H:%M:%f', 'now'),"+
+                   // bid
+                   DoubleToString(bookh.bp01)+","+ DoubleToString(bookh.bv01)+","+ DoubleToString(bookh.bv01a)+","+
+                   DoubleToString(bookh.bp02)+","+ DoubleToString(bookh.bv02)+","+ DoubleToString(bookh.bv02a)+","+
+                   DoubleToString(bookh.bp03)+","+ DoubleToString(bookh.bv03)+","+ DoubleToString(bookh.bv03a)+","+
+                   DoubleToString(bookh.bp04)+","+ DoubleToString(bookh.bv04)+","+ DoubleToString(bookh.bv04a)+","+
+                   DoubleToString(bookh.bp05)+","+ DoubleToString(bookh.bv05)+","+ DoubleToString(bookh.bv05a)+","+
+                   DoubleToString(bookh.bp06)+","+ DoubleToString(bookh.bv06)+","+ DoubleToString(bookh.bv06a)+","+
+                   DoubleToString(bookh.bp07)+","+ DoubleToString(bookh.bv07)+","+ DoubleToString(bookh.bv07a)+","+
+                   DoubleToString(bookh.bp08)+","+ DoubleToString(bookh.bv08)+","+ DoubleToString(bookh.bv08a)+","+
+                   DoubleToString(bookh.bp09)+","+ DoubleToString(bookh.bv09)+","+ DoubleToString(bookh.bv09a)+","+
+                   DoubleToString(bookh.bp10)+","+ DoubleToString(bookh.bv10)+","+ DoubleToString(bookh.bv10a)+","+
+                   DoubleToString(bookh.bp11)+","+ DoubleToString(bookh.bv11)+","+ DoubleToString(bookh.bv11a)+","+
+                   DoubleToString(bookh.bp12)+","+ DoubleToString(bookh.bv12)+","+ DoubleToString(bookh.bv12a)+","+
+                   DoubleToString(bookh.bp13)+","+ DoubleToString(bookh.bv13)+","+ DoubleToString(bookh.bv13a)+","+
+                   DoubleToString(bookh.bp14)+","+ DoubleToString(bookh.bv14)+","+ DoubleToString(bookh.bv14a)+","+
+                   DoubleToString(bookh.bp15)+","+ DoubleToString(bookh.bv15)+","+ DoubleToString(bookh.bv15a)+","+
+                   DoubleToString(bookh.bp16)+","+ DoubleToString(bookh.bv16)+","+ DoubleToString(bookh.bv16a)+","+
+                   // ask
+                   DoubleToString(bookh.ap01)+","+ DoubleToString(bookh.av01)+","+ DoubleToString(bookh.av01a)+","+
+                   DoubleToString(bookh.ap02)+","+ DoubleToString(bookh.av02)+","+ DoubleToString(bookh.av02a)+","+
+                   DoubleToString(bookh.ap03)+","+ DoubleToString(bookh.av03)+","+ DoubleToString(bookh.av03a)+","+
+                   DoubleToString(bookh.ap04)+","+ DoubleToString(bookh.av04)+","+ DoubleToString(bookh.av04a)+","+
+                   DoubleToString(bookh.ap05)+","+ DoubleToString(bookh.av05)+","+ DoubleToString(bookh.av05a)+","+
+                   DoubleToString(bookh.ap06)+","+ DoubleToString(bookh.av06)+","+ DoubleToString(bookh.av06a)+","+
+                   DoubleToString(bookh.ap07)+","+ DoubleToString(bookh.av07)+","+ DoubleToString(bookh.av07a)+","+
+                   DoubleToString(bookh.ap08)+","+ DoubleToString(bookh.av08)+","+ DoubleToString(bookh.av08a)+","+
+                   DoubleToString(bookh.ap09)+","+ DoubleToString(bookh.av09)+","+ DoubleToString(bookh.av09a)+","+
+                   DoubleToString(bookh.ap10)+","+ DoubleToString(bookh.av10)+","+ DoubleToString(bookh.av10a)+","+
+                   DoubleToString(bookh.ap11)+","+ DoubleToString(bookh.av11)+","+ DoubleToString(bookh.av11a)+","+
+                   DoubleToString(bookh.ap12)+","+ DoubleToString(bookh.av12)+","+ DoubleToString(bookh.av12a)+","+
+                   DoubleToString(bookh.ap13)+","+ DoubleToString(bookh.av13)+","+ DoubleToString(bookh.av13a)+","+
+                   DoubleToString(bookh.ap14)+","+ DoubleToString(bookh.av14)+","+ DoubleToString(bookh.av14a)+","+
+                   DoubleToString(bookh.ap15)+","+ DoubleToString(bookh.av15)+","+ DoubleToString(bookh.av15a)+","+
+                   DoubleToString(bookh.ap16)+","+ DoubleToString(bookh.av16)+","+ DoubleToString(bookh.av16a)+","+
+                   // indicadores
+                   DoubleToString(bookh.imb01)+","+ DoubleToString(bookh.iwfv01)+","+ DoubleToString(bookh.tlfv01)+","+
+                   DoubleToString(bookh.imb02)+","+ DoubleToString(bookh.iwfv02)+","+ DoubleToString(bookh.tlfv02)+","+
+                   DoubleToString(bookh.imb03)+","+ DoubleToString(bookh.iwfv03)+","+ DoubleToString(bookh.tlfv03)+","+
+                   DoubleToString(bookh.imb04)+","+ DoubleToString(bookh.iwfv04)+","+ DoubleToString(bookh.tlfv04)+","+
+                   DoubleToString(bookh.imb05)+","+ DoubleToString(bookh.iwfv05)+","+ DoubleToString(bookh.tlfv05)+","+
+                   DoubleToString(bookh.imb06)+","+ DoubleToString(bookh.iwfv06)+","+ DoubleToString(bookh.tlfv06)+","+
+                   DoubleToString(bookh.imb07)+","+ DoubleToString(bookh.iwfv07)+","+ DoubleToString(bookh.tlfv07)+","+
+                   DoubleToString(bookh.imb08)+","+ DoubleToString(bookh.iwfv08)+","+ DoubleToString(bookh.tlfv08)+","+
+                   DoubleToString(bookh.imb09)+","+ DoubleToString(bookh.iwfv09)+","+ DoubleToString(bookh.tlfv09)+","+
+                   DoubleToString(bookh.imb10)+","+ DoubleToString(bookh.iwfv10)+","+ DoubleToString(bookh.tlfv10)+","+
+                   DoubleToString(bookh.imb11)+","+ DoubleToString(bookh.iwfv11)+","+ DoubleToString(bookh.tlfv11)+","+
+                   DoubleToString(bookh.imb12)+","+ DoubleToString(bookh.iwfv12)+","+ DoubleToString(bookh.tlfv12)+","+
+                   DoubleToString(bookh.imb13)+","+ DoubleToString(bookh.iwfv13)+","+ DoubleToString(bookh.tlfv13)+","+
+                   DoubleToString(bookh.imb14)+","+ DoubleToString(bookh.iwfv14)+","+ DoubleToString(bookh.tlfv14)+","+
+                   DoubleToString(bookh.imb15)+","+ DoubleToString(bookh.iwfv15)+","+ DoubleToString(bookh.tlfv15)+","+
+                   DoubleToString(bookh.imb16)+","+ DoubleToString(bookh.iwfv16)+","+ DoubleToString(bookh.tlfv16)+");";
+                   
         if(!DatabaseExecute(m_db, request_text)) { 
             PrintFormat("%s: failed to insert BOOKH with code %d", __FUNCTION__, GetLastError());
             Print(__FUNCTION__, " SQL_TEXT: ",request_text);

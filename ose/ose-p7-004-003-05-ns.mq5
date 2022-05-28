@@ -1,5 +1,5 @@
 ﻿//+------------------------------------------------------------------+
-//|                                         ose-p7-004-003-04-ns.mq5 |
+//|                                         ose-p7-004-003-05-ns.mq5 |
 //|                                          Copyright 2021, OS Corp |
 //|                                                http://www.os.org |
 //|                                                                  |
@@ -162,13 +162,15 @@ enum ENUM_TIPO_OPERACAO{
   //input bool   EA_EST_POR_EVENTO              = false ; //EST_POR_EVENTO true: acumula por tick. false: por segundo.
   //input bool   EA_EST_NORMALIZAR_TICK_2_TRADE = false ; //EST_NORMALIZAR_TICK_2_TRADE.
 
+  #define EA_DBNAME      "oslib6"//EA_DBNAME nome do banco de dados que guardarah o historico coletados dos books
+
   //input group "=== book imbalance geral ==="
   #define EA_PROCESSAR_BOOK   true //PROCESSAR_BOOK true: obtem dados do book.
   //input bool   EA_PROCESSAR_BOOK   = false; //PROCESSAR_BOOK true: obtem dados do book.
 
-  #define EA_BOOK_DEEP1       16   //BOOK_DEEP1 profundidade book imbalance
-  #define EA_BOOK_QUEU_IN1    2    //BOOK_QUEU_IN1 fila pra considerar a ordem executada
-  #define EA_BOOK_IMBALANCE1  0.1  //BOOK_IMBALANCE1 limiar para definir direcao do movimento
+  #define EA_BOOK_DEEP1       16      //BOOK_DEEP1 profundidade book imbalance
+  #define EA_BOOK_QUEU_IN1    2       //BOOK_QUEU_IN1 fila pra considerar a ordem executada
+  #define EA_BOOK_IMBALANCE1  0.1     //BOOK_IMBALANCE1 limiar para definir direcao do movimento
   //input group "=== book imbalance 1 ==="
   //input int    EA_BOOK_DEEP1       = 3   ; //BOOK_DEEP1 profundidade book imbalance
   //input uint   EA_BOOK_QUEU_IN1    = 2   ; //BOOK_QUEU_IN1 fila pra considerar a ordem executada
@@ -177,7 +179,7 @@ enum ENUM_TIPO_OPERACAO{
   //                                         // na fila 1, dificilmente conseguirah cancelar. Estamos testando 1 para win.
   //input double EA_BOOK_IMBALANCE1  = 0.1 ; //BOOK_IMBALANCE1 limiar para definir direcao do movimento
 
-  #define EA_BOOK_DEEP2        3   //BOOK_DEEP2 profundidade book imbalance
+  #define EA_BOOK_DEEP2        8   //BOOK_DEEP2 profundidade book imbalance
   #define EA_BOOK_QUEU_IN2     1   //BOOK_QUEU_IN2 fila pra considerar a ordem executada
   #define EA_BOOK_IMBALANCE2   0.1 //BOOK_IMBALANCE2 limiar para definir direcao do movimento
   //input double EA_BOOK_IMBALANCE2  = 0.1 ; //BOOK_IMBALANCE2 limiar para definir direcao do movimento
@@ -363,7 +365,7 @@ input int    EA_QTD_MILISEG_TIMER  =  500 ;//*QTD_MILISEG_TIMER:Tempo de acionam
 ENUM_TIPO_OPERACAO         m_acao_posicao     = NAO_OPERAR;
 ENUM_TIPO_OPERACAO         m_acao_posicao_ant = NAO_OPERAR;
 MqlDateTime                m_date;
-string                     m_name = "OSE-P7-004-003-04-ns"; // operacao manual assistida por robo
+string                     m_name = "OSE-P7-004-003-05-ns"; // operacao manual assistida por robo
 osc_db                     m_db                      ;
 CSymbolInfo                m_symb1   , m_symb2       ;
 CPositionInfo              m_posicao1, m_posicao2    ;
@@ -746,7 +748,7 @@ int OnInit(){
     return(INIT_SUCCEEDED);
 }
 
-void configurar_db(){ m_db.create_or_open_mydb(); }
+void configurar_db(){ m_db.create_or_open_mydb(EA_DBNAME); }
 
 double m_len_canal_ofertas  = 0; // tamanho do canal de ofertas do book.
 double m_len_barra_atual    = 0; // tamanho da barra de trades atual.
@@ -1833,17 +1835,6 @@ void OnTick(){
             return;
         }
 
-        // abrindo posicao...
-        //abrirPosicaoHFTFormadorDeMercado();
-
-//    switch(m_acao_posicao){
-//        //case HFT_OPERAR_VOLUME_CANAL   : abrirPosicaoHFTVolumeCanal      (); break;
-//          case HFT_FORMADOR_DE_MERCADO   : abrirPosicaoHFTFormadorDeMercado(); break;
-//          case HFT_ARBITRAGEM_PAR        : abrirPosicaoHFTarbitragemPar    (); break;
-//        //case HFT_DESBALANC_BOOK        : gerenciarPosicaoHFTDesbalancBook(); break;
-//        //case HFT_FLUXO_ORDENS          : abrirPosicaoHFTfluxoOrdens      (); break;
-//        //case NAO_ABRIR_POSICAO         :                                     break;
-//    }
     }
 
     executarEstrategia();
@@ -3580,6 +3571,10 @@ void OnDeinit(const int reason)  {
 
     Comment("");                          Print(m_name," :-| Expert ", m_name, " Comentarios na tela apagados." );
                                           Print(m_name," :-) Expert ", m_name, " OnDeinit finalizado!" );
+    
+                                          
+    m_db.close();
+    
     return;
 }
 

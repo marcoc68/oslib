@@ -553,7 +553,7 @@ public:
     // Peficiente = Plast + (1/2)spread * (+1 no lado bid, ou -1 no lado ask)
     // ref: 2017-Quantitative Trading_ Algorithms, Analytics, Data, Models, Optimization (4.1)
     static double preco_eficiente_hft(double bid, double ask, double last){
-        return last + ( (ask-bid)/2.0 ) * (last <= bid)?+1:-1;
+        return last + ( (ask-bid)/2.0 ) * ( (last <= bid)?+1:-1 );
     }
 
     // seja:
