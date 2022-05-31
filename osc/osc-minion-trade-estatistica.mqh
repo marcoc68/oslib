@@ -76,7 +76,7 @@ public:
  //void setStrSymbol            (const string   strSymbol ){ m_str_symbol         = strSymbol; }
    void initialize(){ m_rebaixamentoSld=0; m_taxaLiqWIN=0.0; m_taxaLiqWDO=0.12; m_symbol.Name(_Symbol); }
    void setCotacaoMoedaTarifaWDO(const double   cotacao   )  { m_cotacaoMoedaTarifa = cotacao  ; }
-   void refresh       (const datetime from, const datetime to);
+   void refresh       (const datetime from, const datetime to, double tarifa_teste=0);
    void print_posicoes(const datetime from, const datetime to);
    
    double getProfitDia           (){ return m_profitDia            ;}
@@ -327,7 +327,7 @@ void osc_minion_trade_estatistica::print_posicoes(const datetime from, const dat
 //| resultado nas variaveis usadas para posterior consulta.          |
 //|                                                                  |
 //+------------------------------------------------------------------+
-void osc_minion_trade_estatistica::refresh(datetime from, datetime to){
+void osc_minion_trade_estatistica::refresh(datetime from, datetime to, double tarifa_teste=0){
 
     //Print(":-| Obtendo historico de ofertas...");
     HistorySelect(from,to);
@@ -367,6 +367,9 @@ void osc_minion_trade_estatistica::refresh(datetime from, datetime to){
             }else if( ehMiniIndice(symbol) ){
                 volumeDiaWIN +=  m_deal.Volume();
                 profitDiaWIN +=  m_deal.Profit();
+                
+                // aplicando a tarifa de teste. Ela retira seu valor por volume nas transacoes vencedoras
+                if( tarifa_teste>0 && m_deal.Profit()>=0 ) profitDiaWIN -= m_deal.Volume()*tarifa_teste; 
             }else{
                 volumeDia    +=  m_deal.Volume();
                 profitDia    +=  m_deal.Profit();

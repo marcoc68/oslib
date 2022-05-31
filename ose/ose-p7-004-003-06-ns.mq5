@@ -322,8 +322,10 @@ enum ENUM_TIPO_OPERACAO{
 //
   input group "show_tela"
   input bool   EA_SHOW_CONTROL_PANEL               = false ;//*SHOW_CONTROL_PANEL mostra painel de controle;
-  input bool   EA_SHOW_TELA                        = true ;//*SHOW_TELA:mostra valor de variaveis na tela;
+  input bool   EA_SHOW_TELA                        = true  ;//*SHOW_TELA:mostra valor de variaveis na tela;
   input bool   EA_SHOW_CANAL_PRECOS                = true  ;//*SHOW_CANAL_PRECOS:mostra linhas do canal de precos;
+  input int    EA_TARIFA_TESTE                     = 1     ;//*TARIFA_TESTE:tarifa de teste. cobra seu valor por volume de trade vencedor. use quando t4g=2 e tarifa=1;
+
   #define      EA_SHOW_TELA_LINHAS_ACIMA             0      // SHOW_TELA_LINHAS_ACIMA:permite impressao na parte inferior da tela;
 //input bool   EA_SHOW_STR_PERMISSAO_ABRIR_POSICAO = false; // SHOW_STR_PERMISSAO_ABRIR_POSICAO:condicoes p/abrir posicao;
 
@@ -3797,7 +3799,7 @@ void OnTimer(){
 
     //if (EA_SHOW_TELA         ) m_trade_estatistica.calcRelacaoVolumeProfit(m_time_in_seconds_ini_day, m_time_in_seconds_atu);
       if (EA_SHOW_CONTROL_PANEL) {
-          m_trade_estatistica.refresh(m_time_in_seconds_ini_day, m_time_in_seconds_atu);
+          m_trade_estatistica.refresh(m_time_in_seconds_ini_day, m_time_in_seconds_atu, EA_TARIFA_TESTE);
           refreshControlPanel();
       }
     //Print(__FUNCTION__, " Fim Ontimer()...");
