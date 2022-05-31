@@ -1,5 +1,5 @@
 ﻿//+------------------------------------------------------------------+
-//|                                         ose-p7-004-003-05-ns.mq5 |
+//|                                         ose-p7-004-003-06-ns.mq5 |
 //|                                          Copyright 2021, OS Corp |
 //|                                                http://www.os.org |
 //|                                                                  |
@@ -52,6 +52,9 @@
 //|                                                                  |
 //| Versao p7-004-003-05                                             |
 //|    - Primeiro uso de rede neural.                                |
+//|                                                                  |
+//| Versao p7-004-003-06                                             |
+//|    - Aprimorando uso do book. Nao usa a rede neural.             |
 //|                                                                  |
 //|                                                                  |
 //|                                                                  |
@@ -165,8 +168,8 @@ enum ENUM_TIPO_OPERACAO{
   #define EA_DBNAME      "oslib7"//EA_DBNAME nome do banco de dados que guardarah o historico coletados dos books
 
   //input group "=== book imbalance geral ==="
-  #define EA_PROCESSAR_BOOK   true //PROCESSAR_BOOK true: obtem dados do book.
-  //input bool   EA_PROCESSAR_BOOK   = false; //PROCESSAR_BOOK true: obtem dados do book.
+  //#define    EA_PROCESSAR_BOOK     true   //PROCESSAR_BOOK true: obtem dados do book.
+  input bool   EA_PROCESSAR_BOOK   = true; //PROCESSAR_BOOK true: obtem dados do book.
 
   #define EA_BOOK_DEEP1       9      //BOOK_DEEP1 profundidade book imbalance
   #define EA_BOOK_QUEU_IN1    2       //BOOK_QUEU_IN1 fila pra considerar a ordem executada
@@ -243,10 +246,10 @@ enum ENUM_TIPO_OPERACAO{
   #define      EA_DIVISOR_OFFSET                            0.5   //DIVISOR_OFFSET 0.5 (divide offset por 2)
 
   input group "entrada na posicao"
-  #define      EA_TOLERANCIA_ENTRADA         1      //*TOLERANCIA_ENTRADA: algumas estrategias permitem uma tolerancia do preco em ticks para entrada na posicao
+  #define      EA_TOLERANCIA_ENTRADA         0      //*TOLERANCIA_ENTRADA: algumas estrategias permitem uma tolerancia do preco em ticks para entrada na posicao
   input int    EA_VOL_LOTE_INI_1           = 1    ; //*VOL_LOTE_INI:Vol do lote na abertura de posicao qd vol/seg eh L1.
   input int    EA_VOL_LOTE_INI_2           = 1    ; //*VOL_LOTE_INI:Vol do lote na abertura de posicao qd vol/seg eh L1.
-  input double EA_QTD_TICKS_4_GAIN_INI_1   = 4    ; //*TICKS_4_GAIN_INI_1 Qtd ticks para o gain qd vol/seg eh level 1;
+  input double EA_QTD_TICKS_4_GAIN_INI_1   = 2    ; //*TICKS_4_GAIN_INI_1 Qtd ticks para o gain qd vol/seg eh level 1;
   input double EA_QTD_TICKS_4_GAIN_INI_2   = 3    ; //*TICKS_4_GAIN_INI_2 Qtd ticks para o gain qd vol/seg eh level 1;
   #define      EA_QTD_TICKS_4_GAIN_DECR      0      // TICKS_4_GAIN_DECR Qtd ticks a ser decrementado em tfg a cada aumento de volume de posicao;
   #define      EA_QTD_TICKS_4_GAIN_MIN_1     1      //*QTD_TICKS_4_GAIN_MIN_1 menor alvo inicial possivel;
@@ -365,7 +368,7 @@ input int    EA_QTD_MILISEG_TIMER  =  500 ;//*QTD_MILISEG_TIMER:Tempo de acionam
 ENUM_TIPO_OPERACAO         m_acao_posicao     = NAO_OPERAR;
 ENUM_TIPO_OPERACAO         m_acao_posicao_ant = NAO_OPERAR;
 MqlDateTime                m_date;
-string                     m_name = "OSE-P7-004-003-05-ns"; // operacao manual assistida por robo
+string                     m_name = "OSE-P7-004-003-06-ns"; // operacao manual assistida por robo
 osc_db                     m_db                      ;
 CSymbolInfo                m_symb1   , m_symb2       ;
 CPositionInfo              m_posicao1, m_posicao2    ;
@@ -1151,7 +1154,7 @@ void showAcao2(string acao){
            //                                         DoubleToString(m_est.getVarTradeLogRet(),6)+"/"+
            //                                         DoubleToString(m_est.getDPTradeLogRet()/oneIfZero(sqrt(m_est.getVolTotTot())),6),
            " \n INCLINACAO REGRESSAO E PRECO MEDIO ===" +
-           " \n InclinacaoHLTrade="             ,astIfNeg(m_est.getInclinacaoHLTrade   (),2)+
+           " \n InclinacaoHLTrade="             ,astIfNeg(m_est.getInclinacaoHLTrade(),2)+
            " \n InclTrade/InclPair="            ,astIfNeg(m_est.getInclinacaoTrade  (),4)+ " / " +
                                                  astIfNeg(m_par.regLinSlope         (),8)+
          " \n DxMedTradeMedBuy="                ,astIfNeg(m_est.getPrecoMedTrade()-m_est.getPrecoMedTradeBuy(),2)+
@@ -1161,6 +1164,10 @@ void showAcao2(string acao){
          "\n m_est.getVolTradeLiqPorSeg/acel: ", astIfNeg(m_est.getVolTradeLiqPorSeg(),2)+ " / " + astIfNeg(m_est.getAceVolLiq(),2)+
          "\n m_est.getVolTradeTotPorSeg/acel: ", astIfNeg(m_est.getVolTradeTotPorSeg(),2)+ " / " + astIfNeg(m_est.getAceVol   (),2)+
          "\n m_predict_NET1                 : ", astIfNeg(m_predict_NET1              ,2)+
+         "\n m_book1.IWFV/TLFV/IMB/SINAL    : ", astIfNeg(m_book1.getIWFV       (EA_BOOK_DEEP1)    ,0)+ " / " + 
+                                                 astIfNeg(m_book1.getTLFV       (EA_BOOK_DEEP1)    ,0)+ " / " + 
+                                                 astIfNeg(m_book1.getImbalance  (EA_BOOK_DEEP1)*100,0)+ " / " +  
+                                                 astIfNeg(        calcSinalBook1(EA_BOOK_DEEP1)    ,0)        +
          //"\n m_predict_RDF1                 : ", astIfNeg(m_predict_RDF1             ,2)+
          //"\n m_pos_mat_RDF/TOT              : ", astIfNeg(m_pos_mat_RDF              ,0)+ "/" + astIfNeg(EA_MAT_RDF_TAMANHO     ,0) +
          //"\n m_pos_mat_RDF/TOT (nova)       : ", astIfNeg(m_pos_mat_RDF_nova         ,0)+ "/" + astIfNeg(EA_MAT_RDF_TAMANHO_NOVA,0) +
@@ -1738,7 +1745,7 @@ bool podeExecutarOnTick(){
 
     // se chegou aqui eh porque tem restricao...
     m_milisec_ontick = GetTickCount();
-    if( m_milisec_ontick < m_milisec_ontick_ant + EA_ONTICK_A_CADA_X_MILIS ) return false;
+    if( m_milisec_ontick < m_milisec_ontick_ant + EA_ONTICK_A_CADA_X_MILIS ) { Print(__FUNCTION__," nao pode executar ontick!");   return false;}
     m_milisec_ontick_ant = m_milisec_ontick;
     return true;
 }
@@ -1746,11 +1753,15 @@ bool podeExecutarOnTick(){
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
-void OnTick(){
+
+void OnTick(){ onTick(); }
+
+void onTick(){
 
     // verificando restricao de tempo pra executar ontick()...
     if( !podeExecutarOnTick() ) return;
-
+    
+    onBookEvent(m_symb_str1);
 
     //refreshMe();
     // elimina ordens de saida a mais na posicao...
@@ -1758,8 +1769,8 @@ void OnTick(){
         //consertarOrdensSaidaPosicao();
         //consertarOrdensEntradaPosicao();
     }
+    
     refreshMe();
-
 
     if ( m_qtdPosicoes1 > 0 ) {
 
@@ -1795,6 +1806,7 @@ void OnTick(){
         m_time_analisado = 0; // pra que as posicoes abertas sejam analisadas no mesmo periodo de uma posicao que jah fechou.
 
         definirPasso();
+        
         // Esta opcao NAO_OPERAR nao interfere nas ordens...
         if( m_acao_posicao == NAO_OPERAR ) return;
 
@@ -1848,8 +1860,8 @@ void executarEstrategia(){
         case HFT_FORMADOR_DE_MERCADO   : abrirPosicaoHFTFormadorDeMercado ();                            break;
         case HFT_ARBITRAGEM_PAR        : abrirPosicaoHFTarbitragemPar     ();                            break;
         case HFT_DESBALANC_BOOK        : gerenciarPosicaoHFTDesbalancBook ();                            break;
-        case HFT_OPERAR_VELOC_VOL_RDF  : abrirPosicaoVelocVolumeRDF       (); manterFilaOrdensEntrada(); break;
-        case HFT_OPERAR_VELOC_VOL_NET  : abrirPosicaoVelocVolumeNET       (); manterFilaOrdensEntrada(); break;
+        //case HFT_OPERAR_VELOC_VOL_RDF  : abrirPosicaoVelocVolumeRDF       (); manterFilaOrdensEntrada(); break;
+        //case HFT_OPERAR_VELOC_VOL_NET  : abrirPosicaoVelocVolumeNET       (); manterFilaOrdensEntrada(); break;
         
       //case HFT_FLUXO_ORDENS          : abrirPosicaoHFTfluxoOrdens       ();                            break;
         case NAO_ABRIR_POSICAO         : naoAbrirPosicao                  ();                            break;
@@ -2104,7 +2116,7 @@ string strEmLeilao(){ if(emLeilao()) return "SIM"; return "NAO";}
 //      a ordem executada (typeDeal) foi uma compra, dispara uma venda e vice-versa.
 //------------------------------------------------------------------------------------------------------------
 void doCloseOposite( double toClosePriceIn, double vol, string symbol, ENUM_DEAL_TYPE typeDeal ){
-    Print(__FUNCTION__,"(",toClosePriceIn,",",vol,",",symbol,",", EnumToString(typeDeal),")" );
+    Print(__FUNCTION__,"(",toClosePriceIn,",",vol,",",symbol,",", EnumToString(typeDeal),")", ",tg4=",m_qtd_ticks_4_gain_ini_1 );
 
     if(m_stop) return;
     
@@ -2750,7 +2762,7 @@ void abrirPosicaoHFTPairsTradingCanal(){
 //-----------------------------------------------------------------------------------------------------------------------------
 bool velVolRDFOrientaCompra1(){ return m_predict_RDF1 >  1; }
 bool velVolRDFOrientaVenda1 (){ return m_predict_RDF1 < -1; }
-
+/*
 void abrirPosicaoVelocVolumeRDF(){
 
     //if( !bidAskEstaoIntegros() ){
@@ -2818,7 +2830,7 @@ void abrirPosicaoVelocVolumeRDF(){
     }
 }
 //-----------------------------------------------------------------------------------------------------------------------------
-
+*/
 //-----------------------------------------------------------------------------------------------------------------------------
 // HFT_OPERAR_CANAL_EM_PAR
 //
@@ -2833,7 +2845,7 @@ void abrirPosicaoVelocVolumeRDF(){
 //-----------------------------------------------------------------------------------------------------------------------------
 bool velVolNETOrientaCompra1(){ return m_predict_NET1 >  0.5; }
 bool velVolNETOrientaVenda1 (){ return m_predict_NET1 < -0.5; }
-
+/*
 void abrirPosicaoVelocVolumeNET(){
 
     //if( !bidAskEstaoIntegros() ){
@@ -2903,7 +2915,7 @@ void abrirPosicaoVelocVolumeNET(){
     }
 }
 //-----------------------------------------------------------------------------------------------------------------------------
-
+*/
 //------------------------------------------------------------------------------
 //| HFT_FORMADOR_DE_MERCADO
 //| Mantem pedidos de abetura de ordem segundo as regras abaixo:
@@ -2930,32 +2942,32 @@ void abrirPosicaoHFTFormadorDeMercadoSinaisDoBook(){
    int sinal1 = calcSinalBook1(EA_BOOK_DEEP1);
    // compre ou feche a posicao vendida
    if( sinal1>0 ){
-        if(estouSemPosicao1()){
-            Print(__FUNCTION__,":Usando getBid()...");
-            if(m_book1.getBid(1)==0){Print(__FUNCTION__,":Preco Ordem de compra ZERADO! VERIFIQUE!"); return;}
-            Print(__FUNCTION__,":Usando getBid()...");
-            sleepTeste(); ticket1 = m_trade1.manterOrdemLimitadaEntornoDe(m_symb_str1, ORDER_TYPE_BUY_LIMIT, m_apmb_buy, m_book1.getBid(1), room1, vol1);
-            return;
+        if(estouSemPosicao1() || estouVendido1() ){
+            if(m_book1.getBid(2)==0){Print(__FUNCTION__,":Preco Ordem de compra ZERADO! VERIFIQUE!"); return;}
+            if(estouVendido1()) Print(__FUNCTION__,":SAIDA: Mantendo ordem de COMPRA em torno de:", m_book1.getBid(2), "...");
+            sleepTeste(); ticket1 = m_trade1.manterOrdemLimitadaEntornoDe(m_symb_str1, ORDER_TYPE_BUY_LIMIT, m_apmb_buy, m_book1.getBid(2), room1, vol1);
+            //return;
         }
+        return;
         // se cheou aqui, eh porque estou posicionado. Se estiver vendido, fecha a posicao;
-        if( estouVendido1() ){ m_trade1.fecharPosicao("SINALCMP"); return; }
+        //if( estouVendido1() ){ m_trade1.fecharPosicao("SINALCMP"); return; }
    }
    
    // venda ou feche a posicao comprada
    if( sinal1<0 ){
-        if(estouSemPosicao1()){
-            Print(__FUNCTION__,":Usando getAsk()...");
-            if(m_book1.getAsk(1)==0){Print(__FUNCTION__,":Preco Ordem de venda ZERADO! VERIFIQUE!"); return;}
-            Print(__FUNCTION__,":Usando getAsk()...");
-            sleepTeste(); ticket1 = m_trade1.manterOrdemLimitadaEntornoDe(m_symb_str1, ORDER_TYPE_SELL_LIMIT, m_apmb_sel, m_book1.getAsk(1), room1, vol1);
-            return;
+        if(estouSemPosicao1() || estouComprado1()){
+            if(m_book1.getAsk(2)==0){Print(__FUNCTION__,":Preco Ordem de venda ZERADO! VERIFIQUE!"); return;}
+            if( estouComprado1()) Print(__FUNCTION__,":SAIDA: Mantendo ordem de VENDA em torno de:", m_book1.getAsk(2), "...");
+            sleepTeste(); ticket1 = m_trade1.manterOrdemLimitadaEntornoDe(m_symb_str1, ORDER_TYPE_SELL_LIMIT, m_apmb_sel, m_book1.getAsk(2), room1, vol1);
+            //return;
         }
+        return;
         // se cheou aqui, eh porque estou posicionado. Se estiver comprado, fecha a posicao;
-        if( estouComprado1() ){ m_trade1.fecharPosicao("SINALVND"); return;}
+        //if( estouComprado1() ){ m_trade1.fecharPosicao("SINALVND"); return;}
    }
    
    // chegou aqui, eh porque nao tem sinal de compra ou venda e tambem nao tem posicao aberta. Entao cancela ordens de abertura de posicao, caso existam.
-   m_trade1.cancelarOrdens("SEM_SINAL_ENTRADA");
+   if( estouSemPosicao1() ) m_trade1.cancelarOrdens("SEM_SINAL_ENTRADA");
 
 }
 //-----------------------------------------------------------------------------------------------------------------------------
@@ -2967,12 +2979,12 @@ void abrirPosicaoHFTFormadorDeMercadoSinaisDoBook(){
 int calcSinalBook1(int deep){
     if( m_book1.getIWFV(deep)      < m_book1.getBid(1) &&
         m_book1.getTLFV(deep)      > m_book1.getAsk(1) &&
-        m_book1.getImbalance(deep) < -10                     ){
+        m_book1.getImbalance(deep) < -0.05                     ){
         return 1; // comprar
     }else{
         if( m_book1.getIWFV(deep)      > m_book1.getBid(1) &&
             m_book1.getTLFV(deep)      < m_book1.getAsk(1) &&
-            m_book1.getImbalance(deep) > 10                  ){
+            m_book1.getImbalance(deep) > 0.05                  ){
             return -1; // vender
         }
     }
@@ -3735,6 +3747,7 @@ MqlDateTime m_date_atu;
 MqlDateTime m_date_ant;
 //----------------------------------------------------------------------------------------------------
 void OnTimer(){
+    //Print(__FUNCTION__, " Executando Ontimer()...");
 
     //m_qtd_exec_ontimer++;
 
@@ -3758,8 +3771,10 @@ void OnTimer(){
   //calcRun(m_passo_rajada);                                                 // calculando o indice de runs baseado no passo atual
     controlarTimerParaAbrirPosicao();
     verificarMudancaDeSegundo();
-    acumularNET();
-    if( acumularRDF() ) compilarRDFnova();
+  
+    //acumularNET();
+    //if( acumularRDF() ) compilarRDFnova();
+  
   //calcularDirecaoVelocidadeDoVolume(); <TODO>: verificar se este metodo pode ser melhor que o uso estatistica2
     calcularOffset();
     calcLenBarraMedia();
@@ -3785,6 +3800,7 @@ void OnTimer(){
           m_trade_estatistica.refresh(m_time_in_seconds_ini_day, m_time_in_seconds_atu);
           refreshControlPanel();
       }
+    //Print(__FUNCTION__, " Fim Ontimer()...");
 
 }
 //----------------------------------------------------------------------------------------------------
@@ -4205,6 +4221,7 @@ bool eh_hora_de_fechar_posicao(){
 void controlarTimerParaAbrirPosicao(){
     if( m_aguardar_para_abrir_posicao > 0 ){
         m_aguardar_para_abrir_posicao -= EA_QTD_MILISEG_TIMER;
+        Print(__FUNCTION__, " m_aguardar_para_abrir_posicao:", m_aguardar_para_abrir_posicao, " milissegundos...");
     }
 }
 
@@ -4302,6 +4319,8 @@ void reverterPosicao2(){ m_gerentePos2.reverterPosicao(); }
 void OnTradeTransaction( const MqlTradeTransaction& tran,    // transacao
                          const MqlTradeRequest&     req ,    // request
                          const MqlTradeResult&      res   ){ // result
+                         
+    //Print(__FUNCTION__, " Executando OnTradeTransaction()...");
 
     //bool           closer          = false;  // true: trade eh um fechamento de posicao
     //bool           toClose         = false;  // true: trade deve ser fechado
@@ -4388,6 +4407,9 @@ void OnTradeTransaction( const MqlTradeTransaction& tran,    // transacao
     }
     */
     //if( m_acao_posicao == HFT_FORMADOR_DE_MERCADO ) abrirPosicaoHFTFormadorDeMercado();
+    
+    //Print(__FUNCTION__, "        Fim OnTradeTransaction()...");
+    
 }
 
 
@@ -4403,19 +4425,22 @@ void printDouble(string msg,double val=-1){ if(++m_qtd_print>m_qtd_print_interva
 
 int m_tamanhoBook = 0;
 MqlBookInfo m_book[];
-void OnBookEvent(const string &symbol){
+//void OnBookEvent(const string &symbol){
+void onBookEvent(const string &symbol){
+    //Print(__FUNCTION__, " Executando OnBookEvent()...");
 
    if( !EA_PROCESSAR_BOOK ) return;
    if( !MarketBookGet(symbol, m_book) ) { Print(":-( Falha MarketBookGet. Motivo: ", GetLastError()); return; }
 
-   if(EA_NEGOCIAR_ATIVO_1 && symbol == m_symb_str1) m_book1.setBook(m_book);
-   if(EA_NEGOCIAR_ATIVO_2 && symbol == m_symb_str2) m_book2.setBook();
+   if(EA_NEGOCIAR_ATIVO_1 && symbol == m_symb_str1){ m_book1.setBook(m_book); } 
+   if(EA_NEGOCIAR_ATIVO_2 && symbol == m_symb_str2)  m_book2.setBook();
 
    if(!EA_NEGOCIAR_ATIVO_1 || symbol != m_symb_str1 ) return;
    if( m_tamanhoBook==0) m_tamanhoBook = ArraySize(m_book);
    if( m_tamanhoBook==0) { Print(":-( Falha book vazio. Motivo: ", GetLastError()); return; }
 
-   m_est.addBook( TimeCurrent(), m_book, m_tamanhoBook,0.5, m_symb1.TickSize() );
+   //m_est.addBook( TimeCurrent(), m_book, m_tamanhoBook,0.5, m_symb1.TickSize() );
+   //Print(__FUNCTION__, " Fim OnBookEvent()...");
 }
 
 

@@ -144,6 +144,8 @@ bool C004GerentePosicao::doCloseOposite( double precoOrdemExecutada, double t4g,
     if( precoCompra > ultTick.bid ) precoCompra = ultTick.bid;
     if( precoVenda  < ultTick.ask ) precoVenda  = ultTick.ask;
 
+    Print(__FUNCTION__," precoCompra:",precoCompra, " precoVenda:",precoVenda);  
+
     if(sleep>0) Sleep(sleep);
     //bool assinc = m_trade.getAsync();
     //m_trade.setAsync(true);
@@ -154,13 +156,15 @@ bool C004GerentePosicao::doCloseOposite( double precoOrdemExecutada, double t4g,
     bool assinc = m_trade.getAsync();
     m_trade.setAsync(true);
 
-    if( typeDeal == DEAL_TYPE_BUY  ){ 
-        while( m_trade.tenhoOrdemPendente(precoVenda) ){precoVenda=normalizar(precoVenda+m_symb.TickSize());}
+    if( typeDeal == DEAL_TYPE_BUY  ){
+        //while( m_trade.tenhoOrdemPendente(precoVenda) ){precoVenda=normalizar(precoVenda+m_symb.TickSize());}
+        Print(__FUNCTION__," Vendendo a:"," precoVenda:",precoCompra, " ...");  
         m_trade.enviarOrdemPendente(ORDER_TYPE_SELL_LIMIT, precoVenda, vol, m_ins);
     }
     
-    if( typeDeal == DEAL_TYPE_SELL ){ 
-        while( m_trade.tenhoOrdemPendente(precoCompra) ){precoCompra=normalizar(precoCompra-m_symb.TickSize());}
+    if( typeDeal == DEAL_TYPE_SELL ){
+        //while( m_trade.tenhoOrdemPendente(precoCompra) ){precoCompra=normalizar(precoCompra-m_symb.TickSize());}
+        Print(__FUNCTION__," Comprando a:"," precoCompra:",precoCompra, " ...");  
         m_trade.enviarOrdemPendente(ORDER_TYPE_BUY_LIMIT , precoCompra, vol, m_inb);
     }
 
