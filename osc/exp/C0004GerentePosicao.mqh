@@ -61,7 +61,7 @@ private:
 protected:
 public:
     
-    bool inicializar(string strSymb, ulong magic, int lagEmTicks=1, int tamanhoRajada=3, int reduz_t4g_a_cada_x_seg=5);
+    bool inicializar(string strSymb, ulong magic, int lagEmTicks=1, int tamanhoRajada=3, int reduz_t4g_a_cada_x_seg=0);
     bool abrir();
     bool abrirRajada(ENUM_ORDER_TYPE orderType, double preco, int lag, int lenRajada, string comentario);
     bool temPosicaoAberta();
@@ -144,7 +144,7 @@ bool C004GerentePosicao::doCloseOposite( double precoOrdemExecutada, double t4g,
     if( precoCompra > ultTick.bid ) precoCompra = ultTick.bid;
     if( precoVenda  < ultTick.ask ) precoVenda  = ultTick.ask;
 
-    Print(__FUNCTION__," precoCompra:",precoCompra, " precoVenda:",precoVenda);  
+    //Print(__FUNCTION__," precoCompra:",precoCompra, " precoVenda:",precoVenda);  
 
     if(sleep>0) Sleep(sleep);
     //bool assinc = m_trade.getAsync();
@@ -355,7 +355,7 @@ double C004GerentePosicao::encontrarPrecoVenda(double preco){
 // strSymb : in ticker do simbolo cujas posicoes serao gerenciadas.
 // magic   : in numero magico das ordens que serao colocadas.
 //-----------------------------------------------------------------------------
-bool C004GerentePosicao::inicializar(string strSymb, ulong magic, int lagEmTicks=1, int tamanhoRajada=3, int reduz_t4g_a_cada_x_seg=5){
+bool C004GerentePosicao::inicializar(string strSymb, ulong magic, int lagEmTicks=1, int tamanhoRajada=3, int reduz_t4g_a_cada_x_seg=0){
     m_symb.Name(strSymb);
     m_symb.Refresh();
     m_tick_size     = m_symb.TickSize(); 
