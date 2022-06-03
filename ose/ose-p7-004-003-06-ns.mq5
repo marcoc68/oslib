@@ -337,9 +337,7 @@ int OnInit(){
 
     m_posicao1.Select( m_symb_str1 ); // selecao da posicao por simbolo.
     m_gerentePos1.inicializar(m_symb_str1,EA_MAGIC,EA_LAG_RAJADA1,EA_TAMANHO_RAJADA);
-  //m_gerentePos1.setSpread(m_lag_rajada1*m_tick_size1);
     m_gerentePos1.setSpread(             m_tick_size1);
-  //m_gerentePos1.setT4gMin((int)EA_QTD_TICKS_4_GAIN_MIN_1 );
     m_gerentePos1.setT4gMin((int)EA_QTD_TICKS_4_GAIN_INI_1 );
 
     // estatistica de trade...
@@ -348,9 +346,7 @@ int OnInit(){
     m_trade_estatistica.setCotacaoMoedaTarifaWDO(EA_DOLAR_TARIFA);
 
     m_spread_maximo_in_points = (int)( (EA_SPREAD_MAXIMO_EM_TICKS*m_tick_size1)/m_point1 );
-  //m_stop_level_in_price     = normalizar1( m_symb1.StopsLevel()*m_point1 + m_tick_size1 );
     m_stop_level_in_price     = normalizar1( m_symb1.StopsLevel()*m_point1               );
-  //m_stop_level_in_price     = normalizar1( m_symb2.StopsLevel()*m_symb1.Point()    );
 
     m_shift_in_points         = normalizar1( (EA_TOLERANCIA_ENTRADA*m_tick_size1)/m_point1 ); // tolerancia permitida para entrada em algumas estrategias
 
@@ -509,32 +505,6 @@ void refreshMe(){
           //m_lucroPosicao4Gain = (m_posicaoVolumeTot *m_qtd_ticks_4_gain_ini_1); // passou a usar em 05/06/2020
           //m_lucroPosicao4Gain = (m_posicaoVolumePend*m_qtd_ticks_4_gain_ini_1); // passou a usar em 05/06/2020
 
-            ///////////////////////////////////
-//      }else{
-//
-//         // aqui neste bloco, estah garantido que nao ha posicao aberta...
-//         m_qtdPosicoes1         = 0;
-//         m_volVendasNaPosicao  = 0;
-//         m_volComprasNaPosicao = 0;
-//
-//         m_capitalInicial    =  m_cta.Balance(); // se nao estah na posicao, atualizamos o capital inicial da proxima posicao.
-//         m_qtd_ticks_4_gain_ini_1 = EA_QTD_TICKS_4_GAIN_INI_1;
-//         m_comprado          =  false;
-//         m_vendido           =  false;
-//         m_stop              =  false;
-//         m_lucroPosicao      =  0;
-//         m_lucroPosicaoParcial = 0;
-//         m_lucroPosicaoRealizado = 0;
-//         m_lucroPosicao4Gain =  0;
-//         m_posicaoVolumePend =  0; // versao 02-085
-//         m_posicaoLotsPend   =  0;
-//         m_posicaoProfit     =  0;
-//         m_posicaoVolumeTot  =  0;
-//         m_val_order_4_gain  =  0; // zerando o valor da primeira ordem da posicao...
-//         m_tempo_posicao_atu =  0;
-//         m_tempo_posicao_ini =  0;
-//         m_positionId        = -1;
-//      }
     }else{
         // aqui neste bloco, estah garantido que nao ha posicao aberta...
         m_qtdPosicoes1         = 0;
@@ -1410,7 +1380,6 @@ void eliminarOrdensDeSaidaSobrantes(){
 //------------------------------------------------------------------------------
 void abrirPosicaoHFTFormadorDeMercadoSinaisDoBook(){
     //double dist_min_entrada_book = m_dist_min_in_book_in_pos;
-    double vol1    = m_vol_lote_ini1;
     double room1   = m_tick_size1*EA_TOLERANCIA_ENTRADA;
     ulong  ticket1;
 
@@ -1419,8 +1388,8 @@ void abrirPosicaoHFTFormadorDeMercadoSinaisDoBook(){
    if( sinal1>0 ){
         if(estouSemPosicao1() || estouVendido1() ){
             if(m_book1.getBid(EA_LEVEL_ENTRADA)==0){Print(__FUNCTION__,":Preco Ordem de compra ZERADO! VERIFIQUE!"); return;}
-            if(estouVendido1()) Print(__FUNCTION__,":SAIDA: Mantendo ordem de COMPRA em torno de:", m_book1.getBid(EA_LEVEL_ENTRADA), "...");
-            sleepTeste(); ticket1 = m_trade1.manterOrdemLimitadaEntornoDe(m_symb_str1, ORDER_TYPE_BUY_LIMIT, m_apmb_buy, m_book1.getBid(2), room1, vol1);
+            sleepTeste(); ticket1 = m_trade1.manterOrdemLimitadaEntornoDe(m_symb_str1, ORDER_TYPE_BUY_LIMIT, m_apmb_buy, m_book1.getBid(EA_LEVEL_ENTRADA), room1, m_vol_lote_ini1);
+            if(estouVendido1()) Print(__FUNCTION__,":SAIDA: Mantendo ordem de COMPRA em torno de:", m_book1.getBid(EA_LEVEL_ENTRADA),", ticket: #",ticket1, "...");
             //return;
         }
         return;
@@ -1432,8 +1401,8 @@ void abrirPosicaoHFTFormadorDeMercadoSinaisDoBook(){
    if( sinal1<0 ){
         if(estouSemPosicao1() || estouComprado1()){
             if(m_book1.getAsk(EA_LEVEL_ENTRADA)==0){Print(__FUNCTION__,":Preco Ordem de venda ZERADO! VERIFIQUE!"); return;}
-            if( estouComprado1()) Print(__FUNCTION__,":SAIDA: Mantendo ordem de VENDA em torno de:", m_book1.getAsk(EA_LEVEL_ENTRADA), "...");
-            sleepTeste(); ticket1 = m_trade1.manterOrdemLimitadaEntornoDe(m_symb_str1, ORDER_TYPE_SELL_LIMIT, m_apmb_sel, m_book1.getAsk(EA_LEVEL_ENTRADA), room1, vol1);
+            sleepTeste(); ticket1 = m_trade1.manterOrdemLimitadaEntornoDe(m_symb_str1, ORDER_TYPE_SELL_LIMIT, m_apmb_sel, m_book1.getAsk(EA_LEVEL_ENTRADA), room1, m_vol_lote_ini1);
+            if( estouComprado1()) Print(__FUNCTION__,":SAIDA: Mantendo ordem de VENDA em torno de:", m_book1.getAsk(EA_LEVEL_ENTRADA),", ticket: #",ticket1, "...");
             //return;
         }
         return;
@@ -1455,11 +1424,13 @@ int calcSinalBook1(int deep){
     if( m_book1.getIWFV(deep)      < m_book1.getBid(1) &&
         m_book1.getTLFV(deep)      > m_book1.getAsk(1) &&
         m_book1.getImbalance(deep) < -0.05                     ){
+      //m_book1.getImbalance(deep) < -0.10                     ){
         return 1; // comprar
     }else{
         if( m_book1.getIWFV(deep)      > m_book1.getBid(1) &&
             m_book1.getTLFV(deep)      < m_book1.getAsk(1) &&
             m_book1.getImbalance(deep) > 0.05                  ){
+          //m_book1.getImbalance(deep) > 0.10                  ){
             return -1; // vender
         }
     }
@@ -1544,6 +1515,7 @@ void OnDeinit(const int reason)  {
     if( EA_SHOW_CONTROL_PANEL ) { m_cp.Destroy(reason); Print(__FUNCTION__," :-| Expert ", m_name, " Painel de controle destruido." ); }
     Comment("");                                        Print(__FUNCTION__," :-| Expert ", m_name, " Comentarios na tela apagados." );
     m_db.close();                                       Print(__FUNCTION__," :-| Expert ", m_name, " m_db fechado!" );
+    MarketBookRelease(m_symb_str1)                    ; Print(__FUNCTION__," :-| Expert ", m_name, " book descadastrado!" );
                                                         Print(__FUNCTION__," :-) Expert ", m_name, " OnDeinit finalizado!" );
     return;
 }
@@ -1780,20 +1752,20 @@ void OnTradeTransaction( const MqlTradeTransaction& tran,    // transacao
                          
     //Print(__FUNCTION__, " Executando OnTradeTransaction()...");
 
-    //bool           closer          = false;  // true: trade eh um fechamento de posicao
-    //bool           toClose         = false;  // true: trade deve ser fechado
-    //ulong          toCloseidDeal   = 0    ;  // se toClose=true este serah o ticket  do trade a ser fechado
-    //double         toCloseVol      = 0    ;  // se toClose=true este serah o volume  do trade a ser fechado
-    //ENUM_DEAL_TYPE toCloseTypeDeal        ;  // se toClose=true este serah o sentido do trade a ser fechado, conforme ENUM_DEAL_TYPE
-    //double         toClosePriceIn         ;  // se toClose=true este serah o preco   do trade a ser fechado
-    //bool           toCloseOpenPos  = false;  // se toClose=true esta indicarah se a posicao foi aberta agora (primeiraOrdem)
+  //bool           closer          = false;  // true: trade eh um fechamento de posicao
+  //bool           toClose         = false;  // true: trade deve ser fechado
+  //ulong          toCloseidDeal   = 0    ;  // se toClose=true este serah o ticket  do trade a ser fechado
+  //double         toCloseVol      = 0    ;  // se toClose=true este serah o volume  do trade a ser fechado
+  //ENUM_DEAL_TYPE toCloseTypeDeal        ;  // se toClose=true este serah o sentido do trade a ser fechado, conforme ENUM_DEAL_TYPE
+  //double         toClosePriceIn         ;  // se toClose=true este serah o preco   do trade a ser fechado
+  //bool           toCloseOpenPos  = false;  // se toClose=true esta indicarah se a posicao foi aberta agora (primeiraOrdem)
 
 
   //if(tran.symbol != m_symb_str1) return; //20210305: correcao BUG estava abrindo posicao com papel diferente do que estah sendo processado.
 
-  //m_pos.onTradeTransaction(tran,req,res,closer,toClose,toCloseidDeal,toCloseVol,toCloseTypeDeal,toClosePriceIn, toCloseOpenPos);
+    //m_pos.onTradeTransaction(tran,req,res,closer,toClose,toCloseidDeal,toCloseVol,toCloseTypeDeal,toClosePriceIn, toCloseOpenPos);
 
-    if( EA_LOGAR_TRADETRANSACTION ) m_pos.logarInCSV(tran,req,res);
+    //if( EA_LOGAR_TRADETRANSACTION ) m_pos.logarInCSV(tran,req,res);
 
     if( m_acao_posicao == NAO_OPERAR     ) return;
     if( m_acao_posicao == FECHAR_POSICAO ) return;
@@ -1813,61 +1785,16 @@ void OnTradeTransaction( const MqlTradeTransaction& tran,    // transacao
 
 
   //if( (toClose || closer) && toClosePriceIn > 0 ){
-    if( tran.type == TRADE_TRANSACTION_DEAL_ADD && tran.price > 0 ){
+  //if(  toClose && tran.type == TRADE_TRANSACTION_DEAL_ADD && tran.price > 0 ){
+    if(             tran.type == TRADE_TRANSACTION_DEAL_ADD && tran.price > 0 ){
         // acionando o fechamento das ordens da posicao...
         //doCloseRajada4(toCloseidDeal,toCloseVol,toCloseTypeDeal,toClosePriceIn,toCloseOpenPos);
         //doCloseRajada4Simples(toClosePriceIn,toCloseVol, tran.symbol);
         //doCloseOposite(toClosePriceIn,toCloseVol, tran.symbol,toCloseTypeDeal);
+        //Print(__FUNCTION__, ": tran.order:#", tran.order, ", tran.volume:", tran.volume );
         doCloseOposite(tran.price,tran.volume, tran.symbol,tran.deal_type); // suspeita de erro em toClosePriceIn,
                                                                             // toCloseTypeDeal e toCloseVol
     }
-
-    /*
-    if( toClose==true ){
-
-        // contando volume total da posicao e...
-        if( toCloseTypeDeal == DEAL_TYPE_BUY ){
-            m_volComprasNaPosicao += (toCloseVol/m_lots_step1);
-            //if( estouSemPosicao1() ) setCompradoSoft();
-        }else{
-            if( toCloseTypeDeal == DEAL_TYPE_SELL ){
-                m_volVendasNaPosicao += (toCloseVol/m_lots_step1);
-                //if( estouSemPosicao1() ) setVendidoSoft();
-            }
-        }
-
-        // acionando o fechamento das ordens da posicao...
-        doCloseRajada4(toCloseidDeal,toCloseVol,toCloseTypeDeal,toClosePriceIn,toCloseOpenPos);
-
-    }else{
-
-        // Aqui eh fechamento de posicao.
-        if(closer){
-
-          //if( m_acao_posicao == HFT_FORMADOR_DE_MERCADO ){
-            // Se a posicao estah sendo fechada por uma ordem INX, cancele a ordem de fechamento original(comentario numerico) com preco
-            // mais afastado (maior pra posicoes compradas e menor pra posicoes vendidas).
-                string comment;
-                if( m_pos.getComment(tran.order,comment) ){
-                    if( StringFind(comment,m_apmb) > -1 ){
-                        // eh uma ordem INX, entao cancele uma ordem numerica mais afastada
-                        if( estouComprado1() ){
-                            m_trade1.cancelarMaiorOrdemDeVendaComComentarioNumerico();
-                        }else{
-                            if( estouVendido1() ){
-                                m_trade1.cancelarMenorOrdemDeCompraComComentarioNumerico();
-                            }
-                        }
-                    }
-                }
-          //}
-        }
-    }
-    */
-    //if( m_acao_posicao == HFT_FORMADOR_DE_MERCADO ) abrirPosicaoHFTFormadorDeMercado();
-    
-    //Print(__FUNCTION__, "        Fim OnTradeTransaction()...");
-    
 }
 
 
