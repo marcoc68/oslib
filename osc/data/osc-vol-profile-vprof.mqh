@@ -1,5 +1,5 @@
 ﻿//+------------------------------------------------------------------+
-//|                                              osc-vol-profile.mqh |
+//|                                        osc-vol-profile-vprof.mqh |
 //|                               Copyright 2022,oficina de software.|
 //|                                 http://www.metaquotes.net/marcoc.|
 //+------------------------------------------------------------------+

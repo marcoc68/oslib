@@ -198,4 +198,11 @@ bool VLineDelete(const long   chart_ID=0,   // ID do grafico
      } 
 //--- sucesso na execucao 
    return(true); 
-  } 
+}
+
+string TimeMscToString(long time_in_milis, int flags=TIME_SECONDS){
+    datetime time_in_seconds = (datetime)(time_in_milis/1000);
+    int      mili            = (int     )(time_in_milis%1000);
+    
+    return TimeToString(time_in_seconds,flags) + "," + IntegerToString(mili);
+}

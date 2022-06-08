@@ -74,7 +74,7 @@ public:
                          return "FANTHON";
     }
     
-    bool doCloseOposite( double precoOrdemExecutada, double t4g, double vol, MqlTick& ultTick, int sleep, ENUM_DEAL_TYPE typeDeal );
+    bool doCloseOposite( double precoOrdemExecutada, double t4g, double vol, MqlTick& ultTick, int sleep, ENUM_DEAL_TYPE typeDeal, long ticket=0 );
     
     // recebe uma ordem executada e abre uma ordem se entrada e outra de saida a xx ticks da ordem recebida. 
     bool fireNorteSul(double precoOrdemExecutada,             int lagEmTicks, MqlTick& ultTick, int sleep=0, int sentidoPosicao=0);
@@ -126,7 +126,9 @@ public:
 };
 
 
-bool C004GerentePosicao::doCloseOposite( double precoOrdemExecutada, double t4g, double vol, MqlTick& ultTick, int sleep, ENUM_DEAL_TYPE typeDeal ){
+
+// ticket: se informado, serah colocado como comentario na ordem que estah sendo criada.
+bool C004GerentePosicao::doCloseOposite( double precoOrdemExecutada, double t4g, double vol, MqlTick& ultTick, int sleep, ENUM_DEAL_TYPE typeDeal, long ticket=0 ){
 
     if( t4g < m_t4gMin ){ 
         Print(__FUNCTION__," :-( ERRO GRAVE: T4G menor que o minimo permitido. Recebido:",t4g, " minimo permitido:", m_t4gMin);  
@@ -158,20 +160,26 @@ bool C004GerentePosicao::doCloseOposite( double precoOrdemExecutada, double t4g,
 
     if( typeDeal == DEAL_TYPE_BUY  ){
         //while( m_trade.tenhoOrdemPendente(precoVenda) ){precoVenda=normalizar(precoVenda+m_symb.TickSize());}
-        Print(__FUNCTION__," Vendendo a:"," precoVenda:",precoCompra, " ...");  
-        m_trade.enviarOrdemPendente(ORDER_TYPE_SELL_LIMIT, precoVenda, vol, m_ins);
+        Print(__FUNCTION__," Vendendo a:", precoVenda, " ...");
+    	if(ticket>0){
+            m_trade.enviarOrdemPendente(ORDER_TYPE_SELL_LIMIT, precoVenda, vol, IntegerToString(ticket) ); // fechamento de posicao
+    	}else{
+            m_trade.enviarOrdemPendente(ORDER_TYPE_SELL_LIMIT, precoVenda, vol, m_ins); // abertura de posicao
+    	}
     }
     
     if( typeDeal == DEAL_TYPE_SELL ){
         //while( m_trade.tenhoOrdemPendente(precoCompra) ){precoCompra=normalizar(precoCompra-m_symb.TickSize());}
-        Print(__FUNCTION__," Comprando a:"," precoCompra:",precoCompra, " ...");  
-        m_trade.enviarOrdemPendente(ORDER_TYPE_BUY_LIMIT , precoCompra, vol, m_inb);
+        Print(__FUNCTION__," Comprando a", precoCompra, " ...");
+
+    	if(ticket>0){
+    		m_trade.enviarOrdemPendente(ORDER_TYPE_BUY_LIMIT , precoCompra, vol, IntegerToString(ticket)); // fechamento de posicao
+    	}else{
+    		m_trade.enviarOrdemPendente(ORDER_TYPE_BUY_LIMIT , precoCompra, vol, m_inb); // abertura de posicao
+    	}
     }
 
     m_trade.setAsync(assinc);
-    
-
-
     return true;
 }
 

@@ -132,7 +132,7 @@ public:
             StringConcatenate(str, str, valor[i].toString(),"\n" );
         }
         return str;
-    };    
+    };
 };
 
 

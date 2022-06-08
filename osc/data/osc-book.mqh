@@ -29,7 +29,7 @@
 #define     TLFV 8 //  Threshold liquidity   fair value (TLFV) price
 #define COLS_VET_BOOK 9
 #define BOOK_DEEP_STD 4
-#define BOOK_DEEP_MAX 16
+#define BOOK_DEEP_MAX 32
 class osc_book{
 private:
     double m_pesos    [BOOK_DEEP_MAX];// usado para ponderar o volume de ordens pendentes no nivel, pela sua respectiva probabilidade de execucao. 
@@ -127,7 +127,7 @@ private:
         
         m_tbook.bp09  = getBid  (9); m_tbook.bv09  = getBidV (9); m_tbook.bv09a = getBidVa(9);
         m_tbook.ap09  = getAsk  (9); m_tbook.av09  = getAskV (9); m_tbook.av09a = getAskVa(9);
- /*       
+      
         m_tbook.bp10  = getBid  (10); m_tbook.bv10  = getBidV (10); m_tbook.bv10a = getBidVa(10);
         m_tbook.ap10  = getAsk  (10); m_tbook.av10  = getAskV (10); m_tbook.av10a = getAskVa(10);
         
@@ -148,7 +148,7 @@ private:
         
         m_tbook.bp16  = getBid  (16); m_tbook.bv16  = getBidV (16); m_tbook.bv16a = getBidVa(16);
         m_tbook.ap16  = getAsk  (16); m_tbook.av16  = getAskV (16); m_tbook.av16a = getAskVa(16);
-   */     
+
         m_tbook.imb01 = getImbalance(01); m_tbook.iwfv01 = getIWFV(01); m_tbook.tlfv01 = getTLFV(01);
         m_tbook.imb02 = getImbalance(02); m_tbook.iwfv02 = getIWFV(02); m_tbook.tlfv02 = getTLFV(02);
         m_tbook.imb03 = getImbalance(03); m_tbook.iwfv03 = getIWFV(03); m_tbook.tlfv03 = getTLFV(03);
@@ -158,14 +158,14 @@ private:
         m_tbook.imb07 = getImbalance(07); m_tbook.iwfv07 = getIWFV(07); m_tbook.tlfv07 = getTLFV(07);
         m_tbook.imb08 = getImbalance(08); m_tbook.iwfv08 = getIWFV(08); m_tbook.tlfv08 = getTLFV(08);
         m_tbook.imb09 = getImbalance(09); m_tbook.iwfv09 = getIWFV(09); m_tbook.tlfv09 = getTLFV(09);
- /*     m_tbook.imb10 = getImbalance(10); m_tbook.iwfv10 = getIWFV(10); m_tbook.tlfv10 = getTLFV(10);
+        m_tbook.imb10 = getImbalance(10); m_tbook.iwfv10 = getIWFV(10); m_tbook.tlfv10 = getTLFV(10);
         m_tbook.imb11 = getImbalance(11); m_tbook.iwfv11 = getIWFV(11); m_tbook.tlfv11 = getTLFV(11);
         m_tbook.imb12 = getImbalance(12); m_tbook.iwfv12 = getIWFV(12); m_tbook.tlfv12 = getTLFV(12);
         m_tbook.imb13 = getImbalance(13); m_tbook.iwfv13 = getIWFV(13); m_tbook.tlfv13 = getTLFV(13);
         m_tbook.imb14 = getImbalance(14); m_tbook.iwfv14 = getIWFV(14); m_tbook.tlfv14 = getTLFV(14);
         m_tbook.imb15 = getImbalance(15); m_tbook.iwfv15 = getIWFV(15); m_tbook.tlfv15 = getTLFV(15);
         m_tbook.imb16 = getImbalance(16); m_tbook.iwfv16 = getIWFV(16); m_tbook.tlfv16 = getTLFV(16);
-*/
+
         m_db.insert_table_bookh(m_tbook);
     }
 
