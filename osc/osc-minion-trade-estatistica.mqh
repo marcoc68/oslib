@@ -35,6 +35,9 @@ private:
     double    m_tarifaDia         ;
     double    m_tarifaDiaWDO      ;
     double    m_tarifaDiaWIN      ;
+    
+    double    m_umaTarifaDiaWIN   ;
+    double    m_umaTarifaDiaWDO   ;
 
     double    m_cotacaoMoedaTarifa   ;
     double    m_cotacaoMoedaTarifaWDO;
@@ -86,6 +89,9 @@ public:
    double getTarifaDia           (){ return m_tarifaDia            ;}
    double getTarifaDiaWDO        (){ return m_tarifaDiaWDO         ;}
    double getTarifaDiaWIN        (){ return m_tarifaDiaWIN         ;}
+
+   double getUmaTarifaDiaWDO     (){ return m_umaTarifaDiaWDO      ;}
+   double getUmaTarifaDiaWIN     (){ return m_umaTarifaDiaWIN      ;}
 
    double getProfitDiaLiquido    (){ return m_profitDiaLiquido     ;}
    double getProfitDiaLiquidoWDO (){ return m_profitDiaLiquidoWDO  ;}
@@ -408,15 +414,17 @@ void osc_minion_trade_estatistica::refresh(datetime from, datetime to, double ta
     // calculando o coeficiente de Kelly, baseado no historico de transacoes do periodo...
     calcCoefKelly();
     
-
+    // calculando as tarifas...
     m_profitDiaWDO        = profitDiaWDO  ;
     m_volumeDiaWDO        = volumeDiaWDO  ;
-    m_tarifaDiaWDO        = calcTarifaWDO(m_volumeDiaWDO)*m_volumeDiaWDO;
+    m_umaTarifaDiaWDO     = calcTarifaWDO(m_volumeDiaWDO);
+    m_tarifaDiaWDO        = m_umaTarifaDiaWDO*m_volumeDiaWDO;
     m_profitDiaLiquidoWDO = profitDiaWDO - m_tarifaDiaWDO;
 
     m_profitDiaWIN        = profitDiaWIN  ;
     m_volumeDiaWIN        = volumeDiaWIN  ;
-    m_tarifaDiaWIN        = calcTarifaWIN(m_volumeDiaWIN)*m_volumeDiaWIN;
+    m_umaTarifaDiaWIN     = calcTarifaWIN(m_volumeDiaWIN);
+    m_tarifaDiaWIN        = m_umaTarifaDiaWIN*m_volumeDiaWIN;
     m_profitDiaLiquidoWIN = profitDiaWIN - m_tarifaDiaWIN;
 
     m_profitDia        = profitDia+profitDiaWIN+profitDiaWDO  ; // ok

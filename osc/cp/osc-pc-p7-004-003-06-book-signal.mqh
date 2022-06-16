@@ -43,10 +43,6 @@
 #define LARGURA_CONTROL_PANEL               (450)     // size by X coordinate
 #define ALTURA_CONTROL_PANEL                (460)     // size by X coordinate
 
-#define COL01_WIDTH                         (100)     // size by X coordinate
-#define COL02_WIDTH                         (100)     // size by X coordinate
-
-
 //+------------------------------------------------------------------+
 //| Class osc_control_panel_p7_004_003_06                            |
 //| Usage: Painel de Controle para o Expert P7-004-003-06-BOOK-SIGNAL|
@@ -64,9 +60,9 @@ private:
    CEdit             m_editT4g;                       // the display field object
    double            m_t4g;                           // ticks for gain (primeiro passo)
 
-   CLabel            m_labelPasso;                    // the label object
-   CEdit             m_editPasso;                     // the display field object
-   double            m_passo    ;                     // passo em ticks;
+   CLabel            m_labelTarWIN;                    // the label object
+   CEdit             m_editTarWIN;                     // the display field object
+   double            m_tarWIN    ;                     // passo em ticks;
 
    CLabel            m_labelProfitPosicao;            // the label object
    CEdit             m_editProfitPosicao;             // the display field object
@@ -182,7 +178,7 @@ public:
    void setPosicaoBuy   (string p ){ if(p== m_posicao      )return; m_posicao      = p; m_editPosicao      .Text(                 p    ); m_editPosicao.Color(clrBlue); }
    void setPosicaoSell  (string p ){ if(p== m_posicao      )return; m_posicao      = p; m_editPosicao      .Text(                 p    ); m_editPosicao.Color(clrRed ); }
    void setT4g          (double p ){ if(p== m_t4g          )return; m_t4g          = p; m_editT4g          .Text( DoubleToString (p,2) ); }
-   void setPasso        (double p ){ if(p== m_passo        )return; m_passo        = p; m_editPasso        .Text( DoubleToString (p,2 )); }
+ //void setTarWIN       (double p ){ if(p== m_tarWIN       )return; m_tarWIN       = p; m_editTarWIN       .Text( DoubleToString (p,2 )); }
    void setProfitPosicao(double p ){ if(p== m_profitPosicao)return; m_profitPosicao= p; m_editProfitPosicao.Text( DoubleToString (p,2) ); if( p<0)m_editProfitPosicao.Color(clrRed   ); if(p>0)m_editProfitPosicao.Color(clrBlue); if(p==0)m_editProfitPosicao.Color(clrGray);  }
    void setSaidaPosicao (double p ){ if(p== m_saidaPosicao )return; m_saidaPosicao = p; m_editSaidaPosicao .Text( DoubleToString (p,2) ); if( p<0)m_editSaidaPosicao .Color(clrRed   ); if(p>0)m_editSaidaPosicao .Color(clrBlue); if(p==0)m_editSaidaPosicao .Color(clrGray);  }
    void setStopLoss     (double p ){ if(p== m_stopLoss     )return; m_stopLoss     = p; m_editStopLoss     .Text( DoubleToString (p,2) );         m_editStopLoss     .Color(clrLightSalmon); }
@@ -193,15 +189,16 @@ public:
    void setPftLiquido   (double p ){ if(p== m_pftLiquido   )return; m_pftLiquido   = p; m_editPftLiquido   .Text( DoubleToString (p,2) ); if( p<0)m_editPftLiquido   .Color(clrRed); if(p>0)m_editPftLiquido   .Color(clrBlue); if(p==0)m_editPftLiquido   .Color(clrGray);  }
    void setVol          (double p ){ if(p== m_vol          )return; m_vol          = p; m_editVol          .Text( DoubleToString (p,2) ); }
 
-   void setIWFV     (double p, double limiar=0 ){ if(p==m_IWFV     )return; m_IWFV     =p; setEditValue(p,m_editIWFV     ,limiar,clrBlue,clrRed,clrGray); }
-   void setTLFV     (double p, double limiar=0 ){ if(p==m_TLFV     )return; m_TLFV     =p; setEditValue(p,m_editTLFV     ,limiar,clrBlue,clrRed,clrGray); }
-   void setImbal    (double p, double limiar=0 ){ if(p==m_imbal    )return; m_imbal    =p; setEditValue(p,m_editImbal    ,limiar,clrBlue,clrRed,clrGray); }
-   void setSinalBook(double p, double limiar=0 ){ if(p==m_sinalBook)return; m_sinalBook=p; setEditValue(p,m_editSinalBook,limiar,clrBlue,clrRed,clrGray); }
+   void setTarWIN   (double p, double limiar=0 ){ if(p==m_tarWIN   )return; m_tarWIN   =p; setEditValue(p,m_editTarWIN   ,limiar,clrRed ,clrBlue,clrGray); }
+   void setIWFV     (double p, double limiar=0 ){ if(p==m_IWFV     )return; m_IWFV     =p; setEditValue(p,m_editIWFV     ,limiar,clrRed ,clrBlue,clrGray); }
+   void setTLFV     (double p, double limiar=0 ){ if(p==m_TLFV     )return; m_TLFV     =p; setEditValue(p,m_editTLFV     ,limiar,clrBlue,clrRed ,clrGray); }
+   void setImbal    (double p, double limiar=0 ){ if(p==m_imbal    )return; m_imbal    =p; setEditValue(p,m_editImbal    ,limiar,clrBlue,clrRed ,clrGray); }
+   void setSinalBook(double p, double limiar=0 ){ if(p==m_sinalBook)return; m_sinalBook=p; setEditValue(p,m_editSinalBook,limiar,clrBlue,clrRed ,clrGray); }
 
-   void setVTLen (double p, double limiar=0 ){ if(p==m_VTLen )return; m_VTLen =p; setEditValue(p,m_editVTLen ,limiar,clrBlue,clrRed ,clrGray); }
+   void setVTLen (double p, double limiar=0 ){ if(p==m_VTLen     )return; m_VTLen     =p; setEditValue(p,m_editVTLen     ,limiar,clrBlue,clrRed ,clrGray); }
    void setVTDir2(double p, double limiar=0 ){ if(p==m_sinalBook2)return; m_sinalBook2=p; setEditValue(p,m_editSinalBook2,limiar,clrBlue,clrRed ,clrGray); }
-   void setLEN0  (double p, double limiar=0 ){ if(p==m_LEN0  )return; m_LEN0  =p; setEditValue(p,m_editLEN0  ,limiar,clrBlue,clrRed ,clrGray); }
-   void setLEN1  (double p, double limiar=0 ){ if(p==m_LEN1  )return; m_LEN1  =p; setEditValue(p,m_editLEN1  ,limiar,clrBlue,clrRed ,clrGray); }
+   void setLEN0  (double p, double limiar=0 ){ if(p==m_LEN0      )return; m_LEN0      =p; setEditValue(p,m_editLEN0      ,limiar,clrBlue,clrRed ,clrGray); }
+   void setLEN1  (double p, double limiar=0 ){ if(p==m_LEN1      )return; m_LEN1      =p; setEditValue(p,m_editLEN1      ,limiar,clrBlue,clrRed ,clrGray); }
 
    //void setVTLen (double p, double lim ){ if(p==m_VTLen )return; m_VTLen=p; m_editVTLen.Text( DoubleToString (p,0) ); if( p>=lim)m_editVTLen.Color(clrBlue); if(p<lim)m_editVTLen.Color(clrBlack); }
    //void setVTDir2 (double p, double lim ){ if(p==m_sinalBook2 )return; m_sinalBook2=p; m_editSinalBook2.Text( DoubleToString (p,0) ); if( p>=lim)m_editSinalBook2.Color(clrBlue); if(p<lim)m_editSinalBook2.Color(clrBlack); }
@@ -251,8 +248,8 @@ private:
 //+------------------------------------------------------------------+
 EVENT_MAP_BEGIN(osc_control_panel_p7_004_003_06)
 //ON_EVENT(ON_CHANGE,m_check_group,OnChangeCheckGroup)
-//ON_EVENT(ON_CHANGE,m_editPasso,OnChangeEditPasso)
-//ON_EVENT(ON_END_EDIT,m_editPasso,OnChangeEditPasso)
+//ON_EVENT(ON_CHANGE,m_editTarWIN,OnChangeEditPasso)
+//ON_EVENT(ON_END_EDIT,m_editTarWIN,OnChangeEditPasso)
 //ON_EVENT(ON_END_EDIT,m_ProfitPosicao,OnChangeProfitPosicao)
 //ON_EVENT(ON_END_EDIT,m_edit3,OnChangeEdit3)
 //ON_EVENT(ON_END_EDIT,m_edit4,OnChangeEdit4)
@@ -289,71 +286,84 @@ bool osc_control_panel_p7_004_003_06::Create(const long chart,const string name,
 //--- create dependent controls
  //if(!CreateCheckGroup()) return(false);
 
+   int linha = 0;
    // posicao comprada ou vendida
-   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, 0, "Posicao",m_labelPosicao,"Posicao"                 )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, 0, "Posicao",m_editPosicao ,m_posicao                 )) return(false);
-   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, 0, "IWFV"   ,m_labelIWFV   ,"IWFV"                    )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, 0, "IWFV"   ,m_editIWFV    ,DoubleToString(m_IWFV,0)  )) return(false);
+   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, linha, "Posicao",m_labelPosicao,"Posicao"                 )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, linha, "Posicao",m_editPosicao ,m_posicao                 )) return(false);
+   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, linha, "IWFV"   ,m_labelIWFV   ,"IWFV"                    )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, linha, "IWFV"   ,m_editIWFV    ,DoubleToString(m_IWFV,0)  )) return(false);
 
    // ticks for gain. Antes do primeiro passo rajada
-   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, 1, "T4g"  ,m_labelT4g  ,"Ticks4Gain"              )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, 1, "T4g"  ,m_editT4g   ,DoubleToString(m_t4g,2)   )) return(false);
-   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, 1, "TLFV" ,m_labelTLFV ,"TLFV"                    )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, 1, "TLFV" ,m_editTLFV  ,DoubleToString(m_TLFV,0)  )) return(false);
+   linha++;
+   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, linha, "T4g"  ,m_labelT4g  ,"Ticks4Gain"              )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, linha, "T4g"  ,m_editT4g   ,DoubleToString(m_t4g,2)   )) return(false);
+   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, linha, "TLFV" ,m_labelTLFV ,"TLFV"                    )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, linha, "TLFV" ,m_editTLFV  ,DoubleToString(m_TLFV,0)  )) return(false);
 
    // passo rajada
-   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, 2, "PassoRajada",m_labelPasso ,"PassoRajada"             )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, 2, "PassoRajada",m_editPasso  ,DoubleToString(m_passo,2) )) return(false);
-   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, 2, "IMBAL"      ,m_labelImbal ,"IMBAL"                   )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, 2, "IMBAL"      ,m_editImbal  ,DoubleToString(m_imbal,2) )) return(false);
+   linha++;
+   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, linha, "UmaTarifWIN" ,m_labelTarWIN ,"UmaTarifWIN"             )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, linha, "UmaTarifWIN" ,m_editTarWIN  ,DoubleToString(m_tarWIN,2) )) return(false);
+   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, linha, "IMBAL"       ,m_labelImbal ,"IMBAL"                   )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, linha, "IMBAL"       ,m_editImbal  ,DoubleToString(m_imbal,2) )) return(false);
 
    // profit da posicao
-   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, 3, "ProfitPosic",m_labelProfitPosicao,"ProfitPosic"                     )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, 3, "ProfitPosic",m_editProfitPosicao ,DoubleToString(m_profitPosicao,2) )) return(false);
-   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, 3, "SINAL"       ,m_labelSinalBook   ,"SINAL"                           )) return(false); // desvio padrao da banda de bolinguer
-   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, 3, "SINAL"       ,m_editSinalBook    ,DoubleToString(m_sinalBook,0)     )) return(false); // desvio padrao da banda de bolinguer
+   linha++;
+   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, linha, "ProfitPosic",m_labelProfitPosicao,"ProfitPosic"                     )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, linha, "ProfitPosic",m_editProfitPosicao ,DoubleToString(m_profitPosicao,2) )) return(false);
+   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, linha, "SINAL"       ,m_labelSinalBook   ,"SINAL"                           )) return(false); // desvio padrao da banda de bolinguer
+   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, linha, "SINAL"       ,m_editSinalBook    ,DoubleToString(m_sinalBook,0)     )) return(false); // desvio padrao da banda de bolinguer
 
    // saida esperada da posicao
-   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, 4, "SaidaPosic",m_labelSaidaPosicao,"SaidaPosic"                     )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, 4, "SaidaPosic",m_editSaidaPosicao ,DoubleToString(m_saidaPosicao,2) )) return(false);
-   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, 4, "VTLen"      ,m_labelVTLen      ,"VTLen"                          )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, 4, "VTLen"      ,m_editVTLen       ,DoubleToString(m_VTLen,0)        )) return(false);
+   linha++;
+   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, linha, "SaidaPosic",m_labelSaidaPosicao,"SaidaPosic"                     )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, linha, "SaidaPosic",m_editSaidaPosicao ,DoubleToString(m_saidaPosicao,2) )) return(false);
+   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, linha, "VTLen"      ,m_labelVTLen      ,"VTLen"                          )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, linha, "VTLen"      ,m_editVTLen       ,DoubleToString(m_VTLen,0)        )) return(false);
 
    // stop_loss da posicao
-   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, 5, "StopLoss",m_labelStopLoss,"StopLoss"                   )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, 5, "StopLoss",m_editStopLoss ,DoubleToString(m_stopLoss,2) )) return(false);
-   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, 5, "VTDir2"  ,m_labelSinalBook2  ,"VTDir2"                     )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, 5, "VTDir2"  ,m_editSinalBook2   ,DoubleToString(m_sinalBook2,2)   )) return(false);
+   linha++;
+   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, linha, "StopLoss",m_labelStopLoss,"StopLoss"                   )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, linha, "StopLoss",m_editStopLoss ,DoubleToString(m_stopLoss,2) )) return(false);
+   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, linha, "VTDir2"  ,m_labelSinalBook2  ,"VTDir2"                     )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, linha, "VTDir2"  ,m_editSinalBook2   ,DoubleToString(m_sinalBook2,2)   )) return(false);
 
    // volume da posicao
-   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, 6, "VolPosicao",m_labelVolPosicao,"VolPosicao"             )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, 6, "VolPosicao",m_editVolPosicao ,m_volPosicao             )) return(false);
-   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, 6, "LEN1"      ,m_labelLEN1      ,"LEN1"                   )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, 6, "LEN1"      ,m_editLEN1       ,DoubleToString(m_LEN1,2) )) return(false);
+   linha++;
+   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, linha, "VolPosicao",m_labelVolPosicao,"VolPosicao"             )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, linha, "VolPosicao",m_editVolPosicao ,m_volPosicao             )) return(false);
+   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, linha, "LEN1"      ,m_labelLEN1      ,"LEN1"                   )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, linha, "LEN1"      ,m_editLEN1       ,DoubleToString(m_LEN1,2) )) return(false);
 
    // profit bruto do dia WIN+WDO+OUTROS
-   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, 7, "PtfBruto",m_labelPftBruto,"PtfBruto"                   )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, 7, "PtfBruto",m_editPftBruto ,DoubleToString(m_pftBruto,2) )) return(false);
-   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, 7, "LEN0"    ,m_labelLEN0    ,"LEN0"                       )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, 7, "LEN0"    ,m_editLEN0     ,DoubleToString(m_LEN0,2)     )) return(false);
+   linha++;
+   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, linha, "PtfBruto",m_labelPftBruto,"PtfBruto"                   )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, linha, "PtfBruto",m_editPftBruto ,DoubleToString(m_pftBruto,2) )) return(false);
+   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, linha, "LEN0"    ,m_labelLEN0    ,"LEN0"                       )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, linha, "LEN0"    ,m_editLEN0     ,DoubleToString(m_LEN0,2)     )) return(false);
 
    // tarifa do dia WIN+WDO+OUTROS
-   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, 8, "Tarifa",m_labelTarifa,"Tarifa"                   )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, 8, "Tarifa",m_editTarifa ,DoubleToString(m_tarifa,2) )) return(false);
+   linha++;
+   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, linha, "Tarifa",m_labelTarifa,"Tarifa"                   )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, linha, "Tarifa",m_editTarifa ,DoubleToString(m_tarifa,2) )) return(false);
 
    // profit por contrato do dia WIN+WDO+OUTROS
-   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, 9, "PftContrat",m_labelPftContrat,"PftContrat"                   )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, 9, "PftContrat",m_editPftContrat ,DoubleToString(m_pftContrat,2) )) return(false);
+   linha++;
+   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, linha, "PftContrat",m_labelPftContrat,"PftContrat"                   )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, linha, "PftContrat",m_editPftContrat ,DoubleToString(m_pftContrat,2) )) return(false);
 
    // profit liquido do dia WIN+WDO+OUTROS
-   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, 10, "PftLiquido",m_labelPftLiquido,"PftLiquido"                   )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, 10, "PftLiquido",m_editPftLiquido ,DoubleToString(m_pftLiquido,2) )) return(false);
+   linha++;
+   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, linha, "PftLiquido",m_labelPftLiquido,"PftLiquido"                   )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, linha, "PftLiquido",m_editPftLiquido ,DoubleToString(m_pftLiquido,2) )) return(false);
 
    // volume do dia WIN+WDO+OUTROS
-   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, 11, "Vol",m_labelVol,"Vol"                   )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, 11, "Vol",m_editVol ,DoubleToString(m_vol,2) )) return(false);
+   linha++;
+   if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, linha, "Vol",m_labelVol,"Vol"                   )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, linha, "Vol",m_editVol ,DoubleToString(m_vol,2) )) return(false);
 
-   if(!CreateButtonOK(12)) return(false);
+   linha++;
+   if(!CreateButtonOK(linha)) return(false);
 
 //---
    SetCheck(0,mMail);
@@ -465,15 +475,15 @@ void osc_control_panel_p7_004_003_06::OnChangeCheckGroup(void)
 //+------------------------------------------------------------------+
 //void osc_control_panel_p7_004_003_06::OnChangeEditPasso(void)
 //  {
-//   double temp=StringToDouble(m_editPasso.Text());
+//   double temp=StringToDouble(m_editTarWIN.Text());
 //   if(temp==0.0)
 //     {
 //      MessageBox("In the input field \"Lots\" not a number","Input error",0);
-//      m_editPasso.Text(DoubleToString(mLots,2));
+//      m_editTarWIN.Text(DoubleToString(mLots,2));
 //     }
 //   else
 //     {
-//      m_editPasso.Text(DoubleToString(temp,2));
+//      m_editTarWIN.Text(DoubleToString(temp,2));
 //     }
 //  }
 /*  
@@ -568,9 +578,9 @@ void osc_control_panel_p7_004_003_06::OnClickButtonOK(void)
    if(m_check_group.Check(1)!=mPush  ) mModification=true;
    if(m_check_group.Check(2)!=mAlert_) mModification=true;
 
-   //if(StringToInteger(m_editPasso.Text())!=m_passo)
+   //if(StringToInteger(m_editTarWIN.Text())!=m_tarWIN)
    //  {
-   //   m_passo=StringToInteger(m_editPasso.Text());
+   //   m_tarWIN=StringToInteger(m_editTarWIN.Text());
    //   mModification=true;
    //  }
    //if(StringToInteger(m_edit2.Text())!=mTakeProfit)

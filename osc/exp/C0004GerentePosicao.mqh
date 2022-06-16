@@ -74,7 +74,8 @@ public:
                          return "FANTHON";
     }
     
-    bool doCloseOposite( double precoOrdemExecutada, double t4g, double vol, MqlTick& ultTick, int sleep, ENUM_DEAL_TYPE typeDeal, long ticket=0 );
+    bool doCloseOposite ( double precoOrdemExecutada, double t4g, double vol, MqlTick& ultTick, int sleep, ENUM_DEAL_TYPE typeDeal, long ticket=0 );
+    bool doCloseOposite2( double precoOrdemExecutada, double t4g, double vol, MqlTick& ultTick, int sleep, ENUM_DEAL_TYPE typeDeal, long ticket=0 );
     
     // recebe uma ordem executada e abre uma ordem se entrada e outra de saida a xx ticks da ordem recebida. 
     bool fireNorteSul(double precoOrdemExecutada,             int lagEmTicks, MqlTick& ultTick, int sleep=0, int sentidoPosicao=0);
@@ -125,8 +126,6 @@ public:
     }
 };
 
-
-
 // ticket: se informado, serah colocado como comentario na ordem que estah sendo criada.
 bool C004GerentePosicao::doCloseOposite( double precoOrdemExecutada, double t4g, double vol, MqlTick& ultTick, int sleep, ENUM_DEAL_TYPE typeDeal, long ticket=0 ){
 
@@ -134,9 +133,6 @@ bool C004GerentePosicao::doCloseOposite( double precoOrdemExecutada, double t4g,
         Print(__FUNCTION__," :-( ERRO GRAVE: T4G menor que o minimo permitido. Recebido:",t4g, " minimo permitido:", m_t4gMin);  
         t4g = m_t4gMin;
     }
-    
-    //double precoCompra = m_symb.NormalizePrice( precoOrdemExecutada-lagEmTicks*m_symb.TickSize() );
-    //double precoVenda  = m_symb.NormalizePrice( precoOrdemExecutada+lagEmTicks*m_symb.TickSize() );
     
     // aparentemente algumas ordens entram com slip, fazendo com que o mapa de saida fique descalibrado
     // e colocando ordens de saida proximas umas das outras.
@@ -146,40 +142,92 @@ bool C004GerentePosicao::doCloseOposite( double precoOrdemExecutada, double t4g,
     if( precoCompra > ultTick.bid ) precoCompra = ultTick.bid;
     if( precoVenda  < ultTick.ask ) precoVenda  = ultTick.ask;
 
-    //Print(__FUNCTION__," precoCompra:",precoCompra, " precoVenda:",precoVenda);  
-
     if(sleep>0) Sleep(sleep);
-    //bool assinc = m_trade.getAsync();
-    //m_trade.setAsync(true);
-    //if( typeDeal == DEAL_TYPE_BUY  ){ m_trade.enviarOrdemPendente(ORDER_TYPE_SELL_LIMIT, precoVenda  , vol, m_ins); }
-    //if( typeDeal == DEAL_TYPE_SELL ){ m_trade.enviarOrdemPendente(ORDER_TYPE_BUY_LIMIT , precoCompra , vol, m_inb); }
-    //m_trade.setAsync(assinc);
 
-    bool assinc = m_trade.getAsync();
-    m_trade.setAsync(true);
+    m_trade.saveAsync();
+    m_trade.setAsync(false);
 
-    if( typeDeal == DEAL_TYPE_BUY  ){
-        //while( m_trade.tenhoOrdemPendente(precoVenda) ){precoVenda=normalizar(precoVenda+m_symb.TickSize());}
+    if( typeDeal == DEAL_TYPE_BUY ){
         Print(__FUNCTION__," Vendendo a:", precoVenda, " ...");
-    	if(ticket>0){
-            m_trade.enviarOrdemPendente(ORDER_TYPE_SELL_LIMIT, precoVenda, vol, IntegerToString(ticket) ); // fechamento de posicao
-    	}else{
-            m_trade.enviarOrdemPendente(ORDER_TYPE_SELL_LIMIT, precoVenda, vol, m_ins); // abertura de posicao
+    	if(m_trade.tenhoOrdemLimitadaDeVendaMenorOuIgual(precoVenda)==0 ){
+        	if(ticket>0){
+                    m_trade.enviarOrdemPendente(ORDER_TYPE_SELL_LIMIT, precoVenda, vol, IntegerToString(ticket) ); // fechamento de posicao
+        	}else{
+                    m_trade.enviarOrdemPendente(ORDER_TYPE_SELL_LIMIT, precoVenda, vol, m_ins); // abertura de posicao
+        	}
     	}
     }
     
     if( typeDeal == DEAL_TYPE_SELL ){
-        //while( m_trade.tenhoOrdemPendente(precoCompra) ){precoCompra=normalizar(precoCompra-m_symb.TickSize());}
-        Print(__FUNCTION__," Comprando a", precoCompra, " ...");
+        Print(__FUNCTION__," Comprando a:", precoCompra, " ...");
 
-    	if(ticket>0){
-    		m_trade.enviarOrdemPendente(ORDER_TYPE_BUY_LIMIT , precoCompra, vol, IntegerToString(ticket)); // fechamento de posicao
-    	}else{
-    		m_trade.enviarOrdemPendente(ORDER_TYPE_BUY_LIMIT , precoCompra, vol, m_inb); // abertura de posicao
-    	}
+    	if(!m_trade.tenhoOrdemLimitadaDeCompraMaiorOuIgual(precoCompra) ){
+        	if(ticket>0){
+        		m_trade.enviarOrdemPendente(ORDER_TYPE_BUY_LIMIT , precoCompra, vol, IntegerToString(ticket)); // fechamento de posicao
+        	}else{
+        		m_trade.enviarOrdemPendente(ORDER_TYPE_BUY_LIMIT , precoCompra, vol, m_inb); // abertura de posicao
+        	}
+        }
     }
 
-    m_trade.setAsync(assinc);
+    m_trade.restoreAsync();
+    return true;
+}
+
+// ticket: se informado, serah colocado como comentario na ordem que estah sendo criada.
+// a diferenca deste para doCloseOposite eh que este mantem apenas uma ordem em cada lado da transacao executada
+bool C004GerentePosicao::doCloseOposite2( double precoOrdemExecutada, double t4g, double vol, MqlTick& ultTick, int sleep, ENUM_DEAL_TYPE typeDeal, long ticket=0 ){
+
+    //if( t4g < m_t4gMin ){ 
+    //    Print(__FUNCTION__," :-( ERRO GRAVE: T4G menor que o minimo permitido. Recebido:",t4g, " minimo permitido:", m_t4gMin);  
+    //    t4g = m_t4gMin;
+    //}
+    
+    
+    // aparentemente algumas ordens entram com slip, fazendo com que o mapa de saida fique descalibrado
+    // e colocando ordens de saida proximas umas das outras.
+    double precoCompra = normalizar( precoOrdemExecutada-t4g*m_symb.TickSize() );
+    double precoVenda  = normalizar( precoOrdemExecutada+t4g*m_symb.TickSize() );
+
+  //if( precoCompra > ultTick.bid ) precoCompra = ultTick.bid;
+  //if( precoVenda  < ultTick.ask ) precoVenda  = ultTick.ask;
+    m_symb.RefreshRates();
+    if( precoCompra > m_symb.Bid() ) precoCompra = m_symb.Bid();
+    if( precoVenda  < m_symb.Ask() ) precoVenda  = m_symb.Ask();
+
+    if(sleep>0) Sleep(sleep);
+
+    m_trade.saveAsync();
+    m_trade.setAsync(false);
+
+    if( typeDeal == DEAL_TYPE_BUY ){
+        Print(__FUNCTION__," Vendendo a:", precoVenda, " ...");
+    	if(m_trade.tenhoOrdemLimitadaDeVendaMenorOuIgual(precoVenda)==0 ){
+        	if(ticket>0){
+                  //m_trade.enviarOrdemPendente(ORDER_TYPE_SELL_LIMIT, precoVenda, vol, IntegerToString(ticket) ); // fechamento de posicao
+                    m_trade.manterOrdemLimitadaNoRoom(ORDER_TYPE_SELL_LIMIT, IntegerToString(ticket), precoVenda, t4g, vol);
+        	}else{
+                  //m_trade.enviarOrdemPendente(ORDER_TYPE_SELL_LIMIT, precoVenda, vol, m_ins); // abertura de posicao
+                    m_trade.manterOrdemLimitadaNoRoom(ORDER_TYPE_SELL_LIMIT, m_ins                  , precoVenda, t4g, vol);
+        	}
+    	}
+    }
+    
+    if( typeDeal == DEAL_TYPE_SELL ){
+        Print(__FUNCTION__," Comprando a:", precoCompra, " ...");
+
+    	if(!m_trade.tenhoOrdemLimitadaDeCompraMaiorOuIgual(precoCompra) ){
+        	if(ticket>0){
+              //m_trade.enviarOrdemPendente(ORDER_TYPE_BUY_LIMIT , precoCompra, vol, IntegerToString(ticket)); // fechamento de posicao
+                m_trade.manterOrdemLimitadaNoRoom(ORDER_TYPE_BUY_LIMIT, IntegerToString(ticket), precoCompra, t4g, vol);
+        	}else{
+              //m_trade.enviarOrdemPendente(ORDER_TYPE_BUY_LIMIT , precoCompra, vol, m_inb); // abertura de posicao
+                m_trade.manterOrdemLimitadaNoRoom(ORDER_TYPE_BUY_LIMIT, m_ins, precoCompra, t4g, vol);
+        	}
+        }
+    }
+
+    m_trade.restoreAsync();
     return true;
 }
 
