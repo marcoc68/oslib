@@ -1,0 +1,21 @@
+  755 ganhos
+ -531 perdas
+= 224
+- 560 tarifas
+=-336 liquido
+
+- aumentar em 1 real o valor das tarifas (teste) OK
+- resolver o erro que quebra o EA                OK
+- resolver as ordens duplicadas
+  - parece que, apos a concretizacao da ordem de abertura, é feito novo pedido de abertura achando que nao ha posicao aberta.
+- resolver o cancelamento de ordens de entrada (ordens estao ficando sem cancelar)
+- transforme EA_TOLERANCIA_ENTRADA em parametro. Veja se pode usar, nivel entrada mais 1;
+
+
+commit 20220607
+os-lib: acrescentada a função TimeMscToString
+oslib-include: acrescentadas funcoes e constantes
+osc-minion-trade-03: acrscentado o metodo manterOrdemLimitadaNoRoom
+osc-book: acrescentado suporte para usar ateh 32 niveis do book de ofertas
+C0004GerentePosicao: passa a salvar o ticket da ordem de abertura no comentario da ordem de fechamento (doCloseOposite)
+ose-p7-004-003-06-ns: usando velocidade do volume; usando doCloseOposite somente quando é o fechamento de uma posicao; 

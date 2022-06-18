@@ -1,5 +1,5 @@
 ﻿//+------------------------------------------------------------------+
-//|                                         ose-p7-004-003-04-ns.mq5 |
+//|                                         ose-p7-004-003-05-ns.mq5 |
 //|                                          Copyright 2021, OS Corp |
 //|                                                http://www.os.org |
 //|                                                                  |
@@ -118,11 +118,11 @@ enum ENUM_TIPO_OPERACAO{
 
 //---------------------------------------------------------------------------------------------
   input group "Gerais"
-//input ENUM_TIPO_OPERACAO         EA_ACAO_POSICAO            = FECHAR_POSICAO ; //EA_ACAO_POSICAO:Forma de operacao do EA.
-//input ENUM_TIPO_OPERACAO         EA_ACAO_POSICAO            = HFT_FORMADOR_DE_MERCADO ; // EA_ACAO_POSICAO:Forma de operacao do EA.
+//input ENUM_TIPO_OPERACAO         EA_ACAO_POSICAO            = FECHAR_POSICAO          ; //EA_ACAO_POSICAO:Forma de operacao do EA.
+  input ENUM_TIPO_OPERACAO         EA_ACAO_POSICAO            = HFT_FORMADOR_DE_MERCADO ; // EA_ACAO_POSICAO:Forma de operacao do EA.
 //input ENUM_TIPO_OPERACAO         EA_ACAO_POSICAO            = HFT_OPERAR_CANAL_EM_PAR ; //*EA_ACAO_POSICAO:Forma de operacao do EA.
 //input ENUM_TIPO_OPERACAO         EA_ACAO_POSICAO            = HFT_OPERAR_VELOC_VOL_RDF; //*EA_ACAO_POSICAO:Forma de operacao do EA.
-  input ENUM_TIPO_OPERACAO         EA_ACAO_POSICAO            = HFT_OPERAR_VELOC_VOL_NET; //*EA_ACAO_POSICAO:Forma de operacao do EA.
+//input ENUM_TIPO_OPERACAO         EA_ACAO_POSICAO            = HFT_OPERAR_VELOC_VOL_NET; //*EA_ACAO_POSICAO:Forma de operacao do EA.
 //input ENUM_TIPO_OPERACAO         EA_ACAO_POSICAO            = HFT_DESBALANC_BOOK      ; //*EA_ACAO_POSICAO:Forma de operacao do EA.
 //input ENUM_TIPO_OPERACAO         EA_ACAO_POSICAO            = NAO_ABRIR_POSICAO       ; //*EA_ACAO_POSICAO:Forma de operacao do EA.
 //input ENUM_TIPO_ENTRADA_PERMITDA EA_TIPO_ENTRADA_PERMITIDA_1  = ENTRADA_BUY             ; //*TIPO_ENTRADA_PERMITIDA Tipos de entrada permitidas (sel,buy,ambas e nenhuma)
@@ -154,7 +154,7 @@ enum ENUM_TIPO_OPERACAO{
   #define      EA_QTD_DP_FIRE_ORDEM          1.5        // QTD_DP_FIRE_ORDEM
   #define      EA_QTD_DP_CLOSE_ORDEM         0.5        // QTD_DP_CLOSE_ORDEM
 
-  #define EA_EST_QTD_SEGUNDOS             180     //EST_QTD_SEGUNDOS 0(qtd seg do timeframe) >0(qtd seg)
+  #define EA_EST_QTD_SEGUNDOS             60     //EST_QTD_SEGUNDOS 0(qtd seg do timeframe) >0(qtd seg)
   #define EA_EST_POR_EVENTO               false  //EST_POR_EVENTO true: acumula por tick. false: por segundo.
   #define EA_EST_NORMALIZAR_TICK_2_TRADE  false  //EST_NORMALIZAR_TICK_2_TRADE.
   //input group "coleta estatistica"
@@ -162,13 +162,15 @@ enum ENUM_TIPO_OPERACAO{
   //input bool   EA_EST_POR_EVENTO              = false ; //EST_POR_EVENTO true: acumula por tick. false: por segundo.
   //input bool   EA_EST_NORMALIZAR_TICK_2_TRADE = false ; //EST_NORMALIZAR_TICK_2_TRADE.
 
+  #define EA_DBNAME      "oslib7"//EA_DBNAME nome do banco de dados que guardarah o historico coletados dos books
+
   //input group "=== book imbalance geral ==="
   #define EA_PROCESSAR_BOOK   true //PROCESSAR_BOOK true: obtem dados do book.
   //input bool   EA_PROCESSAR_BOOK   = false; //PROCESSAR_BOOK true: obtem dados do book.
 
-  #define EA_BOOK_DEEP1       16   //BOOK_DEEP1 profundidade book imbalance
-  #define EA_BOOK_QUEU_IN1    2    //BOOK_QUEU_IN1 fila pra considerar a ordem executada
-  #define EA_BOOK_IMBALANCE1  0.1  //BOOK_IMBALANCE1 limiar para definir direcao do movimento
+  #define EA_BOOK_DEEP1       9      //BOOK_DEEP1 profundidade book imbalance
+  #define EA_BOOK_QUEU_IN1    2       //BOOK_QUEU_IN1 fila pra considerar a ordem executada
+  #define EA_BOOK_IMBALANCE1  0.1     //BOOK_IMBALANCE1 limiar para definir direcao do movimento
   //input group "=== book imbalance 1 ==="
   //input int    EA_BOOK_DEEP1       = 3   ; //BOOK_DEEP1 profundidade book imbalance
   //input uint   EA_BOOK_QUEU_IN1    = 2   ; //BOOK_QUEU_IN1 fila pra considerar a ordem executada
@@ -177,7 +179,7 @@ enum ENUM_TIPO_OPERACAO{
   //                                         // na fila 1, dificilmente conseguirah cancelar. Estamos testando 1 para win.
   //input double EA_BOOK_IMBALANCE1  = 0.1 ; //BOOK_IMBALANCE1 limiar para definir direcao do movimento
 
-  #define EA_BOOK_DEEP2        3   //BOOK_DEEP2 profundidade book imbalance
+  #define EA_BOOK_DEEP2        8   //BOOK_DEEP2 profundidade book imbalance
   #define EA_BOOK_QUEU_IN2     1   //BOOK_QUEU_IN2 fila pra considerar a ordem executada
   #define EA_BOOK_IMBALANCE2   0.1 //BOOK_IMBALANCE2 limiar para definir direcao do movimento
   //input double EA_BOOK_IMBALANCE2  = 0.1 ; //BOOK_IMBALANCE2 limiar para definir direcao do movimento
@@ -344,11 +346,11 @@ input ulong  EA_MAGIC             =  21060700400305; //MAGIC: Numero magico dess
 // configurando o horario de inicio e fim da operacao...
 input group "horario de operacao"
 input int    EA_HR_INI_OPERACAO   = 09; // *Hora   de inicio da operacao;
-input int    EA_MI_INI_OPERACAO   = 10; // *Minuto de inicio da operacao;
+input int    EA_MI_INI_OPERACAO   = 05; // *Minuto de inicio da operacao;
 input int    EA_HR_FIM_OPERACAO   = 17; // *Hora   de fim    da operacao;
-input int    EA_MI_FIM_OPERACAO   = 45; // *Minuto de fim    da operacao;
+input int    EA_MI_FIM_OPERACAO   = 55; // *Minuto de fim    da operacao;
 input int    EA_HR_FECHAR_POSICAO = 17; // *HR_FECHAR_POSICAO fecha todas as posicoes;
-input int    EA_MI_FECHAR_POSICAO = 50; // *MI_FECHAR_POSICAO fecha todas as posicoes;
+input int    EA_MI_FECHAR_POSICAO = 57; // *MI_FECHAR_POSICAO fecha todas as posicoes;
 //---------------------------------------------------------------------------------------------
 //
 // group "sleep e timer"
@@ -363,7 +365,7 @@ input int    EA_QTD_MILISEG_TIMER  =  500 ;//*QTD_MILISEG_TIMER:Tempo de acionam
 ENUM_TIPO_OPERACAO         m_acao_posicao     = NAO_OPERAR;
 ENUM_TIPO_OPERACAO         m_acao_posicao_ant = NAO_OPERAR;
 MqlDateTime                m_date;
-string                     m_name = "OSE-P7-004-003-04-ns"; // operacao manual assistida por robo
+string                     m_name = "OSE-P7-004-003-05-ns"; // operacao manual assistida por robo
 osc_db                     m_db                      ;
 CSymbolInfo                m_symb1   , m_symb2       ;
 CPositionInfo              m_posicao1, m_posicao2    ;
@@ -746,7 +748,7 @@ int OnInit(){
     return(INIT_SUCCEEDED);
 }
 
-void configurar_db(){ m_db.create_or_open_mydb(); }
+void configurar_db(){ m_db.create_or_open_mydb(EA_DBNAME); }
 
 double m_len_canal_ofertas  = 0; // tamanho do canal de ofertas do book.
 double m_len_barra_atual    = 0; // tamanho da barra de trades atual.
@@ -1833,17 +1835,6 @@ void OnTick(){
             return;
         }
 
-        // abrindo posicao...
-        //abrirPosicaoHFTFormadorDeMercado();
-
-//    switch(m_acao_posicao){
-//        //case HFT_OPERAR_VOLUME_CANAL   : abrirPosicaoHFTVolumeCanal      (); break;
-//          case HFT_FORMADOR_DE_MERCADO   : abrirPosicaoHFTFormadorDeMercado(); break;
-//          case HFT_ARBITRAGEM_PAR        : abrirPosicaoHFTarbitragemPar    (); break;
-//        //case HFT_DESBALANC_BOOK        : gerenciarPosicaoHFTDesbalancBook(); break;
-//        //case HFT_FLUXO_ORDENS          : abrirPosicaoHFTfluxoOrdens      (); break;
-//        //case NAO_ABRIR_POSICAO         :                                     break;
-//    }
     }
 
     executarEstrategia();
@@ -2295,7 +2286,9 @@ bool fecharPosicaoHFTCusumSimples(){
 //void abrirPosicaoHFTFormadorDeMercado    (){     abrirPosicaoHFTFormadorDeMercadoCusumV3();}
 //void gerenciarPosicaoHFTFormadorDeMercado(){ gerenciarPosicaoHFTFormadorDeMercadoCusumV4();}
 //void abrirPosicaoHFTFormadorDeMercado    (){     abrirPosicaoHFTFormadorDeMercadoSimplesNaMediaDoTrade();}
-  void abrirPosicaoHFTFormadorDeMercado    (){     abrirPosicaoHFTFormadorDeMercadoSimplesNaMediaDoBook();}
+//void abrirPosicaoHFTFormadorDeMercado    (){     abrirPosicaoHFTFormadorDeMercadoSimplesNaMediaDoBook();}
+  void abrirPosicaoHFTFormadorDeMercado    (){     abrirPosicaoHFTFormadorDeMercadoSinaisDoBook();}
+  
 //void gerenciarPosicaoHFTFormadorDeMercado(){     abrirPosicaoHFTFormadorDeMercadoV5     ();}
 bool fecharPosicaoHFTCusum               (){ return fecharPosicaoHFTCusumSimples          ();}
 bool stopGainParcial                     (){ return stopGainParcialSimples                ();}
@@ -2910,6 +2903,82 @@ void abrirPosicaoVelocVolumeNET(){
     }
 }
 //-----------------------------------------------------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+//| HFT_FORMADOR_DE_MERCADO
+//| Mantem pedidos de abetura de ordem segundo as regras abaixo:
+//| 
+//| ENTRADAS
+//|         COMPRAR	imwf abaixo do bid e do ask
+//|                 tlfv acima do bid e do ask
+//|                 imbalance abaixo de -10
+//|
+//|         VENDER	imwf acima do bid e do ask
+//|                 tlfv abaixo do bid e do ask
+//|                 imbalance acima de +10
+//|
+//| SAIDAS
+//|         mesmas condicoes das entradas.
+//------------------------------------------------------------------------------
+void abrirPosicaoHFTFormadorDeMercadoSinaisDoBook(){
+    //double dist_min_entrada_book = m_dist_min_in_book_in_pos;
+    double vol1    = m_vol_lote_ini1;
+    double room1   = m_tick_size1*EA_TOLERANCIA_ENTRADA;
+    double shift   = 0.0; //5.0; // soh pra teste. retire assim que acabar
+    ulong  ticket1;
+
+   int sinal1 = calcSinalBook1(EA_BOOK_DEEP1);
+   // compre ou feche a posicao vendida
+   if( sinal1>0 ){
+        if(estouSemPosicao1()){
+            Print(__FUNCTION__,":Usando getBid()...");
+            if(m_book1.getBid(1)==0){Print(__FUNCTION__,":Preco Ordem de compra ZERADO! VERIFIQUE!"); return;}
+            Print(__FUNCTION__,":Usando getBid()...");
+            sleepTeste(); ticket1 = m_trade1.manterOrdemLimitadaEntornoDe(m_symb_str1, ORDER_TYPE_BUY_LIMIT, m_apmb_buy, m_book1.getBid(1), room1, vol1);
+            return;
+        }
+        // se cheou aqui, eh porque estou posicionado. Se estiver vendido, fecha a posicao;
+        if( estouVendido1() ){ m_trade1.fecharPosicao("SINALCMP"); return; }
+   }
+   
+   // venda ou feche a posicao comprada
+   if( sinal1<0 ){
+        if(estouSemPosicao1()){
+            Print(__FUNCTION__,":Usando getAsk()...");
+            if(m_book1.getAsk(1)==0){Print(__FUNCTION__,":Preco Ordem de venda ZERADO! VERIFIQUE!"); return;}
+            Print(__FUNCTION__,":Usando getAsk()...");
+            sleepTeste(); ticket1 = m_trade1.manterOrdemLimitadaEntornoDe(m_symb_str1, ORDER_TYPE_SELL_LIMIT, m_apmb_sel, m_book1.getAsk(1), room1, vol1);
+            return;
+        }
+        // se cheou aqui, eh porque estou posicionado. Se estiver comprado, fecha a posicao;
+        if( estouComprado1() ){ m_trade1.fecharPosicao("SINALVND"); return;}
+   }
+   
+   // chegou aqui, eh porque nao tem sinal de compra ou venda e tambem nao tem posicao aberta. Entao cancela ordens de abertura de posicao, caso existam.
+   m_trade1.cancelarOrdens("SEM_SINAL_ENTRADA");
+
+}
+//-----------------------------------------------------------------------------------------------------------------------------
+
+// Calcula o sinal do book. Interprete assim:
+//  1: entre comprando. se estiver vendido , feche a posicao.
+// -1: entre vendendo . se estiver comprado, feche a posicao.
+//  0: se estah posicionado, mantenha. Se nao estah, nao abra posicao.
+int calcSinalBook1(int deep){
+    if( m_book1.getIWFV(deep)      < m_book1.getBid(1) &&
+        m_book1.getTLFV(deep)      > m_book1.getAsk(1) &&
+        m_book1.getImbalance(deep) < -10                     ){
+        return 1; // comprar
+    }else{
+        if( m_book1.getIWFV(deep)      > m_book1.getBid(1) &&
+            m_book1.getTLFV(deep)      < m_book1.getAsk(1) &&
+            m_book1.getImbalance(deep) > 10                  ){
+            return -1; // vender
+        }
+    }
+    
+    return 0; // manter
+}
 
 
 //------------------------------------------------------------------------------
@@ -3580,6 +3649,10 @@ void OnDeinit(const int reason)  {
 
     Comment("");                          Print(m_name," :-| Expert ", m_name, " Comentarios na tela apagados." );
                                           Print(m_name," :-) Expert ", m_name, " OnDeinit finalizado!" );
+    
+                                          
+    m_db.close();
+    
     return;
 }
 

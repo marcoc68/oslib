@@ -122,7 +122,7 @@ int osc_vetor_fila_item::getMaxMin(double &max , double &min , double &distancia
     }else{
         distancia = (max-min)   ;
     }
-
+    
    //info = info + " max=" + max + " newMax=" + newMax + " min=" + min + " newMin=" + newMin;
    //Print(info);
     return 0;

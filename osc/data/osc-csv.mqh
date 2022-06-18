@@ -7,9 +7,6 @@
 #property link      "https://www.mql5.com/pt/users/marcoc"
 #property version   "1.00"
 
-//#include <oslib\osc\data\osc-vetor-circular3.mqh>
-//#include <oslib\osc\est\CStat.mqh>
-//#include <oslib\osc\est\C0003ModelRegLin.mqh>
 //+-----------------------------------------------------------------------------------------------+
 //| Manioulacao de arquuivos CSV                                                                  |
 //|                                                                                               |

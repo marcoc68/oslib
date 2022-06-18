@@ -52,7 +52,7 @@ class book:
         for i in range(qtd):
             self.refresh()
             time.sleep(sleep)
-            if verbose: print(i,end="|")
+            if verbose: print(i, end="|")
         if verbose: print("processados ",qtd,"registros...")    
 
     def price(self):
@@ -102,7 +102,6 @@ class book:
         vask = np.array(vol[self.ask0-level])
         vbid = np.array(vol[self.bid0+level])
         
-        
         return (pask*vbid + pbid*vask) / (vask+vbid)
 
     def iwfv_demean(self, level=0):
@@ -119,6 +118,5 @@ class book:
 
         vask = np.array(vol[self.ask0-level])
         vbid = np.array(vol[self.bid0+level])
-        
         
         return (vbid-vask) / (vask+vbid)

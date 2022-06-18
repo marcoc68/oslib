@@ -15,7 +15,7 @@
 #include <Generic\Queue.mqh>
 #include <oslib/osc-padrao.mqh>
 
-class Item : public CObject{
+class ItemVelVol : public CObject{
 
 public:
     ulong    id       ;
@@ -26,9 +26,9 @@ public:
 
     virtual int Compare( const CObject*  node,   // Node to compare with 
                          const int       mode=0){// Compare mode 
-       if( this.id > ((Item*)node).id ) return  1;
-       if( this.id < ((Item*)node).id ) return -1;
-                                        return  0;
+       if( this.id > ((ItemVelVol*)node).id ) return  1;
+       if( this.id < ((ItemVelVol*)node).id ) return -1;
+                                              return  0;
     }
     
     string toString(){
@@ -44,11 +44,23 @@ public:
     }
 };
 
-class osc_vetor_fila_item_veloc_vol : public CQueue<Item*> {
+class osc_vetor_fila_item_veloc_vol : public CQueue<ItemVelVol*> {
 private:
 protected:
     
 public:
+    ~osc_vetor_fila_item_veloc_vol(){ deleteItens(); }
+    
+    void deleteItens(){
+        ItemVelVol* item[];
+        int qtd = CopyTo(item);
+        
+        Print(__FUNCTION__, " Deletando ", qtd, " itens..." );
+        for(int i=0; i<qtd; i++){
+            delete(item[i]);
+        }
+    }
+
 };
 
 /*
