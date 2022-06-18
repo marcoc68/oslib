@@ -590,11 +590,13 @@ void showAcao2(string acao){
                                astIfNeg(m_vel_vol_buy-m_vel_vol_sel,0)+
        //  " \n ENTRADA  E SAIDA ==="+
            "\n DIVERSOS ==="+
-           "\n lenBarraMediaEmTicks="     +astIfNeg(m_lenBarraMediaEmTicks,_Digits)+
+           "\n lenBarraMediaEmTicks="     +astIfNeg(m_lenBarraMediaEmTicks,_Digits)+ "  REDUZIR_VOLUME=" + toString(m_reduzir_volume) +
            " \n TICKS_4_GAIN_INI---MIN="   +astIfNeg(m_qtd_ticks_4_gain_ini_1, 2) + " --- " +
                                             astIfNeg(EA_QTD_TICKS_4_GAIN_MIN_1,2) 
            );
 }
+
+string toString(bool b){ return b?"true":"false"; }
 
 
 void refreshControlPanel(){
@@ -2029,12 +2031,13 @@ void calcLenBarraMedia(){
     if(!m_mudou_segundo) return;
     double   maxMin      = 0 ;
     int      starPos     = 1 ; // desde o periodo anterior
-    int      qtdPeriodos = 60; // ateh 60 periodos pra tras
+    int      qtdPeriodos = 15; // ateh 15 periodos pra tras
     MqlRates ratesLenBarraMedia[];
 
     int qtd = CopyRates(m_symb_str1,_Period,starPos,qtdPeriodos,ratesLenBarraMedia);
 
     for(int i=0; i<qtd; i++){
+        //Print("i:" + TimeToString(ratesLenBarraMedia[i].time) );
         maxMin += (ratesLenBarraMedia[i].high - ratesLenBarraMedia[i].low);
     }
     m_lenBarraMediaEmTicks =  (maxMin/m_tick_size1)/(double)qtd;
