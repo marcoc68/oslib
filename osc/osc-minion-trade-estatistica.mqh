@@ -35,6 +35,9 @@ private:
     double    m_tarifaDia         ;
     double    m_tarifaDiaWDO      ;
     double    m_tarifaDiaWIN      ;
+    
+    double    m_umaTarifaDiaWIN   ;
+    double    m_umaTarifaDiaWDO   ;
 
     double    m_cotacaoMoedaTarifa   ;
     double    m_cotacaoMoedaTarifaWDO;
@@ -76,7 +79,7 @@ public:
  //void setStrSymbol            (const string   strSymbol ){ m_str_symbol         = strSymbol; }
    void initialize(){ m_rebaixamentoSld=0; m_taxaLiqWIN=0.0; m_taxaLiqWDO=0.12; m_symbol.Name(_Symbol); }
    void setCotacaoMoedaTarifaWDO(const double   cotacao   )  { m_cotacaoMoedaTarifa = cotacao  ; }
-   void refresh       (const datetime from, const datetime to);
+   void refresh       (const datetime from, const datetime to, double tarifa_teste=0);
    void print_posicoes(const datetime from, const datetime to);
    
    double getProfitDia           (){ return m_profitDia            ;}
@@ -86,6 +89,9 @@ public:
    double getTarifaDia           (){ return m_tarifaDia            ;}
    double getTarifaDiaWDO        (){ return m_tarifaDiaWDO         ;}
    double getTarifaDiaWIN        (){ return m_tarifaDiaWIN         ;}
+
+   double getUmaTarifaDiaWDO     (){ return m_umaTarifaDiaWDO      ;}
+   double getUmaTarifaDiaWIN     (){ return m_umaTarifaDiaWIN      ;}
 
    double getProfitDiaLiquido    (){ return m_profitDiaLiquido     ;}
    double getProfitDiaLiquidoWDO (){ return m_profitDiaLiquidoWDO  ;}
@@ -327,7 +333,7 @@ void osc_minion_trade_estatistica::print_posicoes(const datetime from, const dat
 //| resultado nas variaveis usadas para posterior consulta.          |
 //|                                                                  |
 //+------------------------------------------------------------------+
-void osc_minion_trade_estatistica::refresh(datetime from, datetime to){
+void osc_minion_trade_estatistica::refresh(datetime from, datetime to, double tarifa_teste=0){
 
     //Print(":-| Obtendo historico de ofertas...");
     HistorySelect(from,to);
@@ -367,6 +373,9 @@ void osc_minion_trade_estatistica::refresh(datetime from, datetime to){
             }else if( ehMiniIndice(symbol) ){
                 volumeDiaWIN +=  m_deal.Volume();
                 profitDiaWIN +=  m_deal.Profit();
+                
+                // aplicando a tarifa de teste. Ela retira seu valor por volume nas transacoes vencedoras
+                if( tarifa_teste>0 && m_deal.Profit()>=0 ) profitDiaWIN -= m_deal.Volume()*tarifa_teste; 
             }else{
                 volumeDia    +=  m_deal.Volume();
                 profitDia    +=  m_deal.Profit();
@@ -405,15 +414,17 @@ void osc_minion_trade_estatistica::refresh(datetime from, datetime to){
     // calculando o coeficiente de Kelly, baseado no historico de transacoes do periodo...
     calcCoefKelly();
     
-
+    // calculando as tarifas...
     m_profitDiaWDO        = profitDiaWDO  ;
     m_volumeDiaWDO        = volumeDiaWDO  ;
-    m_tarifaDiaWDO        = calcTarifaWDO(m_volumeDiaWDO)*m_volumeDiaWDO;
+    m_umaTarifaDiaWDO     = calcTarifaWDO(m_volumeDiaWDO);
+    m_tarifaDiaWDO        = m_umaTarifaDiaWDO*m_volumeDiaWDO;
     m_profitDiaLiquidoWDO = profitDiaWDO - m_tarifaDiaWDO;
 
     m_profitDiaWIN        = profitDiaWIN  ;
     m_volumeDiaWIN        = volumeDiaWIN  ;
-    m_tarifaDiaWIN        = calcTarifaWIN(m_volumeDiaWIN)*m_volumeDiaWIN;
+    m_umaTarifaDiaWIN     = calcTarifaWIN(m_volumeDiaWIN);
+    m_tarifaDiaWIN        = m_umaTarifaDiaWIN*m_volumeDiaWIN;
     m_profitDiaLiquidoWIN = profitDiaWIN - m_tarifaDiaWIN;
 
     m_profitDia        = profitDia+profitDiaWIN+profitDiaWDO  ; // ok

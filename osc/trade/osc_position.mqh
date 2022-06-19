@@ -132,7 +132,7 @@ public:
             StringConcatenate(str, str, valor[i].toString(),"\n" );
         }
         return str;
-    };    
+    };
 };
 
 
@@ -223,7 +223,7 @@ void osc_position::initialize(void){
     m_volOut     = 0                   ; // qtd trades OUT multiplicada pelo volume.
     m_type       = DEAL_TYPE_COMMISSION; // na inicializacao nao usamos um tipo diferente de DEAL_TYPE_BUY ou DEAL_TYPE_SELL,
                                          // pois ainda nao sabemos se eh posicao vendida ou comprada (as unicas que tratamos).
-    m_logPosicao = ""                  ; // string com os eventos ao longo da vida da posicao.
+    m_logPosicao = "logPosicao:"       ; // string com os eventos ao longo da vida da posicao.
     m_ordens.Clear();                  ; // colecao com as ordens da posicao
 }
 
@@ -459,7 +459,7 @@ void osc_position::processarDealAdd(const MqlTradeTransaction& tran   ,
     // verificando se chegou o final da posicao...
     if( m_volIn <= m_volOut ){
           //StringConcatenate( m_logPosicao,m_logPosicao,"FINAL:"); // string com os eventos ao longo da vida da posicao.
-          Print(m_logPosicao);
+          //Print(m_logPosicao);
         
         //Print(__FUNCTION__, ":-| gravando FINAL no log da posicao...");
         initialize();

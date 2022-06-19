@@ -13,9 +13,10 @@
 #include <Object.mqh>
 
 #define M_TIME_SLEEP_MANY_REQUESTS 50
-#define MAX_TENTATIVAS_CORRECAO_INVALID_PRICE 10
+//#define MAX_TENTATIVAS_CORRECAO_INVALID_PRICE 10
+  #define MAX_TENTATIVAS_CORRECAO_INVALID_PRICE 1
 
-// estratura usada para guardar ordens enviadas pro mercado bem como seu ultimo status.
+// estrutura usada para guardar ordens enviadas pro mercado bem como seu ultimo status.
 class TradeOrder : public CObject{
 public:
   MqlTradeRequest req;
@@ -57,8 +58,12 @@ private:
    bool        permiteCancelarOrdem(ulong ordem); // valida se pode enviar pedido de cancelamento de ordem
    //---------------------------------------------------------------
 
-    bool orderStatePendente(const ENUM_ORDER_STATE order_state); // retorna true se o estado da ordem informado for pendente
-   
+   bool   orderStatePendente     (const ENUM_ORDER_STATE order_state); // retorna true se o estado da ordem informado for pendente
+   bool   orderTypeCompra        (const ENUM_ORDER_TYPE  order_type ); // retorna true se o tipo da ordem for compra
+   bool   orderTypeCompraLimitada(const ENUM_ORDER_TYPE  order_type ); // retorna true se o tipo da ordem for compra limitada
+   bool   orderTypeVendaLimitada (const ENUM_ORDER_TYPE  order_type ); // retorna true se o tipo da ordem for venda limitada
+
+   double orderPrice (){ return OrderGetDouble(ORDER_PRICE_OPEN); } // retorna o preco de entrada da ordem atualmente posicionada
 protected:
 
 public:
@@ -92,10 +97,12 @@ public:
   double findPrice(double price_, double lag_, int signal_);
    
    ulong manterOrdemLimitadaEntornoDe(string symbol, ENUM_ORDER_TYPE order_type, string comment, double value, double room, double vol); // Mantem uma ordem limitada em torno do valor informado, cancelando outras ordens em niveis de preco diferentes.
+   ulong manterOrdemLimitadaNoRoom(ENUM_ORDER_TYPE order_type, string comment, double value, double room, double vol); // Mantem uma ordem limitada em torno do valor informado, e em direcao ao melhor bid/ask.
    
    bool cancelarOrdem                             (ulong  ticket                   );//cancela a ordem que tem o ticket informado no parametro.
    void cancelarOrdensDuplicadas                  (            ENUM_ORDER_TYPE tipo);//cancela ordens pendentes do tipo informado
    void cancelarOrdens                            (            ENUM_ORDER_TYPE tipo);//cancela ordens pendentes do tipo informado
+   void cancelarOrdens                            (ulong ticketExcept=0            );//cancela ordens pendentes, exceto a do ticket informado.
    void cancelarOrdens                            (            ENUM_ORDER_TYPE tipo, string comment);
    void cancelarOrdens                            (               string comentario);//cancela ordens pendentes
    void cancelarOrdensComentadas                  (string symbol, string comentario);//cancela as ordens que tenham o comentario informado
@@ -180,6 +187,9 @@ public:
 
    double tenhoOrdemLimitadaDeCompraMaiorQue(double value, string symbol, string comment, double volume, ulong& ticket, bool aceitarIgual=false);
    double tenhoOrdemLimitadaDeVendaMenorQue (double value, string symbol, string comment, double volume, ulong& ticket, bool aceitarIgual=false);
+
+   double tenhoOrdemLimitadaDeCompraMaiorOuIgual(double value);
+   double tenhoOrdemLimitadaDeVendaMenorOuIgual(double value);
 
    bool   tenhoOrdenComComentarioNumerico(double price, ENUM_ORDER_TYPE tipo);
 
@@ -383,9 +393,13 @@ bool osc_minion_trade::enviarOrdemPendente(ENUM_ORDER_TYPE tipo, double val, dou
    if( m_async ){
       if ( OrderSendAsync(m_treq,m_tres) ){ return true;  }
    }else{
-      if ( OrderSend     (m_treq,m_tres) ){ return true;  }
+      if ( OrderSend     (m_treq,m_tres) ){ 
+         if( OrderSelect(m_tres.order) ){
+             Print(":-| ",m_symb_str,":",__FUNCTION__,"(",EnumToString(tipo), ",",val,",",volume, ",",obs, ",", tentativas,") retcode=",m_tres.retcode," deal=",m_tres.deal," order=",m_tres.order," msgerro=",m_tres.comment," commentOrder=", obs, " STATE:", EnumToString( (ENUM_ORDER_STATE)OrderGetInteger(ORDER_STATE) ) );
+         }
+         return true;  
+      }
    }
-   
    
    if( m_tres.retcode == TRADE_RETCODE_INVALID_PRICE && tentativas < MAX_TENTATIVAS_CORRECAO_INVALID_PRICE ){
         Print(":-( ",m_symb_str,":",__FUNCTION__,"(",EnumToString(tipo), ",",val,",",volume, ",",obs, ",", tentativas,") retcode=",m_tres.retcode," deal=",m_tres.deal," order=",m_tres.order," msgerro=",m_tres.comment," commentOrder=", obs);
@@ -705,22 +719,34 @@ bool osc_minion_trade::tenhoOrdemLimitadaDeCompra(double value, string symbol,st
 //+--------------------------------------------------------------------------------------------------------------------+
 bool osc_minion_trade::tenhoOrdemLimitada(double value, ENUM_ORDER_TYPE type){
    
-   ulong order_ticket; 
+    ulong order_ticket;
+    string texto = __FUNCTION__;
+    StringConcatenate(texto, " Buscando ordem ", m_symb_str," ", EnumToString(type), " valor ", value, " ...");
+    //Print(texto,":");
 
-//--- passando por todas as ordens pendentes 
-   for(int i=OrdersTotal()-1; i>=0; i--){ 
-      
-      if( (order_ticket = OrderGetTicket(i) )>0 ){ 
+//--- passando por todas as ordens pendentes
+    for(int i=OrdersTotal()-1; i>=0; i--){
 
-          if(  OrderGetString (ORDER_SYMBOL    ) == m_symb_str            &&
-               OrderGetDouble (ORDER_PRICE_OPEN) == value                 && 
-               OrderGetInteger(ORDER_TYPE      ) == type                  &&
-               orderStatePendente((ENUM_ORDER_STATE)OrderGetInteger(ORDER_STATE))   ){
-               return true;
-          }
-      }
-   }
-   return false;
+        if( (order_ticket = OrderGetTicket(i) )>0 ){
+
+            StringConcatenate(texto,
+              "\nAnalisando ", OrderGetString (ORDER_SYMBOL), 
+              " preco:", OrderGetDouble (ORDER_PRICE_OPEN),
+              " type:", EnumToString( (ENUM_ORDER_TYPE)OrderGetInteger(ORDER_TYPE) ),
+              " state:", EnumToString( (ENUM_ORDER_STATE)OrderGetInteger(ORDER_STATE) ),
+              " pend:", orderStatePendente( (ENUM_ORDER_STATE)OrderGetInteger(ORDER_STATE) ) );
+            
+            if(  OrderGetString (ORDER_SYMBOL    ) == m_symb_str            &&
+                 OrderGetDouble (ORDER_PRICE_OPEN) == value                 &&
+(ENUM_ORDER_TYPE)OrderGetInteger(ORDER_TYPE      ) == type                  &&
+                 orderStatePendente((ENUM_ORDER_STATE)OrderGetInteger(ORDER_STATE))   ){
+                 Print(texto, "\nAchei.");
+                 return true;
+            }
+        }
+    }
+    Print(texto, "\nNao encontrei.");
+    return false;
 }
 
 bool osc_minion_trade::orderStatePendente(const ENUM_ORDER_STATE order_state){
@@ -733,6 +759,17 @@ bool osc_minion_trade::orderStatePendente(const ENUM_ORDER_STATE order_state){
              );
 }
 
+// retorna true se o tipo da ordem for compra
+bool osc_minion_trade::orderTypeCompra(const ENUM_ORDER_TYPE order_type){
+	return (   order_type==ORDER_TYPE_BUY_LIMIT
+			|| order_type==ORDER_TYPE_BUY
+			|| order_type==ORDER_TYPE_BUY_STOP
+			|| order_type==ORDER_TYPE_BUY_STOP_LIMIT
+			);
+}
+
+bool osc_minion_trade::orderTypeCompraLimitada(const ENUM_ORDER_TYPE order_type){ return order_type==ORDER_TYPE_BUY_LIMIT ; }
+bool osc_minion_trade::orderTypeVendaLimitada (const ENUM_ORDER_TYPE order_type){ return order_type==ORDER_TYPE_SELL_LIMIT; }
 
 //+---------------------------------------------------------------------+
 //| Verifica se tenho uma ordem limitada de venda no valor especificado |
@@ -825,14 +862,13 @@ bool osc_minion_trade::tenhoOrdemLimitadaDeVenda(double value, string symbol, st
 void osc_minion_trade::preencherOrdensLimitadasDeVendaAcima(double valIni, int qtdOrdens, string symbol, string comment, double volume, double tickSize){
 
     double valOrdem = valIni;
-    //saveAsync(); setAsync(true);
+
     for( int i=0; i<qtdOrdens; i++ ){
         if( !tenhoOrdemLimitadaDeVenda(valOrdem,symbol,comment ) ){
             enviarOrdemPendente(ORDER_TYPE_SELL_LIMIT, valOrdem, volume, comment);
         }
         valOrdem = m_symb.NormalizePrice(valOrdem+tickSize);
     }
-    //restoreAsync();
 }
 
 //+--------------------------------------------------------------------------------------------+
@@ -841,7 +877,6 @@ void osc_minion_trade::preencherOrdensLimitadasDeVendaAcima(double valIni, int q
 void osc_minion_trade::preencherOrdensLimitadasDeCompraAbaixo(double valIni, int qtdOrdens, string symbol, string comment, double volume, double tickSize){
    
     double valOrdem = valIni;
-    //saveAsync(); setAsync(true);
 
     for( int i=0; i<qtdOrdens; i++ ){
         if( !tenhoOrdemLimitadaDeCompra(valOrdem,symbol,comment ) ){
@@ -849,9 +884,7 @@ void osc_minion_trade::preencherOrdensLimitadasDeCompraAbaixo(double valIni, int
         }
         valOrdem = m_symb.NormalizePrice(valOrdem-tickSize);
     }
-    //restoreAsync();    
 }
-
 
 //+--------------------------------------------------------------------------------------------+
 //| Mantem uma sequencia de ordens limitadas de venda acima do valor informado.                |
@@ -1484,6 +1517,168 @@ double osc_minion_trade::tenhoOrdemLimitadaDeVendaMenorQue(double value, string 
    return 0; // nao foi encontrada sequer ordem ordem modificavel
 }
 
+//+---------------------------------------------------------------------------------------+
+//| Verifica se tenho uma ordem limitada de venda MENOR ou IGUAL ao valor especificado.   |
+//+---------------------------------------------------------------------------------------+
+double osc_minion_trade::tenhoOrdemLimitadaDeVendaMenorOuIgual(double value){
+   
+   if( OrdersTotal() == 0 ) return 0;
+   
+   ulong order_ticket = 0;
+   double price_open;
+
+//--- passaando por todas as ordens pendentes 
+   for(int i=OrdersTotal()-1; i>=0; i--){ 
+      if( (order_ticket = OrderGetTicket(i) )>0 ){ 
+
+          if(  OrderGetString (ORDER_SYMBOL  ) == m_symb_str            &&
+               OrderGetInteger(ORDER_TYPE    ) == ORDER_TYPE_SELL_LIMIT &&
+               orderStatePendente((ENUM_ORDER_STATE)OrderGetInteger(ORDER_STATE))
+               ){
+
+               price_open = OrderGetDouble(ORDER_PRICE_OPEN );
+               if( price_open <= value ){
+                   return price_open; // foi encontrada uma ordem
+               }
+          }
+      }
+   }
+   return 0; // nao foi encontrada sequer uma ordem
+}
+
+//+---------------------------------------------------------------------------------------+
+//| Verifica se tenho uma ordem limitada de compra MAIOR ou IGUAL ao valor especificado.  |
+//+---------------------------------------------------------------------------------------+
+double osc_minion_trade::tenhoOrdemLimitadaDeCompraMaiorOuIgual(double value){
+   
+   if( OrdersTotal() == 0 ) return 0;
+   
+   ulong order_ticket = 0;
+   double price_open;
+
+//--- passaando por todas as ordens pendentes 
+   for(int i=OrdersTotal()-1; i>=0; i--){ 
+      if( (order_ticket = OrderGetTicket(i) )>0 ){ 
+
+          if(  OrderGetString (ORDER_SYMBOL  ) == m_symb_str           &&
+               OrderGetInteger(ORDER_TYPE    ) == ORDER_TYPE_BUY_LIMIT &&
+               orderStatePendente((ENUM_ORDER_STATE)OrderGetInteger(ORDER_STATE))
+               ){
+
+               price_open = OrderGetDouble(ORDER_PRICE_OPEN);
+               if( price_open >= value ){
+                   return price_open; // foi encontrada a ordem
+               }
+          }
+      }
+   }
+   return 0; // nao foi encontrada sequer uma ordem
+}
+
+//+---------------------------------------------------------------------------------------------------------------+
+//| Mantem uma ordem limitada entre o valor informado e o melhor bid/ask, cancelando outras ordens em niveis      |
+//| de preco diferentes.                                                                                          |
+//| - se encontrar ordem com mesmo valor, volume e comentario:                                                    |
+//|   - se nao tem ordem no room informado, altera para o valor informado.                                        |
+//|   - se jah tem ordem no romm informado, cancela.                                                              |
+//| - room aqui eh o espaco entre o preco informado e a direcao do melhor bid/ask.                                |
+//|   -  EX:                                                                                                      |
+//|   -                                                                                                           |
+//|   -  ask 80                                                                                                   |
+//|   -  ask 70                                                                                                   |
+//|   -  ask 60  x                                                                                                |
+//|   -  bid 50  x                                                                                                |
+//|   -  bid 40  x                                                                                                |
+//|   -  bid 30                                                                                                   |
+//|   -                                                                                                           |
+//|   -  se a funcao receber um pedido para manter a ordem de compra no 40, e o room igual a 3:                   |
+//|      - manterah a maior ordem limitada de compra acima de 30 e menor que 70 e cancelarah as demais.           |
+//|   -                                                                                                           |
+//| - IN                                                                                                          |
+//|   - symbol                                                                                                    |
+//|   - order_type                                                                                                |
+//|   - comment                                                                                                   |
+//|   - value                                                                                                     |
+//|   - room                                                                                                      |
+//|   - vol                                                                                                       |
+//| - OUT                                                                                                         |
+//|   - <=  zero: erro                                                                                            |
+//|   - >   zero: ordem mantida                                                                                   |
+//|---------------------------------------------------------------------------------------------------------------+
+ulong osc_minion_trade:: manterOrdemLimitadaNoRoom(ENUM_ORDER_TYPE order_type, string comment, double value, double room, double vol){
+
+    // nao tem ordem, cadastramos uma agora...
+    if( OrdersTotal() == 0 ){
+        if( enviarOrdemPendente(order_type, value , vol, comment) ){return m_tres.order;}else{return -1;}
+    }
+
+    ulong order_ticket    = 0;
+    ulong order_found     = 0;
+    ulong order_candidate = 0;
+
+//--- passando por todas as ordens pendentes com o mesmo comentario, volume e faixa de valor...
+   for(int i=OrdersTotal()-1; i>=0; i--){
+      if( ( order_ticket = OrderGetTicket(i) )>0 ){
+
+          if(     OrderGetString (ORDER_SYMBOL        )          == m_symb_str &&
+     //StringFind(OrderGetString (ORDER_COMMENT       ),comment) > -1          &&
+ (ENUM_ORDER_TYPE)OrderGetInteger(ORDER_TYPE          )          == order_type &&
+                  OrderGetDouble (ORDER_VOLUME_INITIAL)          == vol        &&
+              orderStatePendente((ENUM_ORDER_STATE)OrderGetInteger(ORDER_STATE))
+                                                                                   ){
+              order_candidate = order_ticket;
+
+              // compras...
+              if( orderTypeCompraLimitada(order_type) &&
+            	  orderPrice() >= (value     )        &&
+            	  orderPrice() <= (value+room)          ){
+
+            	  // encontrou a ordem. seu numero estah em order_ticket
+                  order_found = order_ticket; break;
+              }
+
+              // vendas...
+              if( orderTypeVendaLimitada(order_type) &&
+            	  orderPrice() <= (value     )       &&
+            	  orderPrice() >= (value-room)         ){
+
+            	  // encontrou a ordem. seu numero estah em order_ticket
+                  order_found = order_ticket; break;
+              }
+          }
+      }
+   }//for
+
+   // ordem encontrada... cancelamos as demais do mesmo tipo e terminamos
+   if( order_found > 0 ){
+       // cancelamos as demais ordens, exceto a encontrada ou a modificada...
+     //cancelarOrdens(symbol, order_type, comment, order_found);
+       cancelarOrdens(order_found);
+       return order_found;
+   }
+
+   //Print("order_candidate=",order_candidate," order_found=",order_found, " ...");
+
+   // nao encontrou ordem nenhuma, entao cadastramos uma agora...
+   if( order_candidate == 0 ){
+       if( enviarOrdemPendente(order_type, value , vol, comment) ){return m_tres.order;}else{return -1;}
+   }else{
+       // encontrou pelo menos uma ordem, mas nao no valor informado...
+       // - alteramos a ordem para o parametro informado
+       if( order_candidate > 0 ){
+           alterarOrdem(order_type, value, vol, order_candidate, comment);
+           order_found = order_candidate;
+       }
+   }
+
+   // cancelamos as demais ordens, exceto a encontrada ou a modificada...
+ //cancelarOrdens(symbol, order_type, comment, order_found);
+   if( !PositionSelect(m_symb_str) ){
+       cancelarOrdens(order_found);
+   }
+
+   return order_found;
+}
 
 //+---------------------------------------------------------------------------------------------------------------+
 //| Mantem uma ordem limitada em torno do valor informado, cancelando outras ordens em niveis de preco diferentes.|
@@ -1522,7 +1717,6 @@ ulong osc_minion_trade:: manterOrdemLimitadaEntornoDe(string symbol, ENUM_ORDER_
                OrderGetDouble (ORDER_VOLUME_INITIAL)          == vol        &&
                orderStatePendente((ENUM_ORDER_STATE)OrderGetInteger(ORDER_STATE))
                                                                                    ){
-
               order_candidate = order_ticket;
 
               if( OrderGetDouble(ORDER_PRICE_OPEN) >= (value-room) &&
@@ -1540,11 +1734,10 @@ ulong osc_minion_trade:: manterOrdemLimitadaEntornoDe(string symbol, ENUM_ORDER_
        // cancelamos as demais ordens, exceto a encontrada ou a modificada...
        cancelarOrdens(symbol, order_type, comment, order_found);
        return order_found; 
-       
    }
    
    //Print("order_candidate=",order_candidate," order_found=",order_found, " ...");
-   
+
    // nao encontrou ordem nenhuma, entao cadastramos uma agora...
    if( order_candidate == 0 ){
        if( enviarOrdemPendente(order_type, value , vol, comment) ){return m_tres.order;}else{return -1;}
@@ -2171,6 +2364,33 @@ void osc_minion_trade::cancelarOrdens(string symbol, ENUM_ORDER_TYPE tipo, strin
                                                                                   ){                     
                    //Print(":-| ",__FUNCTION__ ,"(",symbol,",",EnumToString(tipo),",",comment,",",ticketExcept,") Canc #",order_ticket," #state ", stateOrderToString()," asyn");   
                    cancelarOrdem(order_ticket); 
+           }
+      }else{
+           Print(":-( ", __FUNCTION__," :-( ERRO REMOCAO ORDEM ticket=",order_ticket,"IND=", i, " ORDEM NAO ENCONTRADA!");
+      }
+   }
+}
+//+------------------------------------------------------------------------------------------------+
+
+//+--------------------------------------------------------------------------------------------------------------------+
+//| cancela todas as ordens pendentes do simbolo informado nesta instanacia, exceto o ticket informado em ticketExcept.|
+//+--------------------------------------------------------------------------------------------------------------------+
+void osc_minion_trade::cancelarOrdens(ulong ticketExcept=0){
+   ulong order_ticket;
+   int qtdOrdensPendentes = OrdersTotal();
+//--- passar por todas as ordens pendentes
+   for(int i=0; i<qtdOrdensPendentes; i++){
+
+      if( (order_ticket = OrderGetTicket(i) ) > 0 ){
+
+           if(  order_ticket                  != ticketExcept &&
+//             OrderGetInteger(ORDER_TYPE   ) == tipo         &&
+                OrderGetString(ORDER_SYMBOL ) == m_symb_str   &&
+//  StringFind(OrderGetString (ORDER_COMMENT ),comment) > -1  &&
+           orderStatePendente((ENUM_ORDER_STATE)OrderGetInteger(ORDER_STATE))
+                                                                                  ){
+                   //Print(":-| ",__FUNCTION__ ,"(",symbol,",",EnumToString(tipo),",",comment,",",ticketExcept,") Canc #",order_ticket," #state ", stateOrderToString()," asyn");
+                   cancelarOrdem(order_ticket);
            }
       }else{
            Print(":-( ", __FUNCTION__," :-( ERRO REMOCAO ORDEM ticket=",order_ticket,"IND=", i, " ORDEM NAO ENCONTRADA!");
