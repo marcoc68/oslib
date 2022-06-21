@@ -148,8 +148,9 @@ enum ENUM_TIPO_OPERACAO{
 
 //-------------------------------------------------------------------------------------------
 input group "Passo dinamico"
-input bool   EA_PASSO_DINAMICO                = true; //PASSO_DINAMICO:tamanho do passo muda em funcao da volatilidade
-input double EA_PASSO_DINAMICO_PORC_T4G       = 0.1 ; //PASSO_DINAMICO_PORC_TFG: % do TFG para definir o passo.
+input bool   EA_PASSO_DINAMICO                  = true ; //PASSO_DINAMICO:tamanho do passo muda em funcao da volatilidade
+input double EA_PASSO_DINAMICO_PORC_BARRA_MEDIA = 0.25 ; //PASSO_DINAMICO_PORC_BARRA_MEDIA: % da barra media para definir o T4G.
+input double EA_PASSO_DINAMICO_PORC_T4G         = 0.0  ; //PASSO_DINAMICO_PORC_TFG: % do TFG por volume na posicao para definir o passo.
 #define EA_PASSO_DINAMICO_MIN                   1     //PASSO_DINAMICO_MIN:menor passo possivel.
 #define EA_PASSO_DINAMICO_MAX                   15    //PASSO_DINAMICO_MAX:maior passo possivel.
 #define EA_PASSO_DINAMICO_PORC_CANAL_ENTRELACA  0.02  //PASSO_DINAMICO_PORC_CANAL_ENTRELACA
@@ -290,7 +291,6 @@ int    m_stop_qtd_contrat    = 0; // EA_STOP_QTD_CONTRAT; Eh o tamanho do chunk;
 double m_stop_porc           = 0; // EA_STOP_PORC_L1    ; Eh a porcentagem inicial para o ganho durante o passeio;
 double m_qtd_ticks_4_gain_new  = 0;
 double m_qtd_ticks_4_gain_ini_1  = 0;
-double m_qtd_ticks_4_gain_raj= 0;
 int    m_passo_rajada        = 0;
 double m_vol_lote_ini1       = 0;
 double m_vol_lote_raj        = 0;
@@ -489,7 +489,7 @@ void refreshMe(){
             m_lucroPosicao = m_lucroPosicaoRealizado + m_lucroPosicaoParcial; // 22/10/2020 testando calculo de lucro da posicao...
 
           //m_lucroPosicao4Gain = (m_posicaoVolumeTot *m_stop_porc);
-            m_lucroPosicao4Gain = (m_posicaoVolumeTot *EA_QTD_TICKS_4_GAIN_INI_1)*(m_lots_step1); // 16/02/21 correcao valor do lote
+            m_lucroPosicao4Gain = (m_posicaoVolumeTot *m_qtd_ticks_4_gain_ini_1)*(m_lots_step1); // 16/02/21 correcao valor do lote
           //m_lucroPosicao4Gain = (m_posicaoVolumeTot *m_qtd_ticks_4_gain_ini_1 ); // passou a usar em 05/06/2020
           //m_lucroPosicao4Gain = (m_posicaoVolumePend*m_qtd_ticks_4_gain_ini_1 ); // passou a usar em 05/06/2020
 
@@ -663,13 +663,13 @@ void definirPasso(){
    
    if( EA_PASSO_DINAMICO ){
 
-       m_qtd_ticks_4_gain_new = EA_QTD_TICKS_4_GAIN_INI_1;
+       //m_qtd_ticks_4_gain_new = EA_QTD_TICKS_4_GAIN_INI_1;
+       m_qtd_ticks_4_gain_new = m_lenBarraMediaEmTicks*EA_PASSO_DINAMICO_PORC_BARRA_MEDIA; 
        for( int i=1; i<vol1; i++ ){
           m_qtd_ticks_4_gain_new += EA_PASSO_DINAMICO_PORC_T4G*m_qtd_ticks_4_gain_new;
        }
 
        m_qtd_ticks_4_gain_ini_1 =        m_qtd_ticks_4_gain_new ;
-       m_qtd_ticks_4_gain_raj   =        m_qtd_ticks_4_gain_new;
        m_passo_rajada           =  (int)(m_qtd_ticks_4_gain_new*EA_PASSO_DINAMICO_PORC_T4G);
        if( m_passo_rajada < EA_PASSO_DINAMICO_MIN )  m_passo_rajada = EA_PASSO_DINAMICO_MIN;
 
@@ -752,7 +752,6 @@ void inicializarVariaveisRecebidasPorParametro(){
 
     // variaveis de controle do stop...
     m_qtd_ticks_4_gain_ini_1 = EA_QTD_TICKS_4_GAIN_INI_1;
-    m_qtd_ticks_4_gain_raj = EA_QTD_TICKS_4_GAIN_INI_1;
     m_vol_lote_raj         = EA_VOL_PRIM_ORDEM_RAJ!=0?EA_VOL_PRIM_ORDEM_RAJ*m_lots_step1:m_symb1.LotsMin();
     m_vol_lote_ini1        = EA_VOL_LOTE_INI_1    !=0?EA_VOL_LOTE_INI_1    *m_lots_step1:m_symb1.LotsMin();
     m_passo_rajada         = (int)EA_DISTAN_DEMAIS_ORDENS_RAJ;
@@ -763,7 +762,6 @@ void inicializarVariaveisRecebidasPorParametro(){
     Print(":-| ", __FUNCTION__," m_tipo_entrada_permitida           :", EnumToString(m_tipo_entrada_permitida));
     Print(":-| ", __FUNCTION__," m_stopLossPosicao                  :", m_stopLossPosicao                     );
     Print(":-| ", __FUNCTION__," m_qtd_ticks_4_gain_ini_1           :", m_qtd_ticks_4_gain_ini_1           );
-    Print(":-| ", __FUNCTION__," m_qtd_ticks_4_gain_raj             :", m_qtd_ticks_4_gain_raj             );
     Print(":-| ", __FUNCTION__," m_vol_lote_raj                     :", m_vol_lote_raj                     );
     Print(":-| ", __FUNCTION__," m_vol_lote_ini1                    :", m_vol_lote_ini1                    );
     Print(":-| ", __FUNCTION__," m_passo_rajada                     :", m_passo_rajada                     );
@@ -867,13 +865,6 @@ void fecharPosicao2(string descr, string strLog, int qtdTicksDeslocamento=0, int
 
       Print(":-| ", __FUNCTION__,"(",descr,",",strLog,",",qtdTicksDeslocamento,",",deep,")");
 
-      //<TODO> Este item 1, eh incompativel com novo metodo de fechamento de posicao. Por enquanto
-      //       deixo comentado afim de testar. Resova durante ou logo apos os testes.
-      //
-      //1. providenciando ordens de fechamento que porventura faltem na posicao...
-      //Print   (":-| ", __FUNCTION__+":doCloseRajada(",m_passo_rajada,",",m_vol_lote_raj,",",m_qtd_ticks_4_gain_raj,")...");
-      //doCloseRajada(m_qtd_ticks_4_gain_ini_1);
-
       //2. cancelando rajadas que ainda nao entraram na posicao...
       Print   (":-| ", __FUNCTION__+":cancelarOrdensRajada()..."          );
       cancelarOrdensRajada();
@@ -908,13 +899,6 @@ void fecharPosicao2(string descr, string strLog, int qtdTicksDeslocamento=0, int
 void fecharPosicao3(string descr, string strLog, int qtdTicksDeslocamento=0, int deep=1){
 
       Print(":-| ", __FUNCTION__,"(",descr,",",strLog,",",qtdTicksDeslocamento,",",deep,")");
-
-      //<TODO> Este item 1, eh incompativel com novo metodo de fechamento de posicao. Por enquanto
-      //       deixo comentado afim de testar. Resova durante ou logo apos os testes.
-      //
-      //1. providenciando ordens de fechamento que porventura faltem na posicao...
-      //Print   (":-| ", __FUNCTION__+":doCloseRajada(",m_passo_rajada,",",m_vol_lote_raj,",",m_qtd_ticks_4_gain_raj,")...");
-      //doCloseRajada(m_qtd_ticks_4_gain_ini_1);
 
       //2. cancelando rajadas que ainda nao entraram na posicao...
       Print   (":-| ", __FUNCTION__+":cancelarOrdensRajada()..."          );
@@ -1054,12 +1038,13 @@ void executarEstrategia(){
     switch(m_acao_posicao){
         case HFT_FORMADOR_DE_MERCADO_BOOK: abrirPosicaoHFTFormadorDeMercadoSinaisDoBook  (); break;
         case HFT_FORMADOR_DE_MERCADO_VOL : abrirPosicaoHFTFormadorDeMercadoSinaisDoVolume(); break;
-        case NAO_ABRIR_POSICAO           : naoAbrirPosicao                               (); break;
+        //case NAO_ABRIR_POSICAO           : naoAbrirPosicao                               (); break;
         default                          : return;
     }
 }
 
-void naoAbrirPosicao(){ return; }
+//void naoAbrirPosicao(){ return; }
+bool naoOperar(){ return m_acao_posicao==NAO_OPERAR; }
 
 bool podeAbrirProsicao(){
 
@@ -1173,7 +1158,10 @@ bool m_fechar_posicao = false;
 bool m_reduzir_volume = false;
 void doCloseOposite( double toClosePriceIn, double vol, string symbol, ENUM_DEAL_TYPE typeDeal, long ticket=0  ){
     //Print(__FUNCTION__,"(",toClosePriceIn,",",vol,",",symbol,",", EnumToString(typeDeal),")", ",tg4=",m_qtd_ticks_4_gain_ini_1 );
+    
+    if (naoOperar() ) return;
     if(m_stop) return;
+    
     definirPasso();
     
     double vol_posicao = 0;
@@ -1484,9 +1472,7 @@ void abrirPosicaoHFTFormadorDeMercadoSinaisDoVolume(){
 
     if(m_ask==0 || m_bid==0 || m_bid>m_ask ){Print(__FUNCTION__,":Preco dos ticks inconsistentes! VERIFIQUE!"); return;}
 
-    if( estouSemPosicao1() ){ 
-        cancelarOrdensComComentarioNumerico();
-    }
+    if( estouSemPosicao1() ){ cancelarOrdensComComentarioNumerico(); }
 
     // obtendo o sinal...
     int sinal1 = calcSinalVolume1();
@@ -1508,7 +1494,6 @@ void abrirPosicaoHFTFormadorDeMercadoSinaisDoVolume(){
         }
         
         if( estouVendido1() ){ m_reduzir_volume = true; }
-        
         return;
    }
    
@@ -1994,8 +1979,8 @@ void OnTradeTransaction( const MqlTradeTransaction& tran,    // transacao
 
         // acionando o fechamento das ordens da posicao...
         //Print(__FUNCTION__, ": tran.order:#", tran.order, ", tran.volume:", tran.volume );
-        doCloseOposite(tran.price,tran.volume, tran.symbol,tran.deal_type, tran.order); // suspeita de erro em toClosePriceIn,
-                                                                                        // toCloseTypeDeal e toCloseVol
+      //doCloseOposite(tran.price,tran.volume, tran.symbol,tran.deal_type, tran.order); // suspeita de erro em toClosePriceIn, toCloseTypeDeal e toCloseVol
+        doCloseOposite(tran.price,          1, tran.symbol,tran.deal_type, tran.order); // forcando 1 lote, independente da transacao que originou o fechamento 
     }
 }
 

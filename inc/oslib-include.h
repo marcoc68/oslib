@@ -141,6 +141,61 @@ enum ENUM_DEAL_TYPE{ // Tipo de operação (deal)
 	DEAL_TAX	                       //	Cálculo do imposto
 };
 
+enum ENUM_INDEXBUFFER_TYPE{
+	INDICATOR_DATA        , // Dados para desenho
+	INDICATOR_COLOR_INDEX , // Cor
+	INDICATOR_CALCULATIONS  // Buffers auxiliares para cálculos intermediários
+};
+
+enum ENUM_PLOT_PROPERTY_DOUBLE{
+	PLOT_EMPTY_VALUE //Um valor vazio para plotagem, para a qual não há desenho. O tipo desta propriedade é double.
+};
+
+// Todas as janelas de tempo (timeframes) pré-definidas de gráficos têm identificadores únicos.
+// O identificador PERIOD_CURRENT significa o período corrente de um gráfico, no qual um programa MQL5 está rodando.
+enum ENUM_TIMEFRAMES{
+	PERIOD_CURRENT	,//	Janela de tempo corrente
+	PERIOD_M1     	,//	1 minuto
+	PERIOD_M2     	,//	2 minutos
+	PERIOD_M3     	,//	3 minutos
+	PERIOD_M4     	,//	4 minutos
+	PERIOD_M5	  	,//	5 minutos
+	PERIOD_M6	  	,//	6 minutos
+	PERIOD_M10		,//	10 minutos
+	PERIOD_M12		,//	12 minutos
+	PERIOD_M15		,//	15 minutos
+	PERIOD_M20		,//	20 minutos
+	PERIOD_M30		,//	30 minutos
+	PERIOD_H1		,//	1 hora
+	PERIOD_H2		,//	2 horas
+	PERIOD_H3		,//	3 horas
+	PERIOD_H4		,//	4 horas
+	PERIOD_H6		,//	6 horas
+	PERIOD_H8		,//	8 horas
+	PERIOD_H12		,//	12 horas
+	PERIOD_D1		,//	1 dia
+	PERIOD_W1		,//	1 semana
+	PERIOD_MN1		 //	1 mês
+};
+
+// Este enum nao existe. Criei porque nao encontrei na documentacao.
+enum ENUM_TIME_TYPE{
+	TIME_DATE,
+	TIME_MINUTES,
+	TIME_SECONDS
+};
+
+enum ENUM_CUSTOMIND_PROPERTY_STRING{
+INDICATOR_SHORTNAME, // Nome do indicador abreviado string
+INDICATOR_LEVELTEXT  // Nível de descrição          string modificador = número de nível
+};
+
+enum ENUM_INIT_RETCODE{
+	INIT_SUCCEEDED           ,
+	INIT_FAILED              ,
+	INIT_PARAMETERS_INCORRECT,
+	INIT_AGENT_NOT_SUITABLE
+};
 
 struct MqlDateTime{
    int year;           // Ano
@@ -317,4 +372,78 @@ int  CopyTicksRange(
    ulong            from_msc=0,            // data a partir da qual são solicitados os ticks
    ulong            to_msc=0               // data em que são solicitados os ticks
 );
+
+// A função vincula um buffer específico de indicador com um array unidimensional dinâmico do tipo double.
+bool  SetIndexBuffer(
+   int                    index,         // índice de buffer
+   double                 buffer[],      // array
+   ENUM_INDEXBUFFER_TYPE  data_type      // O que será o armazenado
+);
+
+//A função define o valor da propriedade correspondente da linha do indicador correspondente. A propriedade indicador deve ser do tipo double.
+bool  PlotIndexSetDouble(
+   int     plot_index,     // plotando o índice do estilo
+   int     prop_id,        // propriedade identificador
+   double  prop_value      // valor para ser definido
+);
+
+// Esta função retorna uma string com o nome do símbolo no gráfico corrente.
+string  Symbol() const;
+string _Symbol;
+
+//Esta função retorna o número de segundos em um período.
+int  PeriodSeconds(
+   ENUM_TIMEFRAMES  period=PERIOD_CURRENT      // período do gráfico
+);
+
+//A função define o valor da propriedade do indicador correspondente.
+//Propriedade do indicador deve ser do tipo string. Existem duas variantes da função.
+//Chamar especificando o identificador da propriedade.
+bool  IndicatorSetString(
+   ENUM_CUSTOMIND_PROPERTY_STRING prop_id,           // identificador
+   string                         prop_value         // valor a ser definido
+);
+
+//Chamar especificando o identificador e o modificador da propriedade.
+bool  IndicatorSetString(
+   int     prop_id,           // identificador
+   int     prop_modifier,     // modificador
+   string  prop_value         // valor a ser definido
+);
+
+//A função define o flag AS_SERIES para um objeto de um array dinâmico, e os elementos serão indexados como em timeseries.
+bool  ArraySetAsSeries(
+   const void& array[],    // array passado por referência
+   bool        flag        // true significa ordem reversa de indexação
+);
+
+//A função GetTickCount() retorna o número de milissegundos decorridos desde o inicialização do sistema.
+uint  GetTickCount();
+
+//Converte um valor numérico em string de texto.
+string  DoubleToString(
+   double  value,      // número
+   int     digits=8    // numero de dígitos depois do ponto decimal
+);
+
+//Substitui todas as substrings encontradas de uma string por uma seqüência de símbolos.
+int  StringReplace(
+   string&         str,              // a string na qual substrings serão substituídas
+   const string    find,             // a substring procurada
+   const string    replacement       // a substring que será inserida nas posições encontradas
+);
+
+//Fornece o fechamento da Profundidade de Mercado (DOM) para um ativo selecionado, e cancela a
+//subscrição para receber notificações de alteração na DOM (Depth of Market).
+bool  MarketBookRelease(
+   string  symbol      // ativo
+);
+
+//Converte um valor contendo hora em segundos decorridos deste 01.01.1970 em uma string de formato "yyyy.mm.dd hh:mi".
+string  TimeToString(
+   datetime  value,                           // número
+   int       mode=TIME_DATE|TIME_MINUTES      // formato de saída
+);
+
+
 
