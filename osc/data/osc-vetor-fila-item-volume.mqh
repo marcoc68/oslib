@@ -15,6 +15,7 @@
 #include <oslib/osc-padrao.mqh>
 //#include <oslib/osc-util.mqh>
 
+#define VETVOL_TAMANHO_PADRAO 1000
 
 class ItemVol : public CObject{
 
@@ -26,8 +27,8 @@ public:
     ItemVol():id(0),volsel(0),volbuy(0){}
     ItemVol(MqlTick &tick){
     	id     = tick.time_msc; // usando o horario em milissegundos como id do item da fila.
-    	volsel = osc_padrao::isTkSel(tick)?tick.volume_real:0;
-    	volbuy = osc_padrao::isTkBuy(tick)?tick.volume_real:0;
+    	volsel = (osc_padrao::isTkVol(tick) && osc_padrao::isTkSel(tick))?tick.volume_real:0;
+    	volbuy = (osc_padrao::isTkVol(tick) && osc_padrao::isTkBuy(tick))?tick.volume_real:0;
     }
 
     bool tem_volume(){ return (volsel>0 || volbuy>0); }
@@ -67,12 +68,14 @@ private:
 
 protected:
 public:
-	 osc_vetor_fila_item_volume(): m_tamanho_max(10000){}
+	 osc_vetor_fila_item_volume(): m_tamanho_max(VETVOL_TAMANHO_PADRAO){}
 
     ~osc_vetor_fila_item_volume(){ deleteItens(); }
     
     // adiciona ticks a fila de volumes...
     bool add(MqlTick &tick){
+    
+        if(m_tamanho_max==0) m_tamanho_max=VETVOL_TAMANHO_PADRAO;
 
     	// criando um item a patir do tick;
     	ItemVol *item = new ItemVol(tick);
@@ -103,6 +106,25 @@ public:
     double calc_desbalanceamento(){
         if( (m_vbuy+m_vsel) == 0 ) return 0;
         return (m_vbuy-m_vsel)/(m_vbuy+m_vsel);
+    }
+    
+    // calcula e retorna o desbalanceamento do volume "pesando" as ocorrencias mais recentes...
+    double calc_desbalanceamento_com_peso(){
+    
+        if( (m_vbuy+m_vsel) == 0 ) return 0;
+
+        ItemVol* vet[];
+        CopyTo(vet);
+        int size = ArraySize(vet);
+        double vbuy = 0;
+        double vsel = 0;
+        
+        for(int i=0; i<size; i++){
+            vbuy += ( vet[i].volbuy*(i+1) );
+            vsel += ( vet[i].volsel*(i+1) );
+        }        
+
+        return (vbuy-vsel)/(vbuy+vsel);
     }
     
     // retorna data do tick mais antigo na fila.

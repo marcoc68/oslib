@@ -76,6 +76,7 @@ public:
     
     bool doCloseOposite ( double precoOrdemExecutada, double t4g, double vol, MqlTick& ultTick, int sleep, ENUM_DEAL_TYPE typeDeal, long ticket=0 );
     bool doCloseOposite2( double precoOrdemExecutada, double t4g, double vol, MqlTick& ultTick, int sleep, ENUM_DEAL_TYPE typeDeal, long ticket=0 );
+    bool doCloseOposite3Agressao(                                             MqlTick& ultTick, int sleep, ENUM_DEAL_TYPE typeDeal, long ticket=0 );
     
     // recebe uma ordem executada e abre uma ordem se entrada e outra de saida a xx ticks da ordem recebida. 
     bool fireNorteSul(double precoOrdemExecutada,             int lagEmTicks, MqlTick& ultTick, int sleep=0, int sentidoPosicao=0);
@@ -216,7 +217,7 @@ bool C004GerentePosicao::doCloseOposite2( double precoOrdemExecutada, double t4g
     if( typeDeal == DEAL_TYPE_SELL ){
         Print(__FUNCTION__," Comprando a:", precoCompra, " ...");
 
-    	if(!m_trade.tenhoOrdemLimitadaDeCompraMaiorOuIgual(precoCompra) ){
+    	if(m_trade.tenhoOrdemLimitadaDeCompraMaiorOuIgual(precoCompra)==0 ){
         	if(ticket>0){
               //m_trade.enviarOrdemPendente(ORDER_TYPE_BUY_LIMIT , precoCompra, vol, IntegerToString(ticket)); // fechamento de posicao
                 m_trade.manterOrdemLimitadaNoRoom(ORDER_TYPE_BUY_LIMIT, IntegerToString(ticket), precoCompra, t4g, vol);
@@ -230,6 +231,38 @@ bool C004GerentePosicao::doCloseOposite2( double precoOrdemExecutada, double t4g
     m_trade.restoreAsync();
     return true;
 }
+
+// ticket: se informado, serah colocado como comentario na ordem que estah sendo criada.
+// a diferenca deste para doCloseOposite eh que este gera uma ordem de agressao com volume minimo configurado
+bool C004GerentePosicao::doCloseOposite3Agressao( MqlTick& ultTick, int sleep, ENUM_DEAL_TYPE typeDeal, long ticket=0 ){
+
+    if(sleep>0) Sleep(sleep);
+
+    m_trade.saveAsync();
+    m_trade.setAsync(false);
+
+    if( typeDeal == DEAL_TYPE_BUY ){
+        Print(__FUNCTION__," Vendendo(agressao)...");
+    	if(ticket>0){
+    		m_trade.vender( ultTick, IntegerToString(ticket) );
+    	}else{
+    		m_trade.vender( ultTick, m_ins );
+    	}
+    }
+
+    if( typeDeal == DEAL_TYPE_SELL ){
+        Print(__FUNCTION__," Comprando(agressao)...");
+    	if(ticket>0){
+    		m_trade.comprar( ultTick, IntegerToString(ticket) );
+    	}else{
+    		m_trade.comprar( ultTick, m_ins );
+    	}
+    }
+
+    m_trade.restoreAsync();
+    return true;
+}
+
 
 //-----------------------------------------------------------------------------
 // // recebe preco de ordem executada e abre uma ordem de entrada e outra de saida

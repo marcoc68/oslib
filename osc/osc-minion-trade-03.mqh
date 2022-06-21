@@ -272,7 +272,7 @@ bool osc_minion_trade::enviarOrdemAMercado(double val, ENUM_ORDER_TYPE tipo, str
    if(tipo == ORDER_TYPE_BUY ) { price=m_symb.Ask(); stp = m_stp ; tkp = m_tkp ; }
 
    m_treq.action       = TRADE_ACTION_DEAL;                          // immediate order execution
-   m_treq.price                   = m_symb.NormalizePrice(price);                // latest ask price
+   m_treq.price                   = m_symb.NormalizePrice(price);              // latest ask price
    if( m_stp != 0.0 ){ m_treq.sl  = m_symb.NormalizePrice(price - stp); }      // Stop Loss
    if( m_tkp != 0.0 ){ m_treq.tp  = m_symb.NormalizePrice(price + tkp); }      // Take Profit
    m_treq.symbol       = m_symb_str;                                    // currency pair
@@ -512,7 +512,6 @@ bool osc_minion_trade::enviarOrdemPendenteRajada(ENUM_ORDER_TYPE tipo         ,
 //bool osc_minion_trade::alterarPrecoOrdem(int ticket, double price){ 
 //   return alterarOrdem( int ticket, price); 
 //}
-
 
 // altera preco da ordem pendente...
 bool osc_minion_trade::alterarPrecoOrdem(double price){ return alterarOrdem(m_treq.type, price); }

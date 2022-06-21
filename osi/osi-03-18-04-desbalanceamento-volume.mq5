@@ -25,9 +25,10 @@
 
 input bool   DEBUG                   = false   ; // se true, grava informacoes de debug no log.
 input bool   NORMALIZAR_TICK         = false   ; // se true, gera volume baseado nos ticks. Usa em papeis que nao informam volume, tais como o DJ30.
-input int    QTD_BAR_PROC_HIST       = 5       ; // Quantidade de barras historicas a processar. Em modo DEBUG, convem deixar este valor baixo pra nao sobrecarregar o arquivo de log.
+input int    QTD_BAR_PROC_HIST       = 60      ; // Quantidade de barras historicas a processar. Em modo DEBUG, convem deixar este valor baixo pra nao sobrecarregar o arquivo de log.
 input double KK                      = 1       ; // K passo do preco para uma acumulacao direcional
 input double HH                      = 5       ; // H qtd somas na mesma direcao para caracterizar a tendencia 
+input int    QTD_TICKS_DESB_VOL      = 1000    ; // QTD_TICKS_DESB_VOL janela, em ticks, usada no calculo do desbalanceamento
 input int    QTD_TICKS_ACUM_CUSUM    = 200     ; // QTD_TICKS_ACUM calcula a cada X ticks
 
 
@@ -148,6 +149,7 @@ int OnInit() {
    m_tick_util.setTickSize(m_symb.TickSize(), m_symb.Digits() );
    //m_cusum.setAcumularAcadaXTicks(QTD_TICKS_ACUM_CUSUM);
    m_cusum.initialize(HH,KK,QTD_TICKS_ACUM_CUSUM);
+   m_vet_vol.set_tamanho_fila(QTD_TICKS_DESB_VOL);
 
 //--- debug
    if( DEBUG ){
