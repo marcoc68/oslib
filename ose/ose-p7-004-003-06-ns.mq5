@@ -76,7 +76,8 @@
 #include <oslib/osc/exp/C0004GerentePosicao.mqh>             // 
 #include <oslib/osc/cp/osc-pc-p7-004-003-06-book-signal.mqh> // painel de controle
 #include <oslib/osc/data/osc-book.mqh>                       // implemantacao do algoritmo de gerenciamento do book.
-#include <oslib/osc/data/osc-vetor-fila-item-volume.mqh>
+//#include <oslib/osc/data/osc-vetor-fila-item-volume.mqh>
+#include <oslib/osc/data/osc-vet-circular-volume.mqh>
 #include <oslib/os-lib.mq5>
 
 enum ENUM_TIPO_ENTRADA_PERMITDA{
@@ -194,7 +195,7 @@ CSymbolInfo                m_symb1                   ;
 CPositionInfo              m_posicao1                ;
 CAccountInfo               m_cta                     ;
 C004GerentePosicao         m_gerentePos1             ;
-osc_vetor_fila_item_volume m_vet_vol                 ; // vetor circular para acumulacao de volumes
+osc_vet_circular_volume    m_vet_vol                 ; // vetor circular para acumulacao de volumes
 
 double        m_tick_size1                    ;// alteracao minima do preco em pontos para o simbolo 1.
 double        m_tick_value1                   ;// valor do tick na moeda do ativo 1.
@@ -344,7 +345,7 @@ int OnInit(){
     m_sld_sessao_atu   = (m_sld_sessao_atu  ==0)?m_cta.Balance():m_sld_sessao_atu  ;
     m_capitalInicial   = (m_capitalInicial  ==0)?m_cta.Balance():m_capitalInicial  ;
     
-    m_vet_vol.set_tamanho_fila(EA_QTD_TIK_VOL_IMBALANCE); // tamanho da janela de calculo do desbalanceamento do volume (em ticks);
+    m_vet_vol.initialize(EA_QTD_TIK_VOL_IMBALANCE); // tamanho da janela de calculo do desbalanceamento do volume (em ticks);
 
     m_comment_fixo = "LOGIN:"         + DoubleToString(m_cta.Login(),0) +
                      "  TRADEMODE:"   + m_cta.TradeModeDescription()    +
@@ -369,7 +370,7 @@ int OnInit(){
 
     m_tick_util1.setTickSize(m_symb1.TickSize(), m_symb1.Digits() );
 
-    // carregando ultimos 10 minutos de ticks...
+    // carregando a ultima hora de ticks...
     datetime from = (TimeCurrent()-(60*60) ) ; // minutos atras
     MqlTick ticks1[];
     int qtdTicks1 = 0;
@@ -387,9 +388,11 @@ int OnInit(){
             //normalizar2trade(ticks1[i]);
             if( osc_padrao::isTkVol(ticks1[i]) ){
                 m_vet_vol.add(ticks1[i]);// adicionando o tick ao vetor de volumes
-                if( m_vet_vol.Count() > (EA_QTD_TIK_VOL_IMBALANCE/2) ){
-                    m_vol_imb = m_vet_vol.calc_desbalanceamento_com_peso(); // obtendo o desbalancemento do volume;
-                }
+                //if( m_vet_vol.count() > (EA_QTD_TIK_VOL_IMBALANCE/2) ){
+                    m_vol_imb = m_vet_vol.get_desbalanceamento(); // obtendo o desbalancemento do volume;
+                  //m_vol_imb = m_vet_vol.calc_desbalanceamento(); // obtendo o desbalancemento do volume;
+                  //m_vol_imb = m_vet_vol.calc_desbalanceamento_com_peso(); // obtendo o desbalancemento do volume;
+                //}
             }
         }
         Print(__FUNCTION__,":-| ",qtdTicks1, " historicos ",m_symb_str1  ," processados... Mais novo eh:", ticks1[qtdTicks1-1].time );
@@ -408,16 +411,20 @@ void refreshMe(){
 
     // adicionando o tick ao componente estatistico...
     SymbolInfoTick(m_symb_str1,m_tick1);
+
+    if( osc_padrao::isTkVol(m_tick1) && (m_tick1.ask!=m_ask || m_tick1.bid!=m_bid) ){
+        m_vet_vol.add(m_tick1);// adicionando o tick ao vetor de volumes
+        //if( m_vet_vol.count() > (EA_QTD_TIK_VOL_IMBALANCE/2) ){
+            m_vol_imb = m_vet_vol.get_desbalanceamento(); // obtendo o desbalancemento do volume;
+          //m_vol_imb = m_vet_vol.calc_desbalanceamento(); // obtendo o desbalancemento do volume;
+          //m_vol_imb = m_vet_vol.calc_desbalanceamento_com_peso(); // obtendo o desbalancemento do volume;
+        //}
+    }
+
     m_ask     = m_tick1.ask;
     m_bid     = m_tick1.bid;
     m_spread  = m_tick1.ask-m_tick1.bid;
     
-    if( osc_padrao::isTkVol(m_tick1) ){
-        m_vet_vol.add(m_tick1);// adicionando o tick ao vetor de volumes
-        if( m_vet_vol.Count() > (EA_QTD_TIK_VOL_IMBALANCE/2) ){
-            m_vol_imb = m_vet_vol.calc_desbalanceamento_com_peso(); // obtendo o desbalancemento do volume;
-        }
-    }
 
     m_trade1.setStopLoss( m_stopLossOrdens );
     m_trade1.setTakeProf( m_tkprof         );
@@ -590,7 +597,7 @@ void refreshControlPanel(){
 
   m_cp.setIWFV      ( m_book1.getIWFV     (EA_BOOK_DEEP1), m_book1.getBid(1) );
   m_cp.setTLFV      ( m_book1.getTLFV     (EA_BOOK_DEEP1), m_book1.getAsk(1) );
-  m_cp.setImbal     ( m_book1.getImbalance(EA_BOOK_DEEP1)                    );
+  m_cp.setImbb      ( m_book1.getImbalance(EA_BOOK_DEEP1)                    );
   m_cp.setSinalBook ( calcSinalEntrada1   ()                                 );
   m_cp.setVTLen     ( m_vol_imb,0 );  
 
@@ -981,7 +988,7 @@ bool podeAbrirProsicao(){
 bool saldoRebaixouMaisQuePermitidoNoDia(){ return ( EA_STOP_REBAIXAMENTO_MAX != 0 && m_trade_estatistica.getRebaixamentoSld () > EA_STOP_REBAIXAMENTO_MAX ); }
 bool saldoAtingiuObjetivoDoDia         (){ return ( EA_STOP_OBJETIVO_DIA     != 0 && m_trade_estatistica.getProfitDiaLiquido() > EA_STOP_OBJETIVO_DIA     ); }
 
-void definirPrecoSaidaPosicao(){
+void definirPrecoSaidaPosicao(void){
     if( estouComprado1() ){
         if( m_stop ){
             // testando acionamento do stop no calculo do preco de saida da posicao...
@@ -1564,7 +1571,7 @@ double OnTester(){
 
 void printHeartBit(){ if(m_date_ant.min != m_date_atu.min) Print(":-| HeartBit! m_stop:", m_stop           , 
                                                                     " m_fechar_posicao:", m_fechar_posicao ,
-                                                                    " lenVetVolume:"    , m_vet_vol.Count() ) ; }
+                                                                    " lenVetVolume:"    , m_vet_vol.count() ) ; }
 
 void gerenciarRebaixamentoDeSaldoDoDia(){
         /////////////////////////////////////////////////////////////////////////////////////

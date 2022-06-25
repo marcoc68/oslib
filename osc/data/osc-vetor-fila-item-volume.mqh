@@ -43,7 +43,7 @@ public:
     string toString(){
         string str;
         StringConcatenate(str
-                             ,"|id "     ,id
+                             ,"|id "     ,(datetime)id/1000, ",",id%1000
                              ,"|volsel " ,volsel
                              ,"|volbuy " ,volbuy
                           );
@@ -92,11 +92,15 @@ public:
     	m_vsel += item.volsel;
     	
     	//Caso passe do tamanho, descarta os primeiros;
+    	//TrimExcess();
+    	ItemVol *old_item;
         while( Count() > m_tamanho_max ){
-        	item = Dequeue();
-        	m_vbuy -= item.volbuy;
-        	m_vsel -= item.volsel;
-        	delete(item);
+            //Print(__FUNCTION__, " eliminando item da fila...", item.toString() );
+        	old_item = Dequeue();
+        	if( CheckPointer(old_item)== POINTER_INVALID ) break;
+        	m_vbuy -= old_item.volbuy;
+        	m_vsel -= old_item.volsel;
+        	delete(old_item);
         }
 
     	return true;
@@ -115,16 +119,21 @@ public:
 
         ItemVol* vet[];
         CopyTo(vet);
+        ArraySetAsSeries(vet,false);
+        
         int size = ArraySize(vet);
         double vbuy = 0;
         double vsel = 0;
         
         for(int i=0; i<size; i++){
-            vbuy += ( vet[i].volbuy*(i+1) );
-            vsel += ( vet[i].volsel*(i+1) );
-        }        
-
-        return (vbuy-vsel)/(vbuy+vsel);
+            if(CheckPointer(vet[i])==POINTER_INVALID) break;
+            vbuy += ( vet[i].volbuy * (i+1) );
+            vsel += ( vet[i].volsel * (i+1) );
+            //Print(__FUNCTION__, " usando peso ",(i+1), " em ", vet[i].toString() );
+        }
+        double desb = (vbuy+vsel)==0?0:(vbuy-vsel)/(vbuy+vsel);
+        //Print(__FUNCTION__, " size:", size, " vbuy:", vbuy, " vsel:", vsel, " desb:", desb );
+        return desb;
     }
     
     // retorna data do tick mais antigo na fila.

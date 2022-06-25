@@ -20,7 +20,8 @@
 #include <Files/FileTxt.mqh>
 #include <oslib/osc-tick-util.mqh>
 #include <oslib/os-lib.mq5>
-#include <oslib/osc/data/osc-vetor-fila-item-volume.mqh>
+//#include <oslib/osc/data/osc-vetor-fila-item-volume.mqh>
+#include <oslib/osc/data/osc-vet-circular-volume.mqh>
 #include <oslib/osc/est/c00101cusum.mqh>
 
 input bool   DEBUG                   = false   ; // se true, grava informacoes de debug no log.
@@ -87,7 +88,7 @@ double m_bufStrikeHmais []; // H+                     :4
 double m_bufStrikeHmenos[]; // H-                     :5
 
 // variaveis para controle dos ticks
-osc_vetor_fila_item_volume m_vet_vol; // vetor circular para acumulacao de volumes
+osc_vet_circular_volume m_vet_vol; // vetor circular para acumulacao de volumes
 osc_tick_util   m_tick_util         ; // para simular ticks de trade em bolsas que nao informam last/volume.
 CSymbolInfo     m_symb              ;
 c00101cusum     m_cusum             ; //
@@ -149,7 +150,8 @@ int OnInit() {
    m_tick_util.setTickSize(m_symb.TickSize(), m_symb.Digits() );
    //m_cusum.setAcumularAcadaXTicks(QTD_TICKS_ACUM_CUSUM);
    m_cusum.initialize(HH,KK,QTD_TICKS_ACUM_CUSUM);
-   m_vet_vol.set_tamanho_fila(QTD_TICKS_DESB_VOL);
+   //m_vet_vol.set_tamanho_fila(QTD_TICKS_DESB_VOL);
+   m_vet_vol.initialize(QTD_TICKS_DESB_VOL);
 
 //--- debug
    if( DEBUG ){
@@ -244,7 +246,8 @@ int OnCalculate(const int        rates_total,
 // T    eh o alvo. Normalmente a media
 // K    eh o desvio minimo para que se acumule em uma das direcoes
 // H    eh o limiar (alarme)
-      calcC( m_vet_vol.calc_desbalanceamento() );
+    //calcC( m_vet_vol.calc_desbalanceamento_com_peso() );
+      calcC( m_vet_vol.get_desbalanceamento() );
 
       m_bufDesbMedio     [0] = m_cusum.getMedia();
       m_bufStrikeMais    [0] = + m_c_mais ; // log(m_c_mais ); //( (m_c_mais >1)?log(m_c_mais ):m_c_mais  );
@@ -295,21 +298,24 @@ void doOnCalculateHistorico(const int        p_rates_total    ,
                                  p_time[i-1]*1000, //ulong            from_msc=0,           // data a partir da qual são solicitados os ticks
                                  p_time[i  ]*1000  //ulong            to_msc=0              // data ate a qual são solicitados os ticks
                  );
+      //Print(__FUNCTION__, " ", qtdTicks, " copiados. Processando...");
       for(int ind=0; ind<qtdTicks; ind++){
          normalizar2trade(ticks[ind]);
          m_vet_vol.add   (ticks[ind]);
       
-      calcC(m_vet_vol.calc_desbalanceamento());
+       //calcC(m_vet_vol.calc_desbalanceamento());
+       //calcC(m_vet_vol.calc_desbalanceamento_com_peso());
+         calcC(m_vet_vol.get_desbalanceamento() );
 
-      m_bufDesbMedio    [i] = m_cusum.getMedia()  ;
-      m_bufStrikeMais   [i] = 0   + m_c_mais      ; //log(m_c_mais ); // ( (m_c_mais >1)?log(m_c_mais ):m_c_mais  );
-      m_bufStrikeMenos  [i] = 0   - m_c_menos     ; // log(m_c_menos); // ( (m_c_menos>1)?log(m_c_menos):m_c_menos );
+         m_bufDesbMedio    [i] = m_cusum.getMedia()  ;
+         m_bufStrikeMais   [i] = 0   + m_c_mais      ; //log(m_c_mais ); // ( (m_c_mais >1)?log(m_c_mais ):m_c_mais  );
+         m_bufStrikeMenos  [i] = 0   - m_c_menos     ; // log(m_c_menos); // ( (m_c_menos>1)?log(m_c_menos):m_c_menos );
 
 
-        //===============================================================================================
-        // Imprimindo dados de depuracao...
-        //===============================================================================================
-       //imprimirComment();
+         //===============================================================================================
+         // Imprimindo dados de depuracao...
+         //===============================================================================================
+         //imprimirComment();
       }// final for processamento dos ticks
 
       // mudou a barra, entao verificamos se eh necessario alterar o tamanho dos vetores de acumulacao de medias...
@@ -317,7 +323,9 @@ void doOnCalculateHistorico(const int        p_rates_total    ,
 
    }// final for do processamento das barras
 
-   m_prochist = true; Print( "Historico processado :-)" );
+   m_prochist = true; 
+   Print( __FUNCTION__, " Historico processado :-)");
+   Print( __FUNCTION__, " Tamanho do vetor de volume:", m_vet_vol.count() );
 
 }//doOnCalculateHistorico.
 

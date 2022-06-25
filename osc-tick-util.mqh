@@ -43,7 +43,7 @@ public:
          string toString()                                { return toString   (m_tickAnt, ""      ); }
          string toString(                string msgDebug ){ return toString   (m_tickAnt, msgDebug); }
          string toString( MqlTick& tick, string msgDebug );
-  static string toString( MqlTick& tick, int& dig);
+  static string toString( MqlTick& tick, const int dig);
   string toStringCSV()                                { return toStringCSV(m_tickAnt, ""      ); }
   string toStringCSV(                string msgDebug ){ return toStringCSV(m_tickAnt, msgDebug); }
   string toStringCSV( MqlTick& tick, string msgDebug );
@@ -115,7 +115,7 @@ void osc_tick_util::normalizar2trade(MqlTick& tick){
         }
      }
 
-   //Print(osc_tick_util::toString(tick,1));
+     //Print(osc_tick_util::toString(tick,1));
      if( m_buy_tmp > 0 && m_sel_tmp > 0 ){ tick.last = (m_buy_tmp+m_sel_tmp)/2; setTickAnt(tick); return;}
      if( m_buy_tmp > 0                  ){ tick.last =  m_buy_tmp             ; setTickAnt(tick); return;}
      if( m_sel_tmp > 0                  ){ tick.last =  m_sel_tmp             ; setTickAnt(tick); return;}
@@ -145,7 +145,7 @@ void osc_tick_util::normalizar2trade(MqlTick& tick){
 //    pBook = book;
 // }
 
-static string osc_tick_util::toString(MqlTick& tick, int& dig){
+static string osc_tick_util::toString(MqlTick& tick, const int dig){
    return
           "[time:"       + TimeToString   (tick.time       ) + "]" +  //datetime time;        // Hora da ultima atualizacao de precos
           "[bd:"         + DoubleToString (tick.bid        ,dig) + "]" +  //double   bid;         // Preco corrente de venda

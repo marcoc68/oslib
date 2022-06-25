@@ -108,9 +108,9 @@ private:
    CEdit             m_editTLFV;                   // the display field object
    double            m_TLFV;                       // TLFV
 
-   CLabel            m_labelImbal;                 // the label object
-   CEdit             m_editImbal;                  // the display field object
-   double            m_imbal;                      // desbalanceamento do book
+   CLabel            m_labelImbb;                 // the label object
+   CEdit             m_editImbb;                  // the display field object
+   double            m_imbb;                      // desbalanceamento do book
 
    CLabel            m_labelSinalBook;             // the label object
    CEdit             m_editSinalBook;              // the display field object
@@ -192,7 +192,7 @@ public:
    void setTarWIN   (double p, double limiar=0 ){ if(p==m_tarWIN   )return; m_tarWIN   =p; setEditValue(p,m_editTarWIN   ,limiar,clrRed ,clrBlue,clrGray); }
    void setIWFV     (double p, double limiar=0 ){ if(p==m_IWFV     )return; m_IWFV     =p; setEditValue(p,m_editIWFV     ,limiar,clrRed ,clrBlue,clrGray); }
    void setTLFV     (double p, double limiar=0 ){ if(p==m_TLFV     )return; m_TLFV     =p; setEditValue(p,m_editTLFV     ,limiar,clrBlue,clrRed ,clrGray); }
-   void setImbal    (double p, double limiar=0 ){ if(p==m_imbal    )return; m_imbal    =p; setEditValue(p,m_editImbal    ,limiar,clrBlue,clrRed ,clrGray); }
+   void setImbb    (double p, double limiar=0 ){ if(p==m_imbb    )return; m_imbb    =p; setEditValue(p,m_editImbb    ,limiar,clrBlue,clrRed ,clrGray); }
    void setSinalBook(double p, double limiar=0 ){ if(p==m_sinalBook)return; m_sinalBook=p; setEditValue(p,m_editSinalBook,limiar,clrBlue,clrRed ,clrGray); }
 
    void setVTLen (double p, double limiar=0 ){ if(p==m_VTLen     )return; m_VTLen     =p; setEditValue(p,m_editVTLen     ,limiar,clrBlue,clrRed ,clrGray); }
@@ -303,9 +303,9 @@ bool osc_control_panel_p7_004_003_06::Create(const long chart,const string name,
    // passo rajada
    linha++;
    if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, linha, "UmaTarifWIN" ,m_labelTarWIN ,"UmaTarifWIN"             )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, linha, "UmaTarifWIN" ,m_editTarWIN  ,DoubleToString(m_tarWIN,2) )) return(false);
-   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, linha, "IMBAL"       ,m_labelImbal ,"IMBAL"                   )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, linha, "IMBAL"       ,m_editImbal  ,DoubleToString(m_imbal,2) )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, linha, "UmaTarifWIN" ,m_editTarWIN  ,DoubleToString(m_tarWIN,2))) return(false);
+   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, linha, "IMB-B"       ,m_labelImbb   ,"IMB-B"                   )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, linha, "IMB-B"       ,m_editImbb    ,DoubleToString(m_imbb,2)  )) return(false);
 
    // profit da posicao
    linha++;
