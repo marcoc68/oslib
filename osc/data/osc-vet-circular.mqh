@@ -80,16 +80,28 @@ protected:
         
         if( ++m_ind == m_len_max ){ m_ind=0; }   // atualizando o indice
 
+        // acionando o evento on_window;
+        on_window(m_vet[m_ind],item);
+        
         //Print(__FUNCTION__," DEPOIS:", toString());
         
         return calcular_medias(calc_var);
     }
-    virtual bool   pode_inserir_no_vetor    (ItemVol *item){return false;};
-    virtual void   incrementar_totalizadores(ItemVol *item){return      ;};
-    virtual void   decrementar_totalizadores(ItemVol *item){return      ;};
+    virtual bool   pode_inserir_no_vetor    (   T item    ){return false;};
+    virtual void   incrementar_totalizadores(   T item    ){return      ;};
+    virtual void   decrementar_totalizadores(   T item    ){return      ;};
     virtual bool   calcular_medias          (bool calc_var){return true ;};
     virtual string toString()                              {return "implemente toString()";}      
+
+    // o evento on window acontece sempre que um ciclo de preenchimento do vetor eh completado.
+    // sao fornecidos o item mais antigo (first_item) e o mais novo (last_item);
+    virtual void   on_window                (const T first_item, const T last_item) {}
 public:    
+    // retorna a quantidade de elementos no vetor circular.
+    // Se encheu, retornarah o tamanho do tamanho do vetor, senao, retornarah um valor menor que seu tamanho.
     double count() { return m_len_atu; }
+    
+    // retorna o elemento mais antigo do vetor.
     T peek(){ return m_vet[m_ind]; }
+    
 };

@@ -146,7 +146,7 @@ public:
 
     bool calcular_medias(bool calc_var){
         m_desb=calc_desbalanceamento();
-    	return true;
+        return true;
     }
     
     // retorna o ultimo valor adicionado ao vetor;
@@ -162,7 +162,10 @@ public:
         return (m_totbuy-m_totsel)/(m_totbuy+m_totsel);
     }
     
+    int    get_tamanho()         { return m_len_atu; }
     double get_desbalanceamento(){ return m_desb; }
+    double get_totbuy(){ return m_totbuy; }
+    double get_totsel(){ return m_totsel; }
     datetime dt_tick_mais_antigo(){ 
         ItemVol *item = peek();
         return (datetime)item.id/1000;

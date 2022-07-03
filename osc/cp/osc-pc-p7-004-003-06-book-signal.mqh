@@ -116,9 +116,9 @@ private:
    CEdit             m_editSinalBook;              // the display field object
    double            m_sinalBook;                  // sinal do book 1(compre), -1(venda), 0(mantenha)
 
-   CLabel            m_labelVTLen;                        // the label object
-   CEdit             m_editVTLen;                         // the display field object
-   double            m_VTLen;                             // propabilidade do preco descer
+   CLabel            m_labelImbv;                  // the label object
+   CEdit             m_editImbv;                   // the display field object
+   double            m_imbv;                       // propabilidade do preco descer
 
    CLabel            m_labelSinalBook2;                        // the label object
    CEdit             m_editSinalBook2;                         // the display field object
@@ -195,7 +195,7 @@ public:
    void setImbb    (double p, double limiar=0 ){ if(p==m_imbb    )return; m_imbb    =p; setEditValue(p,m_editImbb    ,limiar,clrBlue,clrRed ,clrGray); }
    void setSinalBook(double p, double limiar=0 ){ if(p==m_sinalBook)return; m_sinalBook=p; setEditValue(p,m_editSinalBook,limiar,clrBlue,clrRed ,clrGray); }
 
-   void setVTLen (double p, double limiar=0 ){ if(p==m_VTLen     )return; m_VTLen     =p; setEditValue(p,m_editVTLen     ,limiar,clrBlue,clrRed ,clrGray); }
+   void setImbv  (double p, double limiar=0 ){ if(p==m_imbv      )return; m_imbv      =p; setEditValue(p,m_editImbv      ,limiar,clrBlue,clrRed ,clrGray); }
    void setVTDir2(double p, double limiar=0 ){ if(p==m_sinalBook2)return; m_sinalBook2=p; setEditValue(p,m_editSinalBook2,limiar,clrBlue,clrRed ,clrGray); }
    void setLEN0  (double p, double limiar=0 ){ if(p==m_LEN0      )return; m_LEN0      =p; setEditValue(p,m_editLEN0      ,limiar,clrBlue,clrRed ,clrGray); }
    void setLEN1  (double p, double limiar=0 ){ if(p==m_LEN1      )return; m_LEN1      =p; setEditValue(p,m_editLEN1      ,limiar,clrBlue,clrRed ,clrGray); }
@@ -318,8 +318,8 @@ bool osc_control_panel_p7_004_003_06::Create(const long chart,const string name,
    linha++;
    if(!CreateLabel2(INI_COLUNA_01, LARGURA_COLUNA_01, linha, "SaidaPosic",m_labelSaidaPosicao,"SaidaPosic"                     )) return(false);
    if(!CreateEdit2 (INI_COLUNA_02, LARGURA_COLUNA_02, linha, "SaidaPosic",m_editSaidaPosicao ,DoubleToString(m_saidaPosicao,2) )) return(false);
-   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, linha, "VTLen"      ,m_labelVTLen      ,"VTLen"                          )) return(false);
-   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, linha, "VTLen"      ,m_editVTLen       ,DoubleToString(m_VTLen,0)        )) return(false);
+   if(!CreateLabel2(INI_COLUNA_03, LARGURA_COLUNA_03, linha, "IMB-V"     ,m_labelImbv        ,"IMB-V"                          )) return(false);
+   if(!CreateEdit2 (INI_COLUNA_04, LARGURA_COLUNA_04, linha, "IMB-V"     ,m_editImbv         ,DoubleToString(m_imbv,0)         )) return(false);
 
    // stop_loss da posicao
    linha++;

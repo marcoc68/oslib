@@ -14,7 +14,7 @@
 
 #include <oslib/osc/data/osc-vet-circular-volume.mqh>
 
-#define EA_QTD_TIK_VOL_IMBALANCE 8
+#define EA_QTD_TIK_VOL_IMBALANCE 300
 //+------------------------------------------------------------------+
 //| Teste de comportamento de vetores e matrizes                     |
 //+------------------------------------------------------------------+
@@ -25,10 +25,13 @@ void OnStart(){
     m_vet_vol.initialize(EA_QTD_TIK_VOL_IMBALANCE);
 
     // carregando a ultima hora de ticks...
-    datetime from = (TimeCurrent()-(60*60) ) ; // minutos atras
+    //datetime from = (TimeCurrent()-(60*60) ) ; // minutos atras
+    //datetime to   = TimeCurrent()             ; // agora
+    datetime from = D'2022.06.23 09:05:00';
+    datetime to   = D'2022.06.23 17:50:00';
+    
     MqlTick ticks1[];
     int qtdTicks1 = 0;
-    datetime to   = TimeCurrent()             ; // agora
     string m_symb_str1 = _Symbol;
     double m_vol_imb = 0;
     
@@ -47,13 +50,14 @@ void OnStart(){
             //normalizar2trade(ticks1[i]);
             if( osc_padrao::isTkVol(ticks1[i]) ){
                 m_vet_vol.add(ticks1[i]);// adicionando o tick ao vetor de volumes
-                m_vol_imb = m_vet_vol.calc_desbalanceamento(); // obtendo o desbalancemento do volume;
-                //Print("i:",i, " imb:", m_vol_imb," dt:", ticks1[i].time, " vol:", ticks1[i].volume );
+                m_vol_imb = m_vet_vol.get_desbalanceamento(); // obtendo o desbalancemento do volume;
+                Print("i:",i, " imb:", m_vol_imb," dt:", ticks1[i].time, " vol:", ticks1[i].volume, " buy:", osc_padrao::isTkBuy(ticks1[i]),
+                                                                                                    " sel:", osc_padrao::isTkSel(ticks1[i]) );
                 
-                //if(i>10) break;
+                if(i>1000) break;
             }
         }
-        Print(__FUNCTION__,":-| teste-vol-profile ",qtdTicks1, " historicos ",m_symb_str1  ," processados... Mais novo eh:", ticks1[qtdTicks1-1].time );
+        Print(__FUNCTION__,":-| teste-vet-volume ",qtdTicks1, " historicos ",m_symb_str1  ," processados... Mais novo eh:", ticks1[qtdTicks1-1].time );
     }
     
 }

@@ -31,6 +31,7 @@ input double KK                      = 1       ; // K passo do preco para uma ac
 input double HH                      = 5       ; // H qtd somas na mesma direcao para caracterizar a tendencia 
 input int    QTD_TICKS_DESB_VOL      = 1000    ; // QTD_TICKS_DESB_VOL janela, em ticks, usada no calculo do desbalanceamento
 input int    QTD_TICKS_ACUM_CUSUM    = 200     ; // QTD_TICKS_ACUM calcula a cada X ticks
+input bool   APRESENTAR_COMMENT      = false   ; // APRESENTAR_COMMENT apresenta valor de variaveis na tela;
 
 
 #define LOG(txt)        if(DEBUG){Print("DEBUGINDICATOR:",__FUNCTION__,":linha ",__LINE__,":",(txt));}
@@ -95,7 +96,7 @@ c00101cusum     m_cusum             ; //
 bool            m_prochist          ; // para nao reprocessar o historico sempre que mudar de barra;
 
 // apresentacao de depuracao
-string m_tick_txt    ;
+string m_comment    ;
 
 // variaveis para controle do arquivo de log
 int  m_log_tick      ; // descarreganto ticks em arquivo de log (debug)
@@ -360,6 +361,7 @@ string m_deslocamento = ""+
                         "";
 int m_qtdImpressao = 0;                        
 void imprimirComment(){
+  if(!APRESENTAR_COMMENT) return;
   // imprimir a cada 2 ticks...
   if( m_qtdImpressao++ < 2 ){ return; }
   m_qtdImpressao = 0;
@@ -367,7 +369,7 @@ void imprimirComment(){
   //===============================================================================================
   // Imprimindo dados de depuracao...
   //===============================================================================================
-   m_tick_txt =
+   m_comment =
      "\n" +m_deslocamento+"=== ASSIMETRIA DO MERCADO ====\n"     +
            m_deslocamento+"TICKSD:"+ TimeToString(m_vet_vol.dt_tick_mais_antigo(),TIME_MINUTES|TIME_SECONDS) + "\n" +
            m_deslocamento+"DESBAL INSTANT/MEDIO:"+DoubleToString(m_vet_vol.calc_desbalanceamento(),2)+ "/" +
@@ -380,7 +382,7 @@ void imprimirComment(){
                                     DoubleToString(m_strikeHmenos                  , 2)+ "\n";
 
    Comment(       m_deslocamento+"TICK ===========================\n"+
-                  m_tick_txt+
+                  m_comment+
            "\n" + m_deslocamento+"FIM ================================"  );
   //===============================================================================================
 }

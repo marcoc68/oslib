@@ -412,7 +412,7 @@ void refreshMe(){
     // adicionando o tick ao componente estatistico...
     SymbolInfoTick(m_symb_str1,m_tick1);
 
-    if( osc_padrao::isTkVol(m_tick1) && (m_tick1.ask!=m_ask || m_tick1.bid!=m_bid) ){
+    if( osc_padrao::isTkVol(m_tick1) ){
         m_vet_vol.add(m_tick1);// adicionando o tick ao vetor de volumes
         //if( m_vet_vol.count() > (EA_QTD_TIK_VOL_IMBALANCE/2) ){
             m_vol_imb = m_vet_vol.get_desbalanceamento(); // obtendo o desbalancemento do volume;
@@ -490,7 +490,9 @@ void refreshMe(){
           //m_lucroPosicao = m_capitalLiquido - m_capitalInicial; // voltou versao em 03/02/2020 as 11:50
           //m_lucroPosicao = m_posicaoProfit; // passou a usar em 05/06/2020 jah que nessa estrategia as posicoes sao fechadas de vez.
           //m_lucroPosicao = m_capitalLiquido - m_capitalInicial; // voltou versao em 07/10/2020
-            m_lucroPosicao = m_lucroPosicaoRealizado + m_lucroPosicaoParcial; // 22/10/2020 testando calculo de lucro da posicao...
+            m_lucroPosicao =   m_lucroPosicaoRealizado 
+                             + m_lucroPosicaoParcial   // 22/10/2020 testando calculo de lucro da posicao...
+                             - m_posicaoVolumeTot*(m_trade_estatistica.getUmaTarifaDiaWIN() + EA_TARIFA_TESTE );
 
             m_lucroPosicao4Gain = (m_posicaoVolumeTot *m_qtd_ticks_4_gain_ini_1)*(m_lots_step1); // 16/02/21 correcao valor do lote
           //m_lucroPosicao4Gain = (m_posicaoVolumeTot *m_qtd_ticks_4_gain_ini_1 ); // passou a usar em 05/06/2020
@@ -526,7 +528,7 @@ void refreshMe(){
         //calcStopLossPosicao();
     }
 
-    //showAcao2("normal");
+    showAcao2("normal");
 } // refreshme()
 
 string astIfNeg(double val){ return astIfNeg(val,0); }
@@ -546,15 +548,18 @@ void showAcao2(string acao){
                                                  astIfNeg(m_book1.getImbalance  (EA_BOOK_DEEP1)*100,0)+ " / " +  
                                                  astIfNeg(        calcSinalBook1(             )    ,0)        +
          " \n VOLUME ===" +
-         "\n SEG/VBUY/VSEL/VBUY-SEL: ",
-		 	 	 	 	 	   astIfNeg(EA_QTD_SEG_VOL_IMBALANCE   ,0)+ " / " +
-		                       astIfNeg(m_vel_vol_buy              ,0)+ " / " +
-		                       astIfNeg(m_vel_vol_sel              ,0)+ " / " +
-                               astIfNeg(m_vel_vol_buy-m_vel_vol_sel,0)+
+         "\n LEN/DESDE/DESB/VBUY/VSEL/VBUY-SEL: ",
+		 	 	 	 	 	   astIfNeg(m_vet_vol.get_tamanho()                   ,0)+ " / " +
+		                   TimeToString(m_vet_vol.dt_tick_mais_antigo(),TIME_SECONDS)+ " / " +
+		                       astIfNeg(m_vet_vol.get_desbalanceamento()          ,2)+ " / " +
+		                       astIfNeg(m_vet_vol.get_totbuy()                    ,0)+ " / " +
+                               astIfNeg(m_vet_vol.get_totsel()                    ,0)+ " / " +
+		                       astIfNeg(m_vet_vol.get_totbuy() -     
+                                        m_vet_vol.get_totsel()                    ,0) +
        //  " \n ENTRADA  E SAIDA ==="+
            "\n DIVERSOS ==="+
            "\n lenBarraMediaEmTicks="     +astIfNeg(m_lenBarraMediaEmTicks,_Digits)+ "  REDUZIR_VOLUME=" + toString(m_reduzir_volume) +
-           " \n TICKS_4_GAIN_INI---MIN="   +astIfNeg(m_qtd_ticks_4_gain_ini_1, 2) + " --- " +
+           "\n TICKS_4_GAIN_INI---MIN="   +astIfNeg(m_qtd_ticks_4_gain_ini_1, 2) + " --- " +
                                             astIfNeg(EA_QTD_TICKS_4_GAIN_MIN_1,2) 
            );
 }
@@ -578,7 +583,7 @@ void refreshControlPanel(){
       }
   }
 
-  m_cp.setTarWIN       ( m_trade_estatistica.getUmaTarifaDiaWIN() );
+  m_cp.setTarWIN       ( m_trade_estatistica.getUmaTarifaDiaWIN() + EA_TARIFA_TESTE);
   m_cp.setProfitPosicao(     m_lucroPosicao        );
 
 //m_cp.setSaidaPosicao (     m_saida_posicao       );
@@ -599,7 +604,7 @@ void refreshControlPanel(){
   m_cp.setTLFV      ( m_book1.getTLFV     (EA_BOOK_DEEP1), m_book1.getAsk(1) );
   m_cp.setImbb      ( m_book1.getImbalance(EA_BOOK_DEEP1)                    );
   m_cp.setSinalBook ( calcSinalEntrada1   ()                                 );
-  m_cp.setVTLen     ( m_vol_imb,0 );  
+  m_cp.setImbv      ( m_vol_imb,0 );  
 
   //m_cp.setVTDir2( m_direcaoVelVolTradeMed,0);
   //m_cp.setLEN0  ( m_canal1.getLenCanalOperacionalEmTicks(),0);
@@ -637,6 +642,7 @@ bool inicializarControlPanel(){
 
 bool m_tem_book;
 void inicializarBookEvent(){
+     if(!EA_PROCESSAR_BOOK) return;
      inicializarBookEvent(m_symb_str1);
      m_book1.initialize(m_symb_str1,EA_BOOK_DEEP1,EA_BOOK_IMBALANCE1); 
      m_book1.set_db(m_db); 
@@ -873,19 +879,8 @@ void cancelarOrdensRajada(){
 void OnTick(){ onTick(); }
 
 void onTick(){
-	//calcVelVolume();
-
-    onBookEvent(m_symb_str1);
-
-    //refreshMe();
-
-    // elimina ordens de saida a mais na posicao...
-    //if( m_estah_no_intervalo_de_negociacao && m_acao_posicao != NAO_OPERAR ){
-        //consertarOrdensSaidaPosicao();
-        //consertarOrdensEntradaPosicao();
-    //}
-    
     refreshMe();
+    onBookEvent(m_symb_str1);
 
     if ( m_qtdPosicoes1 > 0 ) {
 
@@ -1884,7 +1879,8 @@ void onBookEvent(const string &symbol){
 double m_lenBarraMediaEmTicks = 0;
 void calcLenBarraMedia(){
 
-    if(!m_mudou_segundo) return;
+    //if(!m_mudou_segundo) return;
+    if(m_date_ant.min == m_date_atu.min) return; // recalcula 1x por minuto.
     double   maxMin      = 0 ;
     int      starPos     = 1 ; // desde o periodo anterior
     int      qtdPeriodos = 15; // ateh 15 periodos pra tras
