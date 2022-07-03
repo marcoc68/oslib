@@ -66,17 +66,19 @@
 #property link      "http://www.os.org"
 #property version   "4.003"
 
-#include <Trade\SymbolInfo.mqh>
-#include <Trade\PositionInfo.mqh>
-#include <Trade\AccountInfo.mqh>
-#include <oslib\osc-tick-util.mqh>
-#include <oslib\osc\osc-minion-trade-03.mqh>                 // executa ordens de neociacao
-#include <oslib\osc\osc-minion-trade-estatistica.mqh>        // resumo das transacoes no dia
-#include <oslib\osc\trade\osc_position.mqh>                  // 
-#include <oslib\osc\exp\C0004GerentePosicao.mqh>             // 
-#include <oslib\osc\cp\osc-pc-p7-004-003-06-book-signal.mqh> // painel de controle
-#include <oslib\osc\data\osc-book.mqh>                       // implemantacao do algoritmo de gerenciamento do book.
-#include <oslib\os-lib.mq5>
+#include <Trade/SymbolInfo.mqh>
+#include <Trade/PositionInfo.mqh>
+#include <Trade/AccountInfo.mqh>
+#include <oslib/osc-tick-util.mqh>
+#include <oslib/osc/osc-minion-trade-03.mqh>                 // executa ordens de neociacao
+#include <oslib/osc/osc-minion-trade-estatistica.mqh>        // resumo das transacoes no dia
+#include <oslib/osc/trade/osc_position.mqh>                  // 
+#include <oslib/osc/exp/C0004GerentePosicao.mqh>             // 
+#include <oslib/osc/cp/osc-pc-p7-004-003-06-book-signal.mqh> // painel de controle
+#include <oslib/osc/data/osc-book.mqh>                       // implemantacao do algoritmo de gerenciamento do book.
+//#include <oslib/osc/data/osc-vetor-fila-item-volume.mqh>
+#include <oslib/osc/data/osc-vet-circular-volume.mqh>
+#include <oslib/os-lib.mq5>
 
 enum ENUM_TIPO_ENTRADA_PERMITDA{
      ENTRADA_NULA              , //ENTRADA_NULA  Nao permite abrir posicoes.
@@ -98,7 +100,7 @@ enum ENUM_TIPO_OPERACAO{
   input group "Gerais";
   input ENUM_TIPO_OPERACAO         EA_ACAO_POSICAO            = HFT_FORMADOR_DE_MERCADO_VOL ; //*EA_ACAO_POSICAO:Forma de operacao do EA.
   input ENUM_TIPO_ENTRADA_PERMITDA EA_TIPO_ENTRADA_PERMITIDA  = ENTRADA_TODAS               ; //*TIPO_ENTRADA_PERMITIDA Tipos de entrada permitidas (sel,buy,ambas e nenhuma)
-  input double                     EA_MAX_VOL_POSICAO         =  3                          ; //*MAX_VOL_POSICAO. reduz volume para nao passar desse numero.
+  input double                     EA_MAX_VOL_POSICAO         =  30                         ; //*MAX_VOL_POSICAO. reduz volume para nao passar desse numero.
   input double                     EA_SPREAD_MAXIMO_EM_TICKS  =  20                         ; //*SPREAD_MAXIMO_EM_TICKS. Se for maior que o maximo, nao abre novas posicoes.
   input int                        SLEEP_TESTE                =  0                          ; //*ERROOOOOOOOOOOOO SLEEP_TESTE nao pode em producao
 
@@ -107,26 +109,16 @@ enum ENUM_TIPO_OPERACAO{
 //input int    EA_LEVEL_FECHAMENTO = 0 ; //*ERROOOOOOOOOOOOO LEVEL_FECHAMENTO use 0 em producao
   input int    EA_BOOK_DEEP1       = 16; //*BOOK_DEEP1 profundidade do book
   #define      EA_BOOK_IMBALANCE1   0.1  // BOOK_IMBALANCE1 limiar para definir direcao do movimento
-  input int    EA_QTD_SEG_VOL_IMBALANCE = 300 ; //QTD_SEG_VOL_IMBALANCE qtd seg calc vol imbalance.
-  input int    EA_TIMER_VOL_IMBALANCE   = 30  ; //TIMER_VOL_IMBALANCE qtd seg entre calculos vol imbalance.
-  input double EA_VOL_IMBALANCE         = 0.15; //VOL_IMBALANCE % para considerar o vol desbalanceado.
-  input bool   EA_PROCESSAR_BOOK        = true; //PROCESSAR_BOOK
+  input int    EA_QTD_SEG_VOL_IMBALANCE = 180  ; //QTD_SEG_VOL_IMBALANCE qtd seg calc vol imbalance.
+  input int    EA_QTD_TIK_VOL_IMBALANCE = 1000 ; //QTD_TIK_VOL_IMBALANCE qtd ticks calc vol imbalance.
+  input int    EA_TIMER_VOL_IMBALANCE   = 15   ; //TIMER_VOL_IMBALANCE qtd seg entre calculos vol imbalance.
+  input double EA_VOL_IMBALANCE         = 0.15 ; //VOL_IMBALANCE % para considerar o vol desbalanceado.
+  input bool   EA_PROCESSAR_BOOK        = true ; //PROCESSAR_BOOK
   
   //input group "=== RAJADA e Formador de Mercado ==="
   #define      EA_TAMANHO_RAJADA                            3     //TAMANHO_RAJADA;
-  #define      EA_DIST_MIN_IN_BOOK_IN_POS                   1     //DIST_MIN_IN_BOOK_IN_POS abrindo posicao
-  #define      EA_DIST_MIN_IN_BOOK_IN_POS_OBRIG             1     //int DIST_MIN_IN_BOOK_IN_POS_OBRIG
-  #define      EA_DIST_MIN_IN_BOOK_OUT_POS                  1     //DIST_MIN_IN_BOOK_OUT_POS fechando posicao
   #define      EA_LAG_RAJADA1                               4     //LAG_RAJADA1
-  #define      EA_STOP_PARCIAL_A_PARTIR_DE_X_LOTES          20    //int STOP_PARCIAL_A_PARTIR_DE_X_LOTES
-  #define      EA_STOP_PARCIAL_A_PARTIR_DE_X_GANHO          10    //int STOP_PARCIAL_A_PARTIR_DE_X_GANHO
   #define      EA_FECHA_POSICAO_NO_BREAK_EVEN               false //FECHA_POSICAO_NO_BREAK_EVEN
-  #define      EA_AUMENTO_LAG_QTD_FASE1                     3     //EA_AUMENTO_LAG_QTD_FASE1
-  #define      EA_AUMENTO_LAG_POR_LOTE_PENDENTE_FASE_1      0.0   //*AUMENTO_LAG_POR_LOTE_PENDENTE_1
-  #define      EA_AUMENTO_LAG_POR_LOTE_PENDENTE_FASE_2      0.0   //*AUMENTO_LAG_POR_LOTE_PENDENTE_1
-  #define      EA_AUMENTO_LAG_POR_LOTE_PENDENTE             0.00  //AUMENTO_LAG_POR_LOTE_PENDENTE_nao_se_usa
-  #define      EA_OFFSET_DINAMICO                           false //OFFSET_DINAMICO
-  #define      EA_DIVISOR_OFFSET                            0.5   //DIVISOR_OFFSET 0.5 (divide offset por 2)
 
   input group "=== Entrada na posicao ===";
   input int    EA_TOLERANCIA_ENTRADA       = 2 ; //*TOLERANCIA_ENTRADA em ticks: algumas estrategias permitem uma tolerancia do preco em ticks para entrada na posicao.
@@ -135,28 +127,19 @@ enum ENUM_TIPO_OPERACAO{
   input double EA_QTD_TICKS_4_GAIN_INI_1   = 1 ; //*TICKS_4_GAIN_INI_1 Qtd ticks para o gain;
   input int    EA_QTD_TICKS_4_GAIN_MIN_1   = 1 ; //*QTD_TICKS_4_GAIN_MIN_1 menor alvo inicial possivel;
   input int    EA_TARIFA_TESTE             = 0 ; //*TARIFA_TESTE:tarifa de teste. cobra seu valor por volume de trade vencedor. use quando t4g=2 e tarifa=1;
+  input int    EA_DESLOC_T4G_TESTE         = 0 ; //*DESLOC_T4G_TESTE:deslocamento do T4G. Use zero em producao e 1 em teste;
 
   input group "=== Database ===";
   input string EA_DBNAME        = "oslib7"; //DBNAME nome do banco de dados que guardarah o historico coletados dos books
   input bool   EA_REGISTRA_BOOK =  false  ; //*REGISTRA_BOOK se grava book em banco de dados
 
-  //input group "Rajada"
-  #define      EA_VOL_PRIM_ORDEM_RAJ                1      //double VOL_PRIM_ORDEM_RAJ:Vol da primeira ordem da rajada.
-  #define      EA_DISTAN_PRIM_ORDEM_RAJ             1      //double DISTAN_PRIM_ORDEM_RAJ Distancia em ticks desde abertura da posicao ateh prim ordem rajada;
-  #define      EA_DISTAN_DEMAIS_ORDENS_RAJ          1      //double DISTAN_DEMAIS_ORDENS_RAJ Distancia entre as demais ordens da rajada;
   #define      EA_LOGAR_TRADETRANSACTION            false  //LOGAR_TRADETRANSACTION
 
 //-------------------------------------------------------------------------------------------
 input group "Passo dinamico"
-input bool   EA_PASSO_DINAMICO                = true; //PASSO_DINAMICO:tamanho do passo muda em funcao da volatilidade
-input double EA_PASSO_DINAMICO_PORC_T4G       = 0.1 ; //PASSO_DINAMICO_PORC_TFG: % do TFG para definir o passo.
-#define EA_PASSO_DINAMICO_MIN                   1     //PASSO_DINAMICO_MIN:menor passo possivel.
-#define EA_PASSO_DINAMICO_MAX                   15    //PASSO_DINAMICO_MAX:maior passo possivel.
-#define EA_PASSO_DINAMICO_PORC_CANAL_ENTRELACA  0.02  //PASSO_DINAMICO_PORC_CANAL_ENTRELACA
-#define EA_PASSO_DINAMICO_STOP_QTD_CONTRAT      3     //PASSO_DINAMICO_STOP_QTD_CONTRAT:A partir dessa qtd contratos totais na posicao, comeca a controlar seu fechamento.
-#define EA_PASSO_DINAMICO_STOP_CHUNK            2     //PASSO_DINAMICO_STOP_CHUNK:tamanho do chunk.
-#define EA_PASSO_DINAMICO_STOP_PORC_CANAL       1     //PASSO_DINAMICO_STOP_PORC_CANAL:porcentagem do canal, usada para calcular o stop_loss dinamico.
-#define EA_PASSO_DINAMICO_STOP_REDUTOR_RISCO    1     //PASSO_DINAMICO_STOP_REDUTOR_RISCO:porcentagem sobre o tamanho do passo para iniciar saida da posicao.
+input bool   EA_PASSO_DINAMICO                  = true ; //PASSO_DINAMICO:tamanho do passo muda em funcao da volatilidade
+input double EA_PASSO_DINAMICO_PORC_BARRA_MEDIA = 0.20 ; //PASSO_DINAMICO_PORC_BARRA_MEDIA: % da barra media para definir o T4G.
+input double EA_PASSO_DINAMICO_PORC_T4G         = 0.0  ; //PASSO_DINAMICO_PORC_TFG: % do TFG por volume na posicao para definir o passo.
 //-------------------------------------------------------------------------------------------
 //
   //input group "STOP PARCIAL"
@@ -165,7 +148,6 @@ input double EA_PASSO_DINAMICO_PORC_T4G       = 0.1 ; //PASSO_DINAMICO_PORC_TFG:
   #define EA_STOP_PARCIAL_FIRE_PORC_LUCRO_POSICAO  0.8   //*STOP_PARCIAL_FIRE_PORC_LUCRO_POSICAO
 
   input group "=== STOP LOSS ===";
-//input int    EA_STOP_TIPO_CONTROLE_RISCO = 1   ; // STOP_TIPO_CONTROLE_RISCO, se 1, controle normal. Se 2, controle por proximidade do breakeven.
   input int    EA_STOP_TICKS_STOP_LOSS   =  0    ; // STOP_TICKS_STOP_LOSS:Quantidade de ticks usados no stop loss;
   input int    EA_STOP_TICKS_TKPROF      =  0    ; // STOP_TICKS_TKPROF:Quantidade de ticks usados no take profit;
   input double EA_STOP_REBAIXAMENTO_MAX  =  0    ; // STOP_REBAIXAMENTO_MAX:preencha com positivo.
@@ -200,8 +182,8 @@ input int    EA_MI_FECHAR_POSICAO = 45; // *MI_FECHAR_POSICAO fecha todas as pos
 //---------------------------------------------------------------------------------------------
 //
 input group "=== Sleep e timer ===";
-input int    EA_SLEEP_INI_OPER     =  05   ;//*SLEEP_INI_OPER:Aguarda estes segundos para iniciar abertura de posicoes.
-input int    EA_QTD_MILISEG_TIMER  =  1000 ;//*QTD_MILISEG_TIMER:Tempo de acionamento do timer.
+input int    EA_SLEEP_INI_OPER     =  05  ;//*SLEEP_INI_OPER:Aguarda estes segundos para iniciar abertura de posicoes.
+input int    EA_QTD_MILISEG_TIMER  =  250 ;//*QTD_MILISEG_TIMER:Tempo de acionamento do timer.
 //---------------------------------------------------------------------------------------------
 
 ENUM_TIPO_OPERACAO         m_acao_posicao     = NAO_OPERAR;
@@ -213,6 +195,7 @@ CSymbolInfo                m_symb1                   ;
 CPositionInfo              m_posicao1                ;
 CAccountInfo               m_cta                     ;
 C004GerentePosicao         m_gerentePos1             ;
+osc_vet_circular_volume    m_vet_vol                 ; // vetor circular para acumulacao de volumes
 
 double        m_tick_size1                    ;// alteracao minima do preco em pontos para o simbolo 1.
 double        m_tick_value1                   ;// valor do tick na moeda do ativo 1.
@@ -273,7 +256,6 @@ string   m_apmb_sel   = "INS"; //string que identifica ordens de abertura de pos
 string   m_apmb_buy   = "INB"; //string que identifica ordens de abertura de posicoes na media das ofertas do book.
 string   m_strRajada  = "RJ" ; //string que identifica rajadas de abertura de novas posicoes.
 string   m_comment_fixo;
-string   m_comment_var;
 
 double m_maior_sld_do_dia = 0;
 double m_sld_sessao_atu   = 0;
@@ -286,14 +268,9 @@ double m_stop_level_in_price = 0;
 long   m_tempo_posicao_atu   = 0;
 long   m_tempo_posicao_ini   = 0;
 
-int    m_stop_qtd_contrat    = 0; // EA_STOP_QTD_CONTRAT; Eh o tamanho do chunk;
-double m_stop_porc           = 0; // EA_STOP_PORC_L1    ; Eh a porcentagem inicial para o ganho durante o passeio;
 double m_qtd_ticks_4_gain_new  = 0;
 double m_qtd_ticks_4_gain_ini_1  = 0;
-double m_qtd_ticks_4_gain_raj= 0;
-int    m_passo_rajada        = 0;
 double m_vol_lote_ini1       = 0;
-double m_vol_lote_raj        = 0;
 
 // controles de apresentacao das variaveis de debug na tela...
 string m_str_linhas_acima   = "";
@@ -352,7 +329,7 @@ int OnInit(){
     m_posicao1.Select( m_symb_str1 ); // selecao da posicao por simbolo.
     m_gerentePos1.inicializar(m_symb_str1,EA_MAGIC,EA_LAG_RAJADA1,EA_TAMANHO_RAJADA);
     m_gerentePos1.setSpread(             m_tick_size1);
-    m_gerentePos1.setT4gMin((int)EA_QTD_TICKS_4_GAIN_INI_1 );
+    m_gerentePos1.setT4gMin((int)(EA_QTD_TICKS_4_GAIN_INI_1+EA_DESLOC_T4G_TESTE) );
 
     // estatistica de trade...
     m_time_in_seconds_ini_day = StringToTime( TimeToString( TimeCurrent(), TIME_DATE ) );
@@ -367,6 +344,8 @@ int OnInit(){
     m_maior_sld_do_dia = (m_maior_sld_do_dia==0)?m_cta.Balance():m_maior_sld_do_dia; // saldo da conta no inicio da sessao;
     m_sld_sessao_atu   = (m_sld_sessao_atu  ==0)?m_cta.Balance():m_sld_sessao_atu  ;
     m_capitalInicial   = (m_capitalInicial  ==0)?m_cta.Balance():m_capitalInicial  ;
+    
+    m_vet_vol.initialize(EA_QTD_TIK_VOL_IMBALANCE); // tamanho da janela de calculo do desbalanceamento do volume (em ticks);
 
     m_comment_fixo = "LOGIN:"         + DoubleToString(m_cta.Login(),0) +
                      "  TRADEMODE:"   + m_cta.TradeModeDescription()    +
@@ -391,21 +370,35 @@ int OnInit(){
 
     m_tick_util1.setTickSize(m_symb1.TickSize(), m_symb1.Digits() );
 
-    datetime from = (TimeCurrent()-600)*1000 ; // minutos atras
+    // carregando a ultima hora de ticks...
+    datetime from = (TimeCurrent()-(60*60) ) ; // minutos atras
     MqlTick ticks1[];
     int qtdTicks1 = 0;
     datetime to   = TimeCurrent()             ; // agora
-    qtdTicks1 = CopyTicksRange( m_symb_str1    , //const string     symbol_name,          // nome do símbolo
+    qtdTicks1 = CopyTicksRange( m_symb_str1   , //const string     symbol_name,          // nome do símbolo
                                 ticks1        , //MqlTick&         ticks_array[],        // matriz para recebimento de ticks
                                 COPY_TICKS_ALL, //uint             flags=COPY_TICKS_ALL, // sinalizador que define o tipo de ticks obtidos
                                 from*1000     , //ulong            from_msc=0,           // data a partir da qual são solicitados os ticks
                                 to*1000         //ulong            to_msc=0              // data ate a qual são solicitados os ticks
                               );
     Print( __FUNCTION__,": Ticks copiados do ativo ",m_symb_str1,":",qtdTicks1);
-    if(qtdTicks1>0) Print(__FUNCTION__,":-| ",qtdTicks1, " historicos ",m_symb_str1  ," processados... Mais novo eh:", ticks1[qtdTicks1-1].time );
+    if(qtdTicks1>0){
+        Print(__FUNCTION__,":-| Procesando ", qtdTicks1, " historicos... Mais antigo eh:", ticks1[0].time );
+        for(int i=0; i<qtdTicks1; i++){
+            //normalizar2trade(ticks1[i]);
+            if( osc_padrao::isTkVol(ticks1[i]) ){
+                m_vet_vol.add(ticks1[i]);// adicionando o tick ao vetor de volumes
+                //if( m_vet_vol.count() > (EA_QTD_TIK_VOL_IMBALANCE/2) ){
+                    m_vol_imb = m_vet_vol.get_desbalanceamento(); // obtendo o desbalancemento do volume;
+                  //m_vol_imb = m_vet_vol.calc_desbalanceamento(); // obtendo o desbalancemento do volume;
+                  //m_vol_imb = m_vet_vol.calc_desbalanceamento_com_peso(); // obtendo o desbalancemento do volume;
+                //}
+            }
+        }
+        Print(__FUNCTION__,":-| ",qtdTicks1, " historicos ",m_symb_str1  ," processados... Mais novo eh:", ticks1[qtdTicks1-1].time );
+    }
 
     calcLenBarraMedia();
-
     return(INIT_SUCCEEDED);
 }
 
@@ -418,9 +411,20 @@ void refreshMe(){
 
     // adicionando o tick ao componente estatistico...
     SymbolInfoTick(m_symb_str1,m_tick1);
+
+    if( osc_padrao::isTkVol(m_tick1) ){
+        m_vet_vol.add(m_tick1);// adicionando o tick ao vetor de volumes
+        //if( m_vet_vol.count() > (EA_QTD_TIK_VOL_IMBALANCE/2) ){
+            m_vol_imb = m_vet_vol.get_desbalanceamento(); // obtendo o desbalancemento do volume;
+          //m_vol_imb = m_vet_vol.calc_desbalanceamento(); // obtendo o desbalancemento do volume;
+          //m_vol_imb = m_vet_vol.calc_desbalanceamento_com_peso(); // obtendo o desbalancemento do volume;
+        //}
+    }
+
     m_ask     = m_tick1.ask;
     m_bid     = m_tick1.bid;
     m_spread  = m_tick1.ask-m_tick1.bid;
+    
 
     m_trade1.setStopLoss( m_stopLossOrdens );
     m_trade1.setTakeProf( m_tkprof         );
@@ -486,10 +490,11 @@ void refreshMe(){
           //m_lucroPosicao = m_capitalLiquido - m_capitalInicial; // voltou versao em 03/02/2020 as 11:50
           //m_lucroPosicao = m_posicaoProfit; // passou a usar em 05/06/2020 jah que nessa estrategia as posicoes sao fechadas de vez.
           //m_lucroPosicao = m_capitalLiquido - m_capitalInicial; // voltou versao em 07/10/2020
-            m_lucroPosicao = m_lucroPosicaoRealizado + m_lucroPosicaoParcial; // 22/10/2020 testando calculo de lucro da posicao...
+            m_lucroPosicao =   m_lucroPosicaoRealizado 
+                             + m_lucroPosicaoParcial   // 22/10/2020 testando calculo de lucro da posicao...
+                             - m_posicaoVolumeTot*(m_trade_estatistica.getUmaTarifaDiaWIN() + EA_TARIFA_TESTE );
 
-          //m_lucroPosicao4Gain = (m_posicaoVolumeTot *m_stop_porc);
-            m_lucroPosicao4Gain = (m_posicaoVolumeTot *EA_QTD_TICKS_4_GAIN_INI_1)*(m_lots_step1); // 16/02/21 correcao valor do lote
+            m_lucroPosicao4Gain = (m_posicaoVolumeTot *m_qtd_ticks_4_gain_ini_1)*(m_lots_step1); // 16/02/21 correcao valor do lote
           //m_lucroPosicao4Gain = (m_posicaoVolumeTot *m_qtd_ticks_4_gain_ini_1 ); // passou a usar em 05/06/2020
           //m_lucroPosicao4Gain = (m_posicaoVolumePend*m_qtd_ticks_4_gain_ini_1 ); // passou a usar em 05/06/2020
 
@@ -500,7 +505,7 @@ void refreshMe(){
         m_volComprasNaPosicao  = 0;
 
         m_capitalInicial       = m_cta.Balance(); // se nao estah na posicao, atualizamos o capital inicial da proxima posicao.
-        //m_qtd_ticks_4_gain_ini_1 = EA_QTD_TICKS_4_GAIN_INI_1;
+        //m_qtd_ticks_4_gain_ini_1 = EA_QTD_TICKS_4_GAIN_INI_1+EA_DESLOC_T4G_TESTE;
         m_comprado          = false;
         m_vendido           = false;
         m_stop              = false;
@@ -532,46 +537,6 @@ string astIfNeg(double val, int digits){
                   return DoubleToString(val,digits);
 }
 
-
-void showAcao(string acao){
-
-   if( !EA_SHOW_TELA ){ return; }
-
-   Comment(
-           " LUCRO E LOTES ==="                          ,
-           " \n lucro Conf/Tot="              +astIfNeg(m_lucroPosicaoRealizado,2) + " / " +
-                                               astIfNeg(m_lucroPosicao         ,2) + "  lucroPos4Gain=" +astIfNeg(m_lucroPosicao4Gain    ,2),
-
-           " \n LOTS Pend/Tot/addSelAdv="   +astIfNeg(m_posicaoLotsPend ,0)+ "/"+
-                                             astIfNeg(m_posicaoVolumeTot,0)+ "/"+
-                                             DoubleToString(getTicksAddPorSelecaoAdversa1(),0)+
-           //================
-           " \n INCLINACAO ===" +
-           //================
-           " \n DIVERSOS ==="                          ,
-           " \n tempo_posicao="             ,m_tempo_posicao_atu       ,
-           //----------------
-           " \n PARAMETROS FIXOS/DINAMICOS ===" +
-           " \n DIST_IN_POS/OUT_POS="      +astIfNeg(EA_DIST_MIN_IN_BOOK_IN_POS ) + " / " + astIfNeg(m_dist_min_in_book_in_pos  ,0) + " --- " +
-                                            astIfNeg(EA_DIST_MIN_IN_BOOK_OUT_POS) + " / " + astIfNeg(m_dist_min_in_book_out_pos ,0) +
-           " \n LAG_RAJADA="               +astIfNeg(EA_LAG_RAJADA1              ) + " / " + astIfNeg(m_lag_rajada1               ,0) +
-           " \n TICKS_4_GAIN_INI---MIN="   +astIfNeg(m_qtd_ticks_4_gain_ini_1, 2)  + " --- " +
-                                            astIfNeg(EA_QTD_TICKS_4_GAIN_MIN_1,2) +
-           " \n INCLINACAO REGRESSAO E PRECO MEDIO ===" +
-           " \n VOLATILIDADE ===" +
-       //  " \n ENTRADA  E SAIDA ==="+
-           " \n INCLINACAO ===" +
-           " \n DIVERSOS ==="+
-           " \n lenBarraMediaEmTicks="     +astIfNeg(m_lenBarraMediaEmTicks,_Digits) +
-           " \n DEEP IMBALANCE ==="+
-           " \n BOOK DEEP1 = "    +astIfNeg(EA_BOOK_DEEP1) +
-           " \n IMBAL LIMIAR1 = "  +astIfNeg(EA_BOOK_IMBALANCE1,2) +
-           " \n BOOK IMBAL1 = "     +astIfNeg(m_book1.getImbalance(),3 ) +
-           " \n RECOMENDACAO IMBAL1 = " + m_book1.getDirecaoImbalanceStr()
-           );
-}
-
-
 void showAcao2(string acao){
 
    if( !EA_SHOW_TELA ){ return; }
@@ -583,15 +548,18 @@ void showAcao2(string acao){
                                                  astIfNeg(m_book1.getImbalance  (EA_BOOK_DEEP1)*100,0)+ " / " +  
                                                  astIfNeg(        calcSinalBook1(             )    ,0)        +
          " \n VOLUME ===" +
-         "\n SEG/VBUY/VSEL/VBUY-SEL: ",
-		 	 	 	 	 	   astIfNeg(EA_QTD_SEG_VOL_IMBALANCE   ,0)+ " / " +
-		                       astIfNeg(m_vel_vol_buy              ,0)+ " / " +
-		                       astIfNeg(m_vel_vol_sel              ,0)+ " / " +
-                               astIfNeg(m_vel_vol_buy-m_vel_vol_sel,0)+
+         "\n LEN/DESDE/DESB/VBUY/VSEL/VBUY-SEL: ",
+		 	 	 	 	 	   astIfNeg(m_vet_vol.get_tamanho()                   ,0)+ " / " +
+		                   TimeToString(m_vet_vol.dt_tick_mais_antigo(),TIME_SECONDS)+ " / " +
+		                       astIfNeg(m_vet_vol.get_desbalanceamento()          ,2)+ " / " +
+		                       astIfNeg(m_vet_vol.get_totbuy()                    ,0)+ " / " +
+                               astIfNeg(m_vet_vol.get_totsel()                    ,0)+ " / " +
+		                       astIfNeg(m_vet_vol.get_totbuy() -     
+                                        m_vet_vol.get_totsel()                    ,0) +
        //  " \n ENTRADA  E SAIDA ==="+
            "\n DIVERSOS ==="+
            "\n lenBarraMediaEmTicks="     +astIfNeg(m_lenBarraMediaEmTicks,_Digits)+ "  REDUZIR_VOLUME=" + toString(m_reduzir_volume) +
-           " \n TICKS_4_GAIN_INI---MIN="   +astIfNeg(m_qtd_ticks_4_gain_ini_1, 2) + " --- " +
+           "\n TICKS_4_GAIN_INI---MIN="   +astIfNeg(m_qtd_ticks_4_gain_ini_1, 2) + " --- " +
                                             astIfNeg(EA_QTD_TICKS_4_GAIN_MIN_1,2) 
            );
 }
@@ -615,8 +583,7 @@ void refreshControlPanel(){
       }
   }
 
-//m_cp.setPasso        ((int)m_passo_rajada        );
-  m_cp.setTarWIN       ( m_trade_estatistica.getUmaTarifaDiaWIN() );
+  m_cp.setTarWIN       ( m_trade_estatistica.getUmaTarifaDiaWIN() + EA_TARIFA_TESTE);
   m_cp.setProfitPosicao(     m_lucroPosicao        );
 
 //m_cp.setSaidaPosicao (     m_saida_posicao       );
@@ -635,25 +602,16 @@ void refreshControlPanel(){
 
   m_cp.setIWFV      ( m_book1.getIWFV     (EA_BOOK_DEEP1), m_book1.getBid(1) );
   m_cp.setTLFV      ( m_book1.getTLFV     (EA_BOOK_DEEP1), m_book1.getAsk(1) );
-  m_cp.setImbal     ( m_book1.getImbalance(EA_BOOK_DEEP1)                    );
+  m_cp.setImbb      ( m_book1.getImbalance(EA_BOOK_DEEP1)                    );
   m_cp.setSinalBook ( calcSinalEntrada1   ()                                 );
-  m_cp.setVTLen     ( m_vol_imb,0 );    
+  m_cp.setImbv      ( m_vol_imb,0 );  
+
   //m_cp.setVTDir2( m_direcaoVelVolTradeMed,0);
   //m_cp.setLEN0  ( m_canal1.getLenCanalOperacionalEmTicks(),0);
   //m_cp.setLEN1  ( m_canal1.getCoefLinear(),0);
 }
 
-bool passoAutorizado(){
-    if( EA_PASSO_DINAMICO ){
-        return m_qtd_ticks_4_gain_new >= EA_PASSO_DINAMICO_MIN && m_qtd_ticks_4_gain_new < EA_PASSO_DINAMICO_MAX;
-    }
-    return true;
-}
-
-int    m_dist_min_in_book_in_pos              = 0;//EA_DIST_MIN_IN_BOOK_IN_POS; //DISTANCIA_MINIMA_PARA_ENTRAR_NO_BOOK  ABRINDO POSICAO
-int    m_dist_min_in_book_out_pos             = 0;//EA_DIST_MIN_IN_BOOK_OUT_POS; //DISTANCIA_MINIMA_PARA_ENTRAR_NO_BOOK FECHANDO POSICAO
-int    m_lag_rajada1                          = 0;//EA_LAG_RAJADA1                          ; //LAG_RAJADA
-double m_razao_lag_rajada_x_dist_entrada_book = 0;//(double)EA_DIST_MIN_IN_BOOK_IN_POS/(double)EA_LAG_RAJADA1;
+int m_lag_rajada1 = 0;//EA_LAG_RAJADA1
 void definirPasso(){
 
    double vol1 = 0;
@@ -663,18 +621,13 @@ void definirPasso(){
    
    if( EA_PASSO_DINAMICO ){
 
-       m_qtd_ticks_4_gain_new = EA_QTD_TICKS_4_GAIN_INI_1;
+       //m_qtd_ticks_4_gain_new = EA_QTD_TICKS_4_GAIN_INI_1;
+       m_qtd_ticks_4_gain_new = m_lenBarraMediaEmTicks*EA_PASSO_DINAMICO_PORC_BARRA_MEDIA; 
        for( int i=1; i<vol1; i++ ){
           m_qtd_ticks_4_gain_new += EA_PASSO_DINAMICO_PORC_T4G*m_qtd_ticks_4_gain_new;
        }
 
-       m_qtd_ticks_4_gain_ini_1 =        m_qtd_ticks_4_gain_new ;
-       m_qtd_ticks_4_gain_raj   =        m_qtd_ticks_4_gain_new;
-       m_passo_rajada           =  (int)(m_qtd_ticks_4_gain_new*EA_PASSO_DINAMICO_PORC_T4G);
-       if( m_passo_rajada < EA_PASSO_DINAMICO_MIN )  m_passo_rajada = EA_PASSO_DINAMICO_MIN;
-
-       m_stop_qtd_contrat = EA_PASSO_DINAMICO_STOP_QTD_CONTRAT;
-       m_stop_porc        = m_qtd_ticks_4_gain_new*EA_PASSO_DINAMICO_STOP_REDUTOR_RISCO;
+       m_qtd_ticks_4_gain_ini_1 = m_qtd_ticks_4_gain_new + EA_DESLOC_T4G_TESTE;
    }
    
 }
@@ -689,6 +642,7 @@ bool inicializarControlPanel(){
 
 bool m_tem_book;
 void inicializarBookEvent(){
+     if(!EA_PROCESSAR_BOOK) return;
      inicializarBookEvent(m_symb_str1);
      m_book1.initialize(m_symb_str1,EA_BOOK_DEEP1,EA_BOOK_IMBALANCE1); 
      m_book1.set_db(m_db); 
@@ -727,8 +681,7 @@ void inicializarSimbolos(){
     Print(":-| ", __FUNCTION__," ******************************** Simbolo 1 inicializado.> \n");
 }
 
-double m_passo_dinamico_porc_canal_entrelaca = 0;
-double m_stopLossPosicao                     = 0;
+double m_stopLossPosicao = 0;
 
 void inicializarVariaveisRecebidasPorParametro(){
 
@@ -751,41 +704,23 @@ void inicializarVariaveisRecebidasPorParametro(){
 
 
     // variaveis de controle do stop...
-    m_qtd_ticks_4_gain_ini_1 = EA_QTD_TICKS_4_GAIN_INI_1;
-    m_qtd_ticks_4_gain_raj = EA_QTD_TICKS_4_GAIN_INI_1;
-    m_vol_lote_raj         = EA_VOL_PRIM_ORDEM_RAJ!=0?EA_VOL_PRIM_ORDEM_RAJ*m_lots_step1:m_symb1.LotsMin();
+    m_qtd_ticks_4_gain_ini_1 = EA_QTD_TICKS_4_GAIN_INI_1+EA_DESLOC_T4G_TESTE;
     m_vol_lote_ini1        = EA_VOL_LOTE_INI_1    !=0?EA_VOL_LOTE_INI_1    *m_lots_step1:m_symb1.LotsMin();
-    m_passo_rajada         = (int)EA_DISTAN_DEMAIS_ORDENS_RAJ;
-    m_stop_qtd_contrat     = (int)EA_STOP_CHUNK;
-    m_stop_porc            = EA_STOP_PORC_L1;
 
     Print(":-| ", __FUNCTION__," m_aguardar_para_abrir_posicao      :", m_aguardar_para_abrir_posicao         );
     Print(":-| ", __FUNCTION__," m_tipo_entrada_permitida           :", EnumToString(m_tipo_entrada_permitida));
     Print(":-| ", __FUNCTION__," m_stopLossPosicao                  :", m_stopLossPosicao                     );
     Print(":-| ", __FUNCTION__," m_qtd_ticks_4_gain_ini_1           :", m_qtd_ticks_4_gain_ini_1           );
-    Print(":-| ", __FUNCTION__," m_qtd_ticks_4_gain_raj             :", m_qtd_ticks_4_gain_raj             );
-    Print(":-| ", __FUNCTION__," m_vol_lote_raj                     :", m_vol_lote_raj                     );
     Print(":-| ", __FUNCTION__," m_vol_lote_ini1                    :", m_vol_lote_ini1                    );
-    Print(":-| ", __FUNCTION__," m_passo_rajada                     :", m_passo_rajada                     );
-    Print(":-| ", __FUNCTION__," m_stop_qtd_contrat                 :", m_stop_qtd_contrat                 );
-    Print(":-| ", __FUNCTION__," m_stop_porc                        :", m_stop_porc                        );
     Print(":-| ", __FUNCTION__," SLEEP_TESTE                        :", SLEEP_TESTE        ," miliseg"     );
     Print(":-| ", __FUNCTION__," ******************************** Variaveis diversas inicializadas."       );
 }
 
 void inicializarPassoRajadaFixoHFT_FORMADOR_DE_MERCADO(){
     Print(":-| ", __FUNCTION__," ******************************** Inicializando variaveis HFT_FORMADOR_DE_MERCADO...");
-    m_dist_min_in_book_in_pos              = EA_DIST_MIN_IN_BOOK_IN_POS ; //DISTANCIA_MINIMA_PARA_ENTRAR_NO_BOOK ABRINDO POSICAO
-    m_dist_min_in_book_out_pos             = EA_DIST_MIN_IN_BOOK_OUT_POS; //DISTANCIA_MINIMA_PARA_ENTRAR_NO_BOOK FECHANDO POSICAO
-    m_razao_lag_rajada_x_dist_entrada_book = (double)EA_DIST_MIN_IN_BOOK_IN_POS/ oneIfZero( (double)EA_LAG_RAJADA1 );
     m_lag_rajada1                          = EA_LAG_RAJADA1;
-    m_passo_rajada                         = m_lag_rajada1; //nao eh usado. Eh soh pra aparecer no painel de controle.
 
-    Print(":-| ", __FUNCTION__," m_dist_min_in_book_in_pos             :", m_dist_min_in_book_in_pos               ,": DISTANCIA_MINIMA_PARA_ENTRAR_NO_BOOK ABRINDO  POSICAO");
-    Print(":-| ", __FUNCTION__," m_dist_min_in_book_out_pos            :", m_dist_min_in_book_out_pos              ,": DISTANCIA_MINIMA_PARA_ENTRAR_NO_BOOK FECHANDO POSICAO");
-    Print(":-| ", __FUNCTION__," m_razao_lag_rajada_x_dist_entrada_book:", m_razao_lag_rajada_x_dist_entrada_book  );
-    Print(":-| ", __FUNCTION__," m_lag_rajada1                         :", m_lag_rajada1                            );
-    Print(":-| ", __FUNCTION__," m_passo_rajada                        :", m_passo_rajada                          );
+    Print(":-| ", __FUNCTION__," m_lag_rajada1                         :", m_lag_rajada1                           );
     Print(":-| ", __FUNCTION__," ******************************** Variaveis HFT_FORMADOR_DE_MERCADO inicializadas.");
 }
 
@@ -867,13 +802,6 @@ void fecharPosicao2(string descr, string strLog, int qtdTicksDeslocamento=0, int
 
       Print(":-| ", __FUNCTION__,"(",descr,",",strLog,",",qtdTicksDeslocamento,",",deep,")");
 
-      //<TODO> Este item 1, eh incompativel com novo metodo de fechamento de posicao. Por enquanto
-      //       deixo comentado afim de testar. Resova durante ou logo apos os testes.
-      //
-      //1. providenciando ordens de fechamento que porventura faltem na posicao...
-      //Print   (":-| ", __FUNCTION__+":doCloseRajada(",m_passo_rajada,",",m_vol_lote_raj,",",m_qtd_ticks_4_gain_raj,")...");
-      //doCloseRajada(m_qtd_ticks_4_gain_ini_1);
-
       //2. cancelando rajadas que ainda nao entraram na posicao...
       Print   (":-| ", __FUNCTION__+":cancelarOrdensRajada()..."          );
       cancelarOrdensRajada();
@@ -908,13 +836,6 @@ void fecharPosicao2(string descr, string strLog, int qtdTicksDeslocamento=0, int
 void fecharPosicao3(string descr, string strLog, int qtdTicksDeslocamento=0, int deep=1){
 
       Print(":-| ", __FUNCTION__,"(",descr,",",strLog,",",qtdTicksDeslocamento,",",deep,")");
-
-      //<TODO> Este item 1, eh incompativel com novo metodo de fechamento de posicao. Por enquanto
-      //       deixo comentado afim de testar. Resova durante ou logo apos os testes.
-      //
-      //1. providenciando ordens de fechamento que porventura faltem na posicao...
-      //Print   (":-| ", __FUNCTION__+":doCloseRajada(",m_passo_rajada,",",m_vol_lote_raj,",",m_qtd_ticks_4_gain_raj,")...");
-      //doCloseRajada(m_qtd_ticks_4_gain_ini_1);
 
       //2. cancelando rajadas que ainda nao entraram na posicao...
       Print   (":-| ", __FUNCTION__+":cancelarOrdensRajada()..."          );
@@ -955,22 +876,11 @@ void cancelarOrdensRajada(){
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
 
-//void OnTick(){ onTick(); }
+void OnTick(){ onTick(); }
 
 void onTick(){
-	calcVelVolume();
-
-    onBookEvent(m_symb_str1);
-
-    //refreshMe();
-
-    // elimina ordens de saida a mais na posicao...
-    //if( m_estah_no_intervalo_de_negociacao && m_acao_posicao != NAO_OPERAR ){
-        //consertarOrdensSaidaPosicao();
-        //consertarOrdensEntradaPosicao();
-    //}
-    
     refreshMe();
+    onBookEvent(m_symb_str1);
 
     if ( m_qtdPosicoes1 > 0 ) {
 
@@ -1054,12 +964,13 @@ void executarEstrategia(){
     switch(m_acao_posicao){
         case HFT_FORMADOR_DE_MERCADO_BOOK: abrirPosicaoHFTFormadorDeMercadoSinaisDoBook  (); break;
         case HFT_FORMADOR_DE_MERCADO_VOL : abrirPosicaoHFTFormadorDeMercadoSinaisDoVolume(); break;
-        case NAO_ABRIR_POSICAO           : naoAbrirPosicao                               (); break;
+        //case NAO_ABRIR_POSICAO           : naoAbrirPosicao                               (); break;
         default                          : return;
     }
 }
 
-void naoAbrirPosicao(){ return; }
+//void naoAbrirPosicao(){ return; }
+bool naoOperar(){ return m_acao_posicao==NAO_OPERAR; }
 
 bool podeAbrirProsicao(){
 
@@ -1072,7 +983,7 @@ bool podeAbrirProsicao(){
 bool saldoRebaixouMaisQuePermitidoNoDia(){ return ( EA_STOP_REBAIXAMENTO_MAX != 0 && m_trade_estatistica.getRebaixamentoSld () > EA_STOP_REBAIXAMENTO_MAX ); }
 bool saldoAtingiuObjetivoDoDia         (){ return ( EA_STOP_OBJETIVO_DIA     != 0 && m_trade_estatistica.getProfitDiaLiquido() > EA_STOP_OBJETIVO_DIA     ); }
 
-void definirPrecoSaidaPosicao(){
+void definirPrecoSaidaPosicao(void){
     if( estouComprado1() ){
         if( m_stop ){
             // testando acionamento do stop no calculo do preco de saida da posicao...
@@ -1173,7 +1084,10 @@ bool m_fechar_posicao = false;
 bool m_reduzir_volume = false;
 void doCloseOposite( double toClosePriceIn, double vol, string symbol, ENUM_DEAL_TYPE typeDeal, long ticket=0  ){
     //Print(__FUNCTION__,"(",toClosePriceIn,",",vol,",",symbol,",", EnumToString(typeDeal),")", ",tg4=",m_qtd_ticks_4_gain_ini_1 );
-    if(m_stop) return;
+    
+    if (naoOperar() ) return;
+    //if(m_stop) return;
+    
     definirPasso();
     
     double vol_posicao = 0;
@@ -1184,7 +1098,7 @@ void doCloseOposite( double toClosePriceIn, double vol, string symbol, ENUM_DEAL
     // em caso de fechamento da posicao, as ordens de saida da posicao devem ser a 0 ticks de distancia, da ultima execucao
     m_stop_comprado = false;
     m_stop_vendido  = false;
-    if( m_fechar_posicao || vol_posicao > EA_MAX_VOL_POSICAO || m_reduzir_volume ){
+    if( m_fechar_posicao || vol_posicao > EA_MAX_VOL_POSICAO || m_reduzir_volume || m_stop ){
         if( m_posicao1.Select(m_symb_str1) ){
             if ( m_posicao1.PositionType() == POSITION_TYPE_BUY  ) m_stop_comprado = true;
             if ( m_posicao1.PositionType() == POSITION_TYPE_SELL ) m_stop_vendido  = true;
@@ -1195,13 +1109,15 @@ void doCloseOposite( double toClosePriceIn, double vol, string symbol, ENUM_DEAL
     if( symbol==m_symb_str1 ){
         // ordem de fechamento da posicao
         if( (m_stop_comprado && typeDeal==DEAL_TYPE_BUY) || (m_stop_vendido && typeDeal==DEAL_TYPE_SELL)  ){
-            m_gerentePos1.doCloseOposite2(toClosePriceIn, EA_LEVEL_ENTRADA-1, vol, m_tick1,SLEEP_TESTE, typeDeal, ticket); 
+          //m_gerentePos1.doCloseOposite2(toClosePriceIn, EA_LEVEL_ENTRADA-1, vol, m_tick1,SLEEP_TESTE, typeDeal, ticket);
+            m_gerentePos1.doCloseOposite3Agressao(                                 m_tick1,SLEEP_TESTE, typeDeal, ticket); return;
         }else{
             m_gerentePos1.doCloseOposite2(toClosePriceIn, t4g               , vol, m_tick1,SLEEP_TESTE, typeDeal, ticket); 
         }
         // ordem de entrada mais afastada da posicao
         if( (m_stop_comprado && typeDealInverso(typeDeal)==DEAL_TYPE_BUY) || (m_stop_vendido && typeDealInverso(typeDeal)==DEAL_TYPE_SELL) ){
-            m_gerentePos1.doCloseOposite2(toClosePriceIn, EA_LEVEL_ENTRADA-1, vol, m_tick1,SLEEP_TESTE, typeDealInverso(typeDeal) ); 
+          //m_gerentePos1.doCloseOposite2(toClosePriceIn, EA_LEVEL_ENTRADA-1, vol, m_tick1,SLEEP_TESTE, typeDealInverso(typeDeal) );
+            m_gerentePos1.doCloseOposite3Agressao(                                 m_tick1,SLEEP_TESTE, typeDealInverso(typeDeal) ); return;
         }else{
             m_gerentePos1.doCloseOposite2(toClosePriceIn, t4g               , vol, m_tick1,SLEEP_TESTE, typeDealInverso(typeDeal) ); 
         }
@@ -1217,47 +1133,6 @@ ENUM_DEAL_TYPE typeDealInverso( ENUM_DEAL_TYPE typeDeal ){
 
 bool ehCompra(ENUM_DEAL_TYPE typeDeal){ return typeDeal==DEAL_TYPE_BUY ;}
 bool ehVenda (ENUM_DEAL_TYPE typeDeal){ return typeDeal==DEAL_TYPE_SELL;}
-
-//------------------------------------------------------------------------------------------------------------
-// Faz: recebe um valor de ordem executa e dispara uma ordem de venda acima e outra de compra abaixo.
-//------------------------------------------------------------------------------------------------------------
-void doCloseRajada4Simples( double toClosePriceIn, double vol, string symbol ){
-  //Print(__FUNCTION__,"(",toClosePriceIn,",",vol,",",symbol,")" );
-
-    if(m_stop) return;
-
-    if( symbol==m_symb_str1 ){
-        int pos_type = 0;
-        if( estouPosicionado1() ){
-            if( estouComprado1() ){ pos_type  = +1;
-            }else{
-                if( estouVendido1() ){pos_type = -1;}
-            }
-        }
-        doCloseRajada4Simples(toClosePriceIn,vol,m_gerentePos1, m_tick1, getTicksAddPorSelecaoAdversa1(),pos_type, m_qtd_ticks_4_gain_ini_1);
-        return;
-    }
-}
-
-void doCloseRajada4Simples( double toClosePriceIn, double vol, C004GerentePosicao& gerentePos, MqlTick& tick, double ticksAdd, int pos_type, double t4g ){
-    //Print(__FUNCTION__,"(",toClosePriceIn,",",vol,",","m_gerentePos2",",","m_tick2",",",getTicksAddPorSelecaoAdversa2(),",",pos_type,",",t4g,")" );
-    sleepTeste(); gerentePos.fireNorteSulRajada( toClosePriceIn, vol, (int)(t4g         +ticksAdd), (int)(m_lag_rajada1+ticksAdd),tick, SLEEP_TESTE,pos_type );
-    return;
-}
-
-
-int qtdLotesStopParcial(){
-    if( EA_STOP_PARCIAL_A_PARTIR_DE_X_LOTES  > 0 ) return (int)(1 + m_posicaoLotsPend/EA_STOP_PARCIAL_A_PARTIR_DE_X_LOTES);
-    return (int)m_vol_lote_ini1;
-}
-
-bool lotesNaPosicaoHabilitamStopParcial(){
-    return ( EA_STOP_PARCIAL_A_PARTIR_DE_X_LOTES > 0 && EA_STOP_PARCIAL_A_PARTIR_DE_X_LOTES < m_posicaoLotsPend );
-}
-
-bool lucroNaPosicaoHabilitaStopParcial(){
-    return ( EA_STOP_PARCIAL_A_PARTIR_DE_X_GANHO > 0 && EA_STOP_PARCIAL_A_PARTIR_DE_X_GANHO < m_lucroPosicao    );
-}
 
 bool sleepTeste(){
 
@@ -1484,9 +1359,7 @@ void abrirPosicaoHFTFormadorDeMercadoSinaisDoVolume(){
 
     if(m_ask==0 || m_bid==0 || m_bid>m_ask ){Print(__FUNCTION__,":Preco dos ticks inconsistentes! VERIFIQUE!"); return;}
 
-    if( estouSemPosicao1() ){ 
-        cancelarOrdensComComentarioNumerico();
-    }
+    if( estouSemPosicao1() ){ cancelarOrdensComComentarioNumerico(); }
 
     // obtendo o sinal...
     int sinal1 = calcSinalVolume1();
@@ -1508,7 +1381,6 @@ void abrirPosicaoHFTFormadorDeMercadoSinaisDoVolume(){
         }
         
         if( estouVendido1() ){ m_reduzir_volume = true; }
-        
         return;
    }
    
@@ -1569,7 +1441,7 @@ int calcSinalEntrada1(){
                                                         return  0;
 }
 
-// calcula velocidade do volume nos ultimos 5 segundos...
+// calcula velocidade do volume...
 double m_vol_buy = 0;
 double m_vol_sel = 0;
 double m_vol_imb = 0;  // imbalance do volume
@@ -1578,6 +1450,7 @@ double m_vel_vol_sel = 0;
 double m_maior_agressao = 0;
 datetime m_now     = TimeCurrent();
 datetime m_now_ant = m_now;
+/*
 void calcVelVolume(){
     
     
@@ -1624,31 +1497,7 @@ void calcVelVolume(){
     double soma_vol = m_vol_buy+m_vol_sel;
     m_vol_imb       = (soma_vol!=0)?(m_vol_buy-m_vol_sel)/(soma_vol):0;
 }
-
-//---------------------------------------------------------------------------------------------------------
-// Inicia ordem de abertura a pelo menos XX ticks do preco atual. Visa ter prioridade na fila do book.
-// HFT_FORMADOR_DE_MERCADO_SEM_CUSUM
-//---------------------------------------------------------------------------------------------------------
-int getTicksAddPorSelecaoAdversa1(){
-    if(m_posicaoLotsPend<=m_vol_lote_ini1) return 0;
-    if((EA_AUMENTO_LAG_POR_LOTE_PENDENTE_FASE_1+EA_AUMENTO_LAG_POR_LOTE_PENDENTE_FASE_2)==0) return 0;
-
-    //double ticks_add = EA_AUMENTO_LAG_POR_LOTE_PENDENTE;
-    double ticks_add = m_qtd_ticks_4_gain_ini_1;
-    for ( int i=1; i<=m_posicaoLotsPend; i++ ){
-        //ticks_add = (int)ceil( ticks_add + (ticks_add * EA_AUMENTO_LAG_POR_LOTE_PENDENTE) );
-        if(i<=EA_AUMENTO_LAG_QTD_FASE1)
-            ticks_add = (int)ceil( ticks_add + (ticks_add * EA_AUMENTO_LAG_POR_LOTE_PENDENTE_FASE_1) );
-        else{
-            ticks_add = (int)ceil( ticks_add + (ticks_add * EA_AUMENTO_LAG_POR_LOTE_PENDENTE_FASE_2) );
-        }
-    }
-    //return (int)ceil(m_posicaoLotsPend*EA_AUMENTO_LAG_POR_LOTE_PENDENTE);
-
-    ticks_add = ticks_add-m_qtd_ticks_4_gain_ini_1;
-    if(ticks_add<0) ticks_add=0;
-    return (int)ceil(ticks_add);
-}// truncando pra cima
+*/
 
 bool estouVendido1 (ENUM_DEAL_TYPE toCloseTypeDeal){ return toCloseTypeDeal==DEAL_TYPE_SELL; }
 bool estouComprado1(ENUM_DEAL_TYPE toCloseTypeDeal){ return toCloseTypeDeal==DEAL_TYPE_BUY ; }
@@ -1715,7 +1564,9 @@ double OnTester(){
     return m_trade_estatistica.getProfitDiaLiquido(); // profit do dia no relatorio de performance
 }
 
-void printHeartBit(){ if(m_date_ant.min != m_date_atu.min) Print(":-| HeartBit! m_stop:", m_stop, " m_fechar_posicao",m_fechar_posicao); }
+void printHeartBit(){ if(m_date_ant.min != m_date_atu.min) Print(":-| HeartBit! m_stop:", m_stop           , 
+                                                                    " m_fechar_posicao:", m_fechar_posicao ,
+                                                                    " lenVetVolume:"    , m_vet_vol.count() ) ; }
 
 void gerenciarRebaixamentoDeSaldoDoDia(){
         /////////////////////////////////////////////////////////////////////////////////////
@@ -1797,7 +1648,7 @@ void OnTimer(){
         refreshControlPanel();
     }
     
-    onTick();
+    //onTick();
 }
 //----------------------------------------------------------------------------------------------------
 
@@ -1994,8 +1845,8 @@ void OnTradeTransaction( const MqlTradeTransaction& tran,    // transacao
 
         // acionando o fechamento das ordens da posicao...
         //Print(__FUNCTION__, ": tran.order:#", tran.order, ", tran.volume:", tran.volume );
-        doCloseOposite(tran.price,tran.volume, tran.symbol,tran.deal_type, tran.order); // suspeita de erro em toClosePriceIn,
-                                                                                        // toCloseTypeDeal e toCloseVol
+      //doCloseOposite(tran.price,tran.volume, tran.symbol,tran.deal_type, tran.order); // suspeita de erro em toClosePriceIn, toCloseTypeDeal e toCloseVol
+        doCloseOposite(tran.price,          1, tran.symbol,tran.deal_type, tran.order); // forcando 1 lote, independente da transacao que originou o fechamento 
     }
 }
 
@@ -2028,7 +1879,8 @@ void onBookEvent(const string &symbol){
 double m_lenBarraMediaEmTicks = 0;
 void calcLenBarraMedia(){
 
-    if(!m_mudou_segundo) return;
+    //if(!m_mudou_segundo) return;
+    if(m_date_ant.min == m_date_atu.min) return; // recalcula 1x por minuto.
     double   maxMin      = 0 ;
     int      starPos     = 1 ; // desde o periodo anterior
     int      qtdPeriodos = 15; // ateh 15 periodos pra tras
@@ -2041,5 +1893,4 @@ void calcLenBarraMedia(){
         maxMin += (ratesLenBarraMedia[i].high - ratesLenBarraMedia[i].low);
     }
     m_lenBarraMediaEmTicks =  (maxMin/m_tick_size1)/(double)qtd;
-
 }

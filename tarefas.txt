@@ -6,10 +6,10 @@
 
 - aumentar em 1 real o valor das tarifas (teste) OK
 - resolver o erro que quebra o EA                OK
-- resolver as ordens duplicadas
+- resolver as ordens duplicadas                  OK
   - parece que, apos a concretizacao da ordem de abertura, é feito novo pedido de abertura achando que nao ha posicao aberta.
-- resolver o cancelamento de ordens de entrada (ordens estao ficando sem cancelar)
-- transforme EA_TOLERANCIA_ENTRADA em parametro. Veja se pode usar, nivel entrada mais 1;
+- resolver o cancelamento de ordens de entrada (ordens estao ficando sem cancelar)          OK
+- transforme EA_TOLERANCIA_ENTRADA em parametro. Veja se pode usar, nivel entrada mais 1;   OK
 
 
 commit 20220607

@@ -57,7 +57,10 @@ public:
     c00101cusum(void): m_c_mais       (0),
                        m_c_mais_ant   (0),
                        m_c_menos      (0),
-                       m_c_menos_ant  (0){}
+                       m_c_menos_ant  (0),
+					   m_h            (0),
+					   m_k            (0),
+					   m_dp           (0){}
 
     //
     // Inicializa as variaveis e o vetor para o calculo da soma acumulada;
@@ -102,6 +105,7 @@ public:
     // resultado da ultima acumulacao...
     double getCmais (){return m_c_mais ;}
     double getCmenos(){return m_c_menos;}
+    double getMedia (){return m_vet_x.getMed();}
     
     // coeficientes lineares dos vetores de acumulacao. servem para saber a tendencia do C+ e C- ...
     double get_slope_cmais (){ return m_vet_cmais .regLinGetSlope(); }
