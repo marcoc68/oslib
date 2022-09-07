@@ -45,10 +45,11 @@ private:
 
     double    m_taxaLiqWIN;
     double    m_taxaLiqWDO;
-
-
-  //string    m_str_symbol        ;
-
+    
+    double    m_tarifa_teste_win;
+    double    m_tarifa_teste_wdo;
+  //double    m_tarifa_teste;
+ 
     double    m_valWinsDia; // valor bruto das vitorias no dia
     double    m_valLossDia; // valor bruto das perdas no dia
     double    m_payOut;     // fator de lucro no dia
@@ -76,10 +77,13 @@ protected:
 
 public:
    void osc_minion_trade_estatistica();
- //void setStrSymbol            (const string   strSymbol ){ m_str_symbol         = strSymbol; }
    void initialize(){ m_rebaixamentoSld=0; m_taxaLiqWIN=0.0; m_taxaLiqWDO=0.12; m_symbol.Name(_Symbol); }
    void setCotacaoMoedaTarifaWDO(const double   cotacao   )  { m_cotacaoMoedaTarifa = cotacao  ; }
-   void refresh       (const datetime from, const datetime to, double tarifa_teste=0);
+   
+   void setTarifaTesteWIN(double t){m_tarifa_teste_win=t;}
+   void setTarifaTesteWDO(double t){m_tarifa_teste_wdo=t;}
+   
+   void refresh       (const datetime from, const datetime to);
    void print_posicoes(const datetime from, const datetime to);
    
    double getProfitDia           (){ return m_profitDia            ;}
@@ -125,6 +129,8 @@ void osc_minion_trade_estatistica::osc_minion_trade_estatistica(){
     m_cotacaoMoedaTarifa    = 0;
     m_cotacaoMoedaTarifaWDO = 5;
     m_cotacaoMoedaTarifaWIN = 1;
+    m_tarifa_teste_win      = 0;
+    m_tarifa_teste_wdo      = 0;
 }
 
 
@@ -333,7 +339,7 @@ void osc_minion_trade_estatistica::print_posicoes(const datetime from, const dat
 //| resultado nas variaveis usadas para posterior consulta.          |
 //|                                                                  |
 //+------------------------------------------------------------------+
-void osc_minion_trade_estatistica::refresh(datetime from, datetime to, double tarifa_teste=0){
+void osc_minion_trade_estatistica::refresh(datetime from, datetime to){
 
     //Print(":-| Obtendo historico de ofertas...");
     HistorySelect(from,to);
@@ -375,7 +381,7 @@ void osc_minion_trade_estatistica::refresh(datetime from, datetime to, double ta
                 profitDiaWIN +=  m_deal.Profit();
                 
                 // aplicando a tarifa de teste. Ela retira seu valor por volume nas transacoes vencedoras
-                if( tarifa_teste>0 && m_deal.Profit()>=0 ) profitDiaWIN -= m_deal.Volume()*tarifa_teste; 
+                //if( tarifa_teste>0 && m_deal.Profit()>=0 ) profitDiaWIN -= m_deal.Volume()*tarifa_teste; 
             }else{
                 volumeDia    +=  m_deal.Volume();
                 profitDia    +=  m_deal.Profit();
@@ -452,36 +458,36 @@ void osc_minion_trade_estatistica::refresh(datetime from, datetime to, double ta
 //}
 
 double osc_minion_trade_estatistica::calcTarifaWDO(const double pVolume){
-       if( pVolume <    21) return 1.00*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO;
-       if( pVolume <   251) return 0.89*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO;
-       if( pVolume <   601) return 0.62*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO;
-       if( pVolume <  1001) return 0.52*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO;
-       if( pVolume <  2001) return 0.49*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO;
-       if( pVolume <  2501) return 0.45*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO;
-       if( pVolume <  5001) return 0.42*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO;
-       if( pVolume <  6001) return 0.37*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO;
-       if( pVolume < 10001) return 0.35*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO;
-       if( pVolume < 15001) return 0.31*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO;
-       if( pVolume < 20001) return 0.30*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO;
-       if( pVolume < 25001) return 0.28*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO;
-       if( pVolume < 35001) return 0.26*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO;
-       if( pVolume < 45001) return 0.25*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO;
-       if( pVolume < 60001) return 0.23*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO;
-       if( pVolume < 80001) return 0.22*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO;
-                            return 0.20*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO;
+       if( pVolume <    21) return 1.00*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO + m_tarifa_teste_wdo;
+       if( pVolume <   251) return 0.89*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO + m_tarifa_teste_wdo;
+       if( pVolume <   601) return 0.62*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO + m_tarifa_teste_wdo;
+       if( pVolume <  1001) return 0.52*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO + m_tarifa_teste_wdo;
+       if( pVolume <  2001) return 0.49*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO + m_tarifa_teste_wdo;
+       if( pVolume <  2501) return 0.45*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO + m_tarifa_teste_wdo;
+       if( pVolume <  5001) return 0.42*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO + m_tarifa_teste_wdo;
+       if( pVolume <  6001) return 0.37*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO + m_tarifa_teste_wdo;
+       if( pVolume < 10001) return 0.35*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO + m_tarifa_teste_wdo;
+       if( pVolume < 15001) return 0.31*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO + m_tarifa_teste_wdo;
+       if( pVolume < 20001) return 0.30*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO + m_tarifa_teste_wdo;
+       if( pVolume < 25001) return 0.28*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO + m_tarifa_teste_wdo;
+       if( pVolume < 35001) return 0.26*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO + m_tarifa_teste_wdo;
+       if( pVolume < 45001) return 0.25*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO + m_tarifa_teste_wdo;
+       if( pVolume < 60001) return 0.23*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO + m_tarifa_teste_wdo;
+       if( pVolume < 80001) return 0.22*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO + m_tarifa_teste_wdo;
+                            return 0.20*m_cotacaoMoedaTarifaWDO+m_taxaLiqWDO + m_tarifa_teste_wdo;
 }
 
 double osc_minion_trade_estatistica::calcTarifaWIN(const double pVolume){
       
-       if( pVolume <    21) return 1.48+m_taxaLiqWIN;
-       if( pVolume <   251) return 1.11+m_taxaLiqWIN;
-       if( pVolume <   751) return 0.77+m_taxaLiqWIN;
-       if( pVolume <  2501) return 0.48+m_taxaLiqWIN;
-       if( pVolume <  7501) return 0.44+m_taxaLiqWIN;
-       if( pVolume < 17501) return 0.33+m_taxaLiqWIN;
-       if( pVolume < 37501) return 0.29+m_taxaLiqWIN;
-       if( pVolume < 75001) return 0.26+m_taxaLiqWIN;
-                            return 0.24+m_taxaLiqWIN;
+       if( pVolume <    21) return 1.48+m_taxaLiqWIN + m_tarifa_teste_win;
+       if( pVolume <   251) return 1.11+m_taxaLiqWIN + m_tarifa_teste_win;
+       if( pVolume <   751) return 0.77+m_taxaLiqWIN + m_tarifa_teste_win;
+       if( pVolume <  2501) return 0.48+m_taxaLiqWIN + m_tarifa_teste_win;
+       if( pVolume <  7501) return 0.44+m_taxaLiqWIN + m_tarifa_teste_win;
+       if( pVolume < 17501) return 0.33+m_taxaLiqWIN + m_tarifa_teste_win;
+       if( pVolume < 37501) return 0.29+m_taxaLiqWIN + m_tarifa_teste_win;
+       if( pVolume < 75001) return 0.26+m_taxaLiqWIN + m_tarifa_teste_win;
+                            return 0.24+m_taxaLiqWIN + m_tarifa_teste_win;
 }
 
 //+------------------------------------------------------------------+

@@ -395,18 +395,18 @@ bool osc_minion_trade::enviarOrdemPendente(ENUM_ORDER_TYPE tipo, double val, dou
    }else{
       if ( OrderSend     (m_treq,m_tres) ){ 
          if( OrderSelect(m_tres.order) ){
-             Print(":-| ",m_symb_str,":",__FUNCTION__,"(",EnumToString(tipo), ",",val,",",volume, ",",obs, ",", tentativas,") retcode=",m_tres.retcode," deal=",m_tres.deal," order=",m_tres.order," msgerro=",m_tres.comment," commentOrder=", obs, " STATE:", EnumToString( (ENUM_ORDER_STATE)OrderGetInteger(ORDER_STATE) ) );
+             Print(":-| ",m_symb_str,":",__FUNCTION__,"(",EnumToString(tipo), ",",val,",",volume, ",",obs, ",", tentativas,") retcode=",m_tres.retcode," deal=",m_tres.deal," order=",m_tres.order," msg=",m_tres.comment," commentOrder=", obs, " STATE:", EnumToString( (ENUM_ORDER_STATE)OrderGetInteger(ORDER_STATE) ) );
          }
          return true;  
       }
    }
    
    if( m_tres.retcode == TRADE_RETCODE_INVALID_PRICE && tentativas < MAX_TENTATIVAS_CORRECAO_INVALID_PRICE ){
-        Print(":-( ",m_symb_str,":",__FUNCTION__,"(",EnumToString(tipo), ",",val,",",volume, ",",obs, ",", tentativas,") retcode=",m_tres.retcode," deal=",m_tres.deal," order=",m_tres.order," msgerro=",m_tres.comment," commentOrder=", obs);
+        Print(":-( ",m_symb_str,":",__FUNCTION__,"(",EnumToString(tipo), ",",val,",",volume, ",",obs, ",", tentativas,") retcode=",m_tres.retcode," deal=",m_tres.deal," order=",m_tres.order," msg=",m_tres.comment," commentOrder=", obs);
         return enviarOrdemPendente(tipo, m_treq.price, m_treq.volume, m_treq.comment, ++tentativas);
    }
    Alert(":-( ",m_symb_str,":",__FUNCTION__,"(",EnumToString(tipo), ",",val,",",volume, ",",obs, ",", tentativas,") ERRO SOLIC ORD ",GetLastError(),":",m_tres.retcode,":",m_tres.comment);
-   Print(":-( ",m_symb_str,":",__FUNCTION__,"(",EnumToString(tipo), ",",val,",",volume, ",",obs, ",", tentativas,") retcode=",m_tres.retcode," deal=",m_tres.deal," order=",m_tres.order," msgerro=",m_tres.comment," commentOrder=", obs);
+   Print(":-( ",m_symb_str,":",__FUNCTION__,"(",EnumToString(tipo), ",",val,",",volume, ",",obs, ",", tentativas,") retcode=",m_tres.retcode," deal=",m_tres.deal," order=",m_tres.order," msg=",m_tres.comment," commentOrder=", obs);
 
    //if( m_tres.retcode == TRADE_RETCODE_TOO_MANY_REQUESTS ){
        // duas linhas abaixo comentadas em 25/03/2021.
@@ -601,11 +601,11 @@ bool osc_minion_trade::alterarOrdem(ENUM_ORDER_TYPE tipo, double price, double v
    //Print(":-( ",__FUNCTION__,"(",tipo, ",",price,",",volume, ",",order_ticket,",",newComment,") retcode=",m_tres.retcode," lastError=",GetLastError()," order=",m_treq.order," comment=",m_tres.comment);
 
    if( m_tres.retcode == TRADE_RETCODE_INVALID_PRICE && tentativas < MAX_TENTATIVAS_CORRECAO_INVALID_PRICE ){
-        Print(":-( ",m_symb_str,":",__FUNCTION__,"(",EnumToString(tipo), ",",price,",",volume, ",",order_ticket, ",", newComment,",",tentativas,") retcode=",m_tres.retcode," deal=",m_tres.deal," order=",m_tres.order," msgerro=",m_tres.comment," commentOrder=", newComment);
+        Print(":-( ",m_symb_str,":",__FUNCTION__,"(",EnumToString(tipo), ",",price,",",volume, ",",order_ticket, ",", newComment,",",tentativas,") retcode=",m_tres.retcode," deal=",m_tres.deal," order=",m_tres.order," msge=",m_tres.comment," commentOrder=", newComment);
         return alterarOrdem(tipo, price, volume, order_ticket,newComment="", ++tentativas );
    }
-   Alert(":-( ",m_symb_str,":",__FUNCTION__,"(",EnumToString(tipo), ",",price,",",volume, ",",order_ticket, ",", newComment,",",tentativas,") retcode=",m_tres.retcode," deal=",m_tres.deal," order=",m_tres.order," msgerro=",m_tres.comment," commentOrder=", newComment);
-   Print(":-( ",m_symb_str,":",__FUNCTION__,"(",EnumToString(tipo), ",",price,",",volume, ",",order_ticket, ",", newComment,",",tentativas,") retcode=",m_tres.retcode," deal=",m_tres.deal," order=",m_tres.order," msgerro=",m_tres.comment," commentOrder=", newComment);
+   Alert(":-( ",m_symb_str,":",__FUNCTION__,"(",EnumToString(tipo), ",",price,",",volume, ",",order_ticket, ",", newComment,",",tentativas,") retcode=",m_tres.retcode," deal=",m_tres.deal," order=",m_tres.order," msge=",m_tres.comment," commentOrder=", newComment);
+   Print(":-( ",m_symb_str,":",__FUNCTION__,"(",EnumToString(tipo), ",",price,",",volume, ",",order_ticket, ",", newComment,",",tentativas,") retcode=",m_tres.retcode," deal=",m_tres.deal," order=",m_tres.order," msge=",m_tres.comment," commentOrder=", newComment);
    
    return false;
 }

@@ -24,8 +24,10 @@ public:
     ItemVol(MqlTick &tick){
     	id     = tick.time_msc; // usando o horario em milissegundos como id do item da fila.
     	if(osc_padrao::isTkVol(tick)){
-        	volsel = (osc_padrao::isTkSel(tick))?tick.volume_real:0;
-        	volbuy = (osc_padrao::isTkBuy(tick))?tick.volume_real:0;
+          //volsel = (osc_padrao::isTkSel(tick))?tick.volume_real:0;
+          //volbuy = (osc_padrao::isTkBuy(tick))?tick.volume_real:0;
+        	volsel = (osc_padrao::isTkSel(tick))?1               :0;
+        	volbuy = (osc_padrao::isTkBuy(tick))?1               :0;
     	}else{
     	    volsel=0; volbuy=0;
     	}

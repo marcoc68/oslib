@@ -250,7 +250,8 @@ int OnCalculate(const int        rates_total,
     //calcC( m_vet_vol.calc_desbalanceamento_com_peso() );
       calcC( m_vet_vol.get_desbalanceamento() );
 
-      m_bufDesbMedio     [0] = m_cusum.getMedia();
+      m_bufDesbMedio     [0] = m_vet_vol.get_desbalanceamento();
+    //m_bufDesbMedio     [0] = m_cusum.getMedia();
       m_bufStrikeMais    [0] = + m_c_mais ; // log(m_c_mais ); //( (m_c_mais >1)?log(m_c_mais ):m_c_mais  );
       m_bufStrikeMenos   [0] = - m_c_menos; // log(m_c_menos); //( (m_c_menos>1)?log(m_c_menos):m_c_menos );
 
@@ -308,7 +309,8 @@ void doOnCalculateHistorico(const int        p_rates_total    ,
        //calcC(m_vet_vol.calc_desbalanceamento_com_peso());
          calcC(m_vet_vol.get_desbalanceamento() );
 
-         m_bufDesbMedio    [i] = m_cusum.getMedia()  ;
+         m_bufDesbMedio    [i] = m_vet_vol.get_desbalanceamento()  ;
+       //m_bufDesbMedio    [i] = m_cusum.getMedia()  ;
          m_bufStrikeMais   [i] = 0   + m_c_mais      ; //log(m_c_mais ); // ( (m_c_mais >1)?log(m_c_mais ):m_c_mais  );
          m_bufStrikeMenos  [i] = 0   - m_c_menos     ; // log(m_c_menos); // ( (m_c_menos>1)?log(m_c_menos):m_c_menos );
 

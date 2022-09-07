@@ -109,9 +109,9 @@ enum ENUM_TIPO_OPERACAO{
 //input int    EA_LEVEL_FECHAMENTO = 0 ; //*ERROOOOOOOOOOOOO LEVEL_FECHAMENTO use 0 em producao
   input int    EA_BOOK_DEEP1       = 16; //*BOOK_DEEP1 profundidade do book
   #define      EA_BOOK_IMBALANCE1   0.1  // BOOK_IMBALANCE1 limiar para definir direcao do movimento
-  input int    EA_QTD_SEG_VOL_IMBALANCE = 180  ; //QTD_SEG_VOL_IMBALANCE qtd seg calc vol imbalance.
+//input int    EA_QTD_SEG_VOL_IMBALANCE = 180  ; //QTD_SEG_VOL_IMBALANCE qtd seg calc vol imbalance.
   input int    EA_QTD_TIK_VOL_IMBALANCE = 1000 ; //QTD_TIK_VOL_IMBALANCE qtd ticks calc vol imbalance.
-  input int    EA_TIMER_VOL_IMBALANCE   = 15   ; //TIMER_VOL_IMBALANCE qtd seg entre calculos vol imbalance.
+//input int    EA_TIMER_VOL_IMBALANCE   = 15   ; //TIMER_VOL_IMBALANCE qtd seg entre calculos vol imbalance.
   input double EA_VOL_IMBALANCE         = 0.15 ; //VOL_IMBALANCE % para considerar o vol desbalanceado.
   input bool   EA_PROCESSAR_BOOK        = true ; //PROCESSAR_BOOK
   
@@ -126,7 +126,8 @@ enum ENUM_TIPO_OPERACAO{
   input int    EA_VOL_LOTE_INI_1           = 1 ; //*VOL_LOTE_INI_1 Vol do lote na abertura de posicao.
   input double EA_QTD_TICKS_4_GAIN_INI_1   = 1 ; //*TICKS_4_GAIN_INI_1 Qtd ticks para o gain;
   input int    EA_QTD_TICKS_4_GAIN_MIN_1   = 1 ; //*QTD_TICKS_4_GAIN_MIN_1 menor alvo inicial possivel;
-  input int    EA_TARIFA_TESTE             = 0 ; //*TARIFA_TESTE:tarifa de teste. cobra seu valor por volume de trade vencedor. use quando t4g=2 e tarifa=1;
+  input int    EA_TARIFA_TESTE_WIN         = 0 ; //*TARIFA_TESTE_WIN:tarifa de teste WIN. cobra seu valor por volume de trade;
+  input int    EA_TARIFA_TESTE_WDO         = 0 ; //*TARIFA_TESTE_WDO:tarifa de teste WDO. cobra seu valor por volume de trade;
   input int    EA_DESLOC_T4G_TESTE         = 0 ; //*DESLOC_T4G_TESTE:deslocamento do T4G. Use zero em producao e 1 em teste;
 
   input group "=== Database ===";
@@ -335,6 +336,8 @@ int OnInit(){
     m_time_in_seconds_ini_day = StringToTime( TimeToString( TimeCurrent(), TIME_DATE ) );
     m_trade_estatistica.initialize();
     m_trade_estatistica.setCotacaoMoedaTarifaWDO(EA_DOLAR_TARIFA);
+    m_trade_estatistica.setTarifaTesteWIN(EA_TARIFA_TESTE_WIN);
+    m_trade_estatistica.setTarifaTesteWDO(EA_TARIFA_TESTE_WDO);
 
     m_spread_maximo_in_points = (int)( (EA_SPREAD_MAXIMO_EM_TICKS*m_tick_size1)/m_point1 );
     m_stop_level_in_price     = normalizar1( m_symb1.StopsLevel()*m_point1               );
@@ -371,10 +374,10 @@ int OnInit(){
     m_tick_util1.setTickSize(m_symb1.TickSize(), m_symb1.Digits() );
 
     // carregando a ultima hora de ticks...
-    datetime from = (TimeCurrent()-(60*60) ) ; // minutos atras
+    datetime from = (TimeCurrent()-(60*5) ) ; // minutos atras
+    datetime to   =  TimeCurrent()          ; // agora
     MqlTick ticks1[];
     int qtdTicks1 = 0;
-    datetime to   = TimeCurrent()             ; // agora
     qtdTicks1 = CopyTicksRange( m_symb_str1   , //const string     symbol_name,          // nome do símbolo
                                 ticks1        , //MqlTick&         ticks_array[],        // matriz para recebimento de ticks
                                 COPY_TICKS_ALL, //uint             flags=COPY_TICKS_ALL, // sinalizador que define o tipo de ticks obtidos
@@ -492,7 +495,7 @@ void refreshMe(){
           //m_lucroPosicao = m_capitalLiquido - m_capitalInicial; // voltou versao em 07/10/2020
             m_lucroPosicao =   m_lucroPosicaoRealizado 
                              + m_lucroPosicaoParcial   // 22/10/2020 testando calculo de lucro da posicao...
-                             - m_posicaoVolumeTot*(m_trade_estatistica.getUmaTarifaDiaWIN() + EA_TARIFA_TESTE );
+                             - m_posicaoVolumeTot * getValorUmaTarifa() ;
 
             m_lucroPosicao4Gain = (m_posicaoVolumeTot *m_qtd_ticks_4_gain_ini_1)*(m_lots_step1); // 16/02/21 correcao valor do lote
           //m_lucroPosicao4Gain = (m_posicaoVolumeTot *m_qtd_ticks_4_gain_ini_1 ); // passou a usar em 05/06/2020
@@ -531,6 +534,16 @@ void refreshMe(){
     showAcao2("normal");
 } // refreshme()
 
+
+double getValorUmaTarifa(){
+   if( ehMiniIndice(m_symb_str1) ) return m_trade_estatistica.getUmaTarifaDiaWIN();
+   if( ehMiniDolar (m_symb_str1) ) return m_trade_estatistica.getUmaTarifaDiaWDO();
+   return 0;
+}
+
+bool ehMiniDolar (const string pSymbol){ return (StringFind(pSymbol,"WDO") > -1); }
+bool ehMiniIndice(const string pSymbol){ return (StringFind(pSymbol,"WIN") > -1); }
+
 string astIfNeg(double val){ return astIfNeg(val,0); }
 string astIfNeg(double val, int digits){
     if( val < 0 ) return DoubleToString(val,digits) + " *";
@@ -543,10 +556,12 @@ void showAcao2(string acao){
 
    Comment(
          " \n BOOK ===" +
-         "\n m_book1.IWFV/TLFV/IMB/SINAL    : ", astIfNeg(m_book1.getIWFV       (EA_BOOK_DEEP1)    ,0)+ " / " + 
-                                                 astIfNeg(m_book1.getTLFV       (EA_BOOK_DEEP1)    ,0)+ " / " + 
-                                                 astIfNeg(m_book1.getImbalance  (EA_BOOK_DEEP1)*100,0)+ " / " +  
-                                                 astIfNeg(        calcSinalBook1(             )    ,0)        +
+         (EA_PROCESSAR_BOOK?
+         "\n m_book1.DEEP/IWFV/TLFV/IMB/SINAL : "+ astIfNeg(m_book1.getDeep       (             )    ,0)+ " / " + 
+                                                   astIfNeg(m_book1.getIWFV       (EA_BOOK_DEEP1)    ,0)+ " / " + 
+                                                   astIfNeg(m_book1.getTLFV       (EA_BOOK_DEEP1)    ,0)+ " / " + 
+                                                   astIfNeg(m_book1.getImbalance  (EA_BOOK_DEEP1)*100,0)+ " / " +  
+                                                   astIfNeg(        calcSinalBook1(             )    ,0)        : "") +
          " \n VOLUME ===" +
          "\n LEN/DESDE/DESB/VBUY/VSEL/VBUY-SEL: ",
 		 	 	 	 	 	   astIfNeg(m_vet_vol.get_tamanho()                   ,0)+ " / " +
@@ -583,7 +598,7 @@ void refreshControlPanel(){
       }
   }
 
-  m_cp.setTarWIN       ( m_trade_estatistica.getUmaTarifaDiaWIN() + EA_TARIFA_TESTE);
+  m_cp.setTarWIN       ( getValorUmaTarifa()       );
   m_cp.setProfitPosicao(     m_lucroPosicao        );
 
 //m_cp.setSaidaPosicao (     m_saida_posicao       );
@@ -600,12 +615,13 @@ void refreshControlPanel(){
   m_cp.setPftLiquido( m_trade_estatistica.getProfitDiaLiquido () );
   m_cp.setVol       ( m_trade_estatistica.getVolumeDia        () );
 
-  m_cp.setIWFV      ( m_book1.getIWFV     (EA_BOOK_DEEP1), m_book1.getBid(1) );
-  m_cp.setTLFV      ( m_book1.getTLFV     (EA_BOOK_DEEP1), m_book1.getAsk(1) );
-  m_cp.setImbb      ( m_book1.getImbalance(EA_BOOK_DEEP1)                    );
-  m_cp.setSinalBook ( calcSinalEntrada1   ()                                 );
+  if( EA_PROCESSAR_BOOK ){
+      m_cp.setIWFV      ( m_book1.getIWFV     (EA_BOOK_DEEP1), m_book1.getBid(1) );
+      m_cp.setTLFV      ( m_book1.getTLFV     (EA_BOOK_DEEP1), m_book1.getAsk(1) );
+      m_cp.setImbb      ( m_book1.getImbalance(EA_BOOK_DEEP1)                    );
+      m_cp.setSinalBook ( calcSinalEntrada1   ()                                 );
+  }
   m_cp.setImbv      ( m_vol_imb,0 );  
-
   //m_cp.setVTDir2( m_direcaoVelVolTradeMed,0);
   //m_cp.setLEN0  ( m_canal1.getLenCanalOperacionalEmTicks(),0);
   //m_cp.setLEN1  ( m_canal1.getCoefLinear(),0);
@@ -960,7 +976,13 @@ void onTick(){
 
 }//+------------------------------------------------------------------+
 void executarEstrategia(){
+    
+    // fora do intervalo de neociacao nao entro nos metodos de abrir posicao
     if( !m_estah_no_intervalo_de_negociacao ) return;
+    
+    // 
+    if(m_ask==0 || m_bid==0 || m_bid>m_ask ){Print(__FUNCTION__,":Preco dos ticks inconsistentes! VERIFIQUE! m_ask=", m_ask, " m_bid=", m_bid ); return;}
+    
     switch(m_acao_posicao){
         case HFT_FORMADOR_DE_MERCADO_BOOK: abrirPosicaoHFTFormadorDeMercadoSinaisDoBook  (); break;
         case HFT_FORMADOR_DE_MERCADO_VOL : abrirPosicaoHFTFormadorDeMercadoSinaisDoVolume(); break;
@@ -1364,9 +1386,11 @@ void abrirPosicaoHFTFormadorDeMercadoSinaisDoVolume(){
     // obtendo o sinal...
     int sinal1 = calcSinalVolume1();
    
-    double bid_entrada = normalizar1( m_bid - m_symb1.TickSize()*(EA_LEVEL_ENTRADA-1) );
-    double ask_entrada = normalizar1( m_ask + m_symb1.TickSize()*(EA_LEVEL_ENTRADA-1) );
-   
+    double t4g = m_qtd_ticks_4_gain_ini_1;
+    double bid_entrada = normalizar1( m_bid - m_symb1.TickSize()*(EA_LEVEL_ENTRADA-1+t4g) );
+    double ask_entrada = normalizar1( m_ask + m_symb1.TickSize()*(EA_LEVEL_ENTRADA-1+t4g) );
+
+    
    // comprando ou fechando a posicao vendida...
    if( sinal1>0 ){
 
@@ -1542,7 +1566,7 @@ string status(){
 //| Expert deinitialization function                                 |
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)  {
-   m_trade_estatistica.refresh(m_time_in_seconds_ini_day, m_time_in_seconds_atu, EA_TARIFA_TESTE);
+   m_trade_estatistica.refresh(m_time_in_seconds_ini_day, m_time_in_seconds_atu);
 
                         Print(__FUNCTION__," :-| Expert ", m_name, " Iniciando metodo OnDeinit..." );
                         Print(__FUNCTION__," :-| PROFIT BRUTO  :",m_trade_estatistica.getProfitDia       () );
@@ -1644,7 +1668,7 @@ void OnTimer(){
     m_date_ant            = m_date_atu;
 
     if (EA_SHOW_CONTROL_PANEL) {
-        m_trade_estatistica.refresh(m_time_in_seconds_ini_day, m_time_in_seconds_atu, EA_TARIFA_TESTE);
+        m_trade_estatistica.refresh(m_time_in_seconds_ini_day, m_time_in_seconds_atu);
         refreshControlPanel();
     }
     
@@ -1870,7 +1894,11 @@ void onBookEvent(const string &symbol){
    
    if( !MarketBookGet(symbol, m_book) ) { Print(":-( Falha MarketBookGet. Motivo: ", GetLastError()); return; }
 
-   if(symbol == m_symb_str1){ m_book1.setBook(m_book); } 
+   if(symbol == m_symb_str1){ 
+        m_book1.setBook(m_book); 
+   }else{
+        Print(__FUNCTION__, " onBookEvent chamado para a ativo:", symbol, " mas deveria ser o ativo:", m_symb_str1);
+   } 
    if( m_tamanhoBook==0) m_tamanhoBook = ArraySize(m_book);
    if( m_tamanhoBook==0) { Print(":-( Falha book vazio. Motivo: ", GetLastError()); return; }
 }
@@ -1881,7 +1909,7 @@ void calcLenBarraMedia(){
 
     //if(!m_mudou_segundo) return;
     if(m_date_ant.min == m_date_atu.min) return; // recalcula 1x por minuto.
-    double   maxMin      = 0 ;
+    double   len         = 0 ;
     int      starPos     = 1 ; // desde o periodo anterior
     int      qtdPeriodos = 15; // ateh 15 periodos pra tras
     MqlRates ratesLenBarraMedia[];
@@ -1890,7 +1918,7 @@ void calcLenBarraMedia(){
 
     for(int i=0; i<qtd; i++){
         //Print("i:" + TimeToString(ratesLenBarraMedia[i].time) );
-        maxMin += (ratesLenBarraMedia[i].high - ratesLenBarraMedia[i].low);
+        len += (ratesLenBarraMedia[i].high - ratesLenBarraMedia[i].low);
     }
-    m_lenBarraMediaEmTicks =  (maxMin/m_tick_size1)/(double)qtd;
+    m_lenBarraMediaEmTicks =  (len/m_tick_size1)/(double)qtd;
 }
