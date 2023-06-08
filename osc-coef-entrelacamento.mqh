@@ -19,8 +19,7 @@ private:
     double m_minAnt,m_maxAnt;
 
     double calcCoefEntrelacamento(double minAnt, double maxAnt, double minAtu, double maxAtu);
-    bool   add (double min, double max, double peso){
-
+    bool   add (double min, double max, double peso);
    
 public:
     bool initialize ( int qtdPeriodos );
@@ -54,7 +53,7 @@ public:
 
 bool osc_coef_entrelacamento::initialize ( int qtdPeriodos ){
     m_minAnt=0;m_maxAnt=0;
-    return m_vetCoef.initialize(qtdPeriodos)
+    return m_vetCoef.initialize(qtdPeriodos);
 }
 
 
@@ -128,5 +127,5 @@ double osc_coef_entrelacamento::calcCoefEntrelacamento(double minAnt, double max
 bool osc_coef_entrelacamento::add(double min, double max, double peso){
 
     double coef = calcCoefEntrelacamento(m_minAnt,m_maxAnt,min,max);
-    m_vetCoef.add(coef);
+    return m_vetCoef.add(coef);
 }

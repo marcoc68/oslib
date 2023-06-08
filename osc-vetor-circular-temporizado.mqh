@@ -70,7 +70,7 @@ int osc_vetor_circular_temporizado::initialize(int len){
 //+-----------------------------------------------------------------------+
 void osc_vetor_circular_temporizado::add(datetime time, double val, double peso=1.0){
     if(peso==0) peso = 1;
-    add(val,peso);
+    osc_vetor_circular_com_peso::add(val,peso);
   //m_time_decorrido = time - m_vet[m_ind]  ; // tempo decorrido, em segundos, entre a entrada mais antiga e a atual;
   //m_vetTimeDecorrido.add(m_time_decorrido); // vetor circular onde cada entrada eh o tempo, em segundos, entre a entrada mais antiga e a atual;
     m_vetTimeDecorrido.add(time)            ; // vetor circular onde cada entrada eh a hora da operacao em segundos;
