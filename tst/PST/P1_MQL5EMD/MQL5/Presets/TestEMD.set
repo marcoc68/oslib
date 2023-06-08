@@ -1,8 +1,0 @@
-﻿; saved automatically on 2020.02.03 17:24:49
-; this file contains last used input parameters for testing/optimizing TestEMD expert advisor
-;
-Length=110||20||10||200||Y
-Forecast=4||1||1||5||Y
-Reconstruction=2||1||1||4||Y
-SignalBar=-4||-2||1||-20||N
-Lot=0.1||0.01||0.001000||0.100000||N
