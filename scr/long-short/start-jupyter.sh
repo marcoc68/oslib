@@ -1,4 +1,5 @@
 cd d:\marcoc68\github\oslib-mql\oslib
+cd D:\repogit\oslib\scr\long-short
 d:\programs\python\python310\Scripts\jupyter-lab.exe
 
 # marcando um notebook como trusted
@@ -13,4 +14,8 @@ cd      d:\programs\python\python310\Scripts\
 pip.exe install statsmodels
 pip.exe install openpyxl
 pip.exe install colour
+
+# instalando as bibliotecas mt5
+pip install MetaTrader5
+
 

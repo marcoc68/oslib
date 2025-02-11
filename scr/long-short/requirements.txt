@@ -1,0 +1,5 @@
+MetaTrader5
+pandas
+matplotlib
+scikit-learn
+statsmodels
