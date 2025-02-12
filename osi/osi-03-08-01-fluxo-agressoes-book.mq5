@@ -372,7 +372,7 @@ int OnCalculate(const int        rates_total,
     //===============================================================================================
     //processando o evento atual...
     SymbolInfoTick  (_Symbol,m_tick);// um tick por chamada a oncalculate
-  //normalizar2trade(        m_tick);// soh normaliza se a opcao GERAR_VOLUME estiver ativa
+    normalizar2trade(        m_tick);// soh normaliza se a opcao GERAR_VOLUME estiver ativa
     m_minion.addTick(        m_tick);// adicionando o tick as estatisticas
     
     // plotando no grafico
@@ -394,11 +394,11 @@ int OnCalculate(const int        rates_total,
      // }
 
      //===============================================================================================
-     //calcTempoBarraAtual(time); // segundos na barra atual...
+     calcTempoBarraAtual(time); // segundos na barra atual...
      //===============================================================================================
      // Imprimindo dados de depuracao...
      //===============================================================================================
-     //imprimirComment();
+     imprimirComment();
 
      return(rates_total);
 }
@@ -485,7 +485,7 @@ void imprimirComment(){
 //
      "\n" +m_deslocamento+"=== VOL/VOL MEDIO/ACEL VOL ====\n" +
            m_deslocamento+"TOT: " + DoubleToString(m_minion.getVolTrade      ()    ,_Digits)+ "/"+
-                                    DoubleToString(m_bufBookMed[0]                     ,_Digits)+ "/"+
+                                    DoubleToString(m_bufBookMed[0]                 ,_Digits)+ "/"+
 //                                  DoubleToString(m_minion.getVolMedTrade   ()    ,1      )+ "/"+
 //         m_deslocamento+"BUY: " + DoubleToString(m_minion.getVolTradeBuy   ()    ,_Digits)+ "/"+
 //                                  DoubleToString(m_minion.getVolMedTradeBuy()    ,1      )+ "/"+
@@ -630,7 +630,7 @@ void doOnBookEvent2(MqlBookInfo& book[], double book_out, datetime pTime){
    //m_pmbid = m_minion.getPrecoMedBookBid();
    //m_pmbok = m_minion.getPrecoMedBook();
    
-   //ArrayPrint(book);
+   ArrayPrint(book);
 
    
 
