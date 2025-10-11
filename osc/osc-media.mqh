@@ -10,7 +10,7 @@
 #include <Math/Stat/Math.mqh>
 
 // calculo de media simples baseada em quantidade fixa de elementos. A medida que o vetor de valores enche, despreza o valor mais antigo,
-// adiciona o mais novo e reclacula a media.
+// adiciona o mais novo e recalcula a media.
 class osc_media{
 
 private:
@@ -19,17 +19,17 @@ private:
     int    m_len   ;
     int    m_len_calc;
     double m_mean  ; // media: recalcula sempre que executa o metodo add...
-    double m_var   ; // variancia: recalcula a pedido com a chamada ao medtodo calVar.
+    double m_var   ; // variancia: recalcula a pedido com a chamada ao metodo calVar.
     double m_vet[] ;
 
     uint     m_tf        ; // time_frame
-    datetime m_dt_ult_add; // data da ultima adiciao ao vetor
+    datetime m_dt_ult_add; // data da ultima adicao ao vetor
     CStat m_stat   ;   
 public:
     
     //----------------------------------------------------------------------------------------------------
     // inicializa todas as variaveis usadas no calculo da media. Dimensiona o vetor para len( recebido por parametro).
-    // Ateh que se adicione o len-ezimo valor ao calculo da media, ela serah influenciada por zeros que sao preenchidos no
+    // Ate que se adicione o len-ezimo valor ao calculo da media, ela serah influenciada por zeros que sao preenchidos no
     // vetor de valores da media. 
     //
     // in len: tamanho do vetor de media

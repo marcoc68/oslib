@@ -90,6 +90,15 @@ private:
   uint                m_lenVetMediaTick; // tamanho dos vetores de acumulo de medias de ticks;
 // ==================== TRADES(TICKS): FIM Calculo de PRECO EM FUNCAO DO VOLUME =====================
 
+  osc_vetor_circular2 m_vetCirc[6];// = {m_vetBookAsk,m_vetBookBid, m_vetBookTot, m_vetTradeSel, m_vetTradeBuy, m_vetTradeTot};
+  static const int ASK  ;
+  static const int BID  ;
+  static const int BOOK ;
+  static const int BUY  ;
+  static const int SELL ;
+  static const int TRADE;
+
+
 // ==================== TRADES(TICKS): Calculo de ACELERACAO DE VOLUME =====================
 //osc_vetor_circular2 m_aceVolTotQ; // fila com ultimas QTD_TICK_VELVOL aceleracoes de volume
 //osc_vetor_circular2 m_aceVolSelQ; // fila com ultimas QTD_TICK_VELVOL aceleracoes de volume de venda
@@ -177,7 +186,7 @@ public:
   double pmed(){return (m_ask+m_bid)/2.0;}
   double getLogRetTrade     (){ return m_vetTradeTot.getLogRet     (); }
   double getLogRetTradeMedio(){ return m_vetTradeTot.getLogRetMedio(); }
-  
+
   //void setDebugMode(bool debugMode){ m_debug = debugMode;}
 
   //--- dados de tendencia e reversao (agressoes ao book)
@@ -403,10 +412,24 @@ public:
     // calculo da probabilidade do preco subir/descer em funcao do volume nos niveis do livro de ofertas...  
 }; // fim do corpo da classe
 
+  const int osc_estatistic3::ASK  = 0;
+  const int osc_estatistic3::BID  = 1;
+  const int osc_estatistic3::BOOK = 2;
+  const int osc_estatistic3::BUY  = 3;
+  const int osc_estatistic3::SELL = 4;
+  const int osc_estatistic3::TRADE= 5;
+
 void osc_estatistic3::initialize(uint lenVetMedia=EST2_PERIODO_ACUM_DEFAULT, bool flg_consertar_tick=false, bool relogio_por_evento=false){
 
     Print(__FUNCTION__," [",getId(),"]","[Inicializando vetores de media com tamanho em segundos ", lenVetMedia,"...]");
     
+    m_vetCirc[ASK]   = m_vetBookAsk; 
+    m_vetCirc[BID]   = m_vetBookBid;
+    m_vetCirc[BOOK]  = m_vetBookTot;
+    m_vetCirc[BUY]   = m_vetTradeSel;
+    m_vetCirc[SELL]  = m_vetTradeBuy;
+    m_vetCirc[TRADE] = m_vetTradeTot;
+  
     setFlagGerarSqlInsertBook(false);
     
     setConsertarTicksSemFlag(flg_consertar_tick);
@@ -682,7 +705,20 @@ void osc_estatistic3::addBook(const datetime pTime, MqlBookInfo& book[], const i
        ArrayResize(m_bookDif,tamanhoBook);
        m_tamanhoBook = tamanhoBook;
    }
+   
+   double ask = book[tamanhoBook/2 -1].price;
+   double bid = book[tamanhoBook/2   ].price;
+   
+   double maxAsk = book[0].price;
+   double minBid = book[tamanhoBook-1].price;
+   
+   int tamanhoAsks = (int)round((maxAsk-ask)/tickSize);
+   int tamanhoBids = (int)round((bid-minBid)/tickSize);
 
+   double tamanho = (book[0].price - book[tamanhoBook-1].price ) / tickSize;
+   Print("tamanhoBookReal:", tamanho, " arred:", (int)round(tamanho));
+   Print("tamanhoAsk:", tamanhoAsks, " tamanhoBid:", tamanhoBids);
+   
    double pesoAsk = 0; double pesoBid = 0;// peso adicional das ofertas de venda e compra (peso referente a posicao do preco no book)
 
    // calculando a posicao dos precos significativos no book...
