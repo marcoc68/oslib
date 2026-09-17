@@ -1,4 +1,4 @@
-﻿//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
 //|                                                   C00021Pairs.mqh|
 //|                               Copyright 2022,oficina de software.|
 //|                                 http://www.metaquotes.net/marcoc.|
@@ -60,17 +60,27 @@ public:
     // in  t1    : tick do primeiro ativo
     // in  t2    : tick do segundo  ativo
     // out spread: spread calculado como o retorno do ativo t1 sobre t2: log(t1)-log(t2)
-    double calcSpread(MqlTick &t1, MqlTick &t2){ return calcSpread(t1.last,t2.last, t1.time); }
+    double calcSpread(MqlTick &t1, MqlTick &t2){ return calcSpread(getLast(t1), getLast(t2), t1.time); }
 
     // in  p1    : preco do primeiro ativo
     // in  p2    : preco do segundo  ativo
     // in  t     : data dos precos
     // out spread: spread calculado como o retorno preco p1 sobre p2: log(p1)-log(p2)
     double calcSpread(const double p1, const double p2, const datetime t){
+        if(p1==0 || p2==0){
+            Print("ERRO: Preco invalido! p1=",p1," p2=", p2);
+            return m_spread;
+        }
+
         double spread = log(p1) - log(p2);
-        if( spread != 0 && MathIsValidNumber(spread) && p1!=0 && p2!=0 ){ 
+        if( spread != 0 && MathIsValidNumber(spread) ){ 
             m_spread = spread;
         }else{
+            Print("spread invalido: m_spread anterior retornado:", m_spread);
+            Print("spread invalido: spread anterior:",   spread);
+            Print("spread invalido: spread invalido:",   spread);
+            Print("spread invalido: p1             :", p1      );
+            Print("spread invalido: p2             :", p2      );
             return m_spread;
         }
       //if( m_spread == 0 || !MathIsValidNumber(m_spread) )return m_spread;
@@ -93,5 +103,13 @@ public:
     
     double regLinFit  (){return m_vet_spread.regLinFit     ();}
     double regLinSlope(){return m_vet_spread.regLinGetSlope();}
+
+    double getLast(MqlTick& tick){
+       if(tick.last > 0                ){ return tick.last; }
+       if(tick.bid  > 0 && tick.ask > 0){ return (tick.bid+tick.ask)/2; }
+       if(tick.ask  > 0                ){ return tick.ask; }
+                                          return tick.bid;
+    }
+
 
 };
