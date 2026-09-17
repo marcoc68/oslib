@@ -1,4 +1,4 @@
-﻿//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
 //|                                     ose-p7-004-001-08-fms-pt.mq5 |
 //|                                          Copyright 2021, OS Corp |
 //|                                                http://www.os.org |
@@ -185,7 +185,7 @@ input group "Entrada volatilidade e inclinacoes"
 
   input group "formador de mercado"
   input int    EA_DIST_MIN_IN_BOOK_IN_POS                 = 5   ; //DIST_MIN_IN_BOOK_IN_POS abrindo posicao
-  #define      EA_DIST_MIN_IN_BOOK_IN_POS_OBRIG             5     //int DIST_MIN_IN_BOOK_IN_POS_OBRIG
+  //#define      EA_DIST_MIN_IN_BOOK_IN_POS_OBRIG             5     //int DIST_MIN_IN_BOOK_IN_POS_OBRIG
   input int    EA_DIST_MIN_IN_BOOK_OUT_POS                = 5   ; //DIST_MIN_IN_BOOK_OUT_POS fechando posicao
   input int    EA_LAG_RAJADA                              = 4   ; //LAG_RAJADA
   #define      EA_STOP_PARCIAL_A_PARTIR_DE_X_LOTES          20    //int STOP_PARCIAL_A_PARTIR_DE_X_LOTES
@@ -636,7 +636,7 @@ int OnInit(){
         int qtdSegCalcMedia = 0;
         if(EA_EST_QTD_SEGUNDOS==0) qtdSegCalcMedia = PeriodSeconds()    ;
         if(EA_EST_QTD_SEGUNDOS >0) qtdSegCalcMedia = EA_EST_QTD_SEGUNDOS;
-        m_est.initialize(qtdSegCalcMedia,false,EA_EST_POR_EVENTO); // quantidade de segundos que serao usados no calculo da velocidade do volume e flag indicando que deve consertar ticks sem flag.
+        m_est.initialize(qtdSegCalcMedia,EA_EST_NORMALIZAR_TICK_2_TRADE,EA_EST_POR_EVENTO); // quantidade de segundos que serao usados no calculo da velocidade do volume e flag indicando que deve consertar ticks sem flag.
         
         m_est.setSymbolStr( m_symb_str1 );
         m_tick_util1.setTickSize(m_symb1.TickSize(), m_symb1.Digits() );
@@ -683,8 +683,6 @@ int OnInit(){
 
                 datetime dt1 = m_time_in_seconds_ini_day;
                 datetime dt2 = m_time_in_seconds_ini_day;
-                m_tick_util1.normalizar2trade(ticks1[0]);
-                m_tick_util1.normalizar2trade(ticks2[0]);
                 m_par.calcSpread(ticks1[0],ticks2[0]);
                 
                 for(int i=1,j=1; i<qtdTicks1; i++){
@@ -693,8 +691,6 @@ int OnInit(){
                         //ticks2 deve ficar posicionado na data do ticks1 ou um anterior 
                         while( j<qtdTicks2 && ticks2[j].time <= ticks1[i].time ){j++;}
                         if( --j >= 0 ){
-                            normalizar2trade1(ticks1[i]);
-                            normalizar2trade2(ticks2[j]);
                             m_par.calcSpread(ticks1[i],ticks2[j]);
                             m_est.addTick(ticks1[i]);
                         }else{j++;}
@@ -765,12 +761,10 @@ void refreshMe(){
     m_ask     = m_tick1.ask;
     m_bid     = m_tick1.bid;
     m_spread  = m_tick1.ask-m_tick1.bid;
-    normalizar2trade1();
     m_est.addTick(m_tick1);
          
   //if( EA_ACAO_POSICAO == HFT_ARBITRAGEM_PAR ){
         SymbolInfoTick(EA_TICKER_REF,m_tick2);
-        normalizar2trade2();
         m_par.calcSpread(m_tick1,m_tick2) ;
   //}
 
@@ -2597,7 +2591,7 @@ void abrirPosicaoHFTarbitragemPar(){
     }
     
     // ativo estah barato em ralacao ao seu par...
-    if( m_par.getSpreadStd() <= m_par.getSpreadStd(-EA_QTD_DP_FIRE_ORDEM) ){
+    if( m_par.getSpread() <= m_par.getSpreadStd(-EA_QTD_DP_FIRE_ORDEM) ){
         
         // providenciando a ordem de entrada na posicao...
         m_precoOrdem1 = m_bid;
@@ -2613,7 +2607,7 @@ void abrirPosicaoHFTarbitragemPar(){
     }else{
         
         // ativo estah caro em relacao ao seu par...
-        if( m_par.getSpreadStd() >= m_par.getSpreadStd(EA_QTD_DP_FIRE_ORDEM) ){
+        if( m_par.getSpread() >= m_par.getSpreadStd(EA_QTD_DP_FIRE_ORDEM) ){
         
             // providenciando a ordem de entrada na posicao...
             m_precoOrdem1 = m_ask;
@@ -3540,7 +3534,6 @@ void OnBookEvent(const string &symbol){
 
 }
 
-
 // calcula o tamanho da barra media nos ultimos xx minutos
 double m_lenBarraMediaEmTicks = 0;
 void calcLenBarraMedia(){
@@ -3559,36 +3552,3 @@ void calcLenBarraMedia(){
     m_lenBarraMediaEmTicks =  (maxMin/m_tick_size1)/(double)qtd;
 
 }
-
-// transforma o tick informativo em tick de trade. Usamos em mercados que nao informam volume ou last nos ticks.
-void normalizar2trade(MqlTick& tick){
-   if(EA_EST_NORMALIZAR_TICK_2_TRADE){
-      m_tick_util1.normalizar2trade(tick);
-   }
-}
-
-void normalizar2trade1(MqlTick& tick){
-   if(EA_EST_NORMALIZAR_TICK_2_TRADE){
-      m_tick_util1.normalizar2trade(tick);
-   }
-}
-
-void normalizar2trade2(MqlTick& tick){
-   if(EA_EST_NORMALIZAR_TICK_2_TRADE){
-      m_tick_util2.normalizar2trade(tick);
-   }
-}
-
-
-void normalizar2trade1(){
-   if(EA_EST_NORMALIZAR_TICK_2_TRADE){
-      m_tick_util1.normalizar2trade(m_tick1);
-   }
-}
-
-void normalizar2trade2(){
-   if(EA_EST_NORMALIZAR_TICK_2_TRADE){
-      m_tick_util2.normalizar2trade(m_tick2);
-   }
-}
-

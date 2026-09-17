@@ -1,4 +1,4 @@
-﻿//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
 //|                                         osi-03-14-myPair-006.mq5 |
 //|                                                           marcoc |
 //|                             https://www.mql5.com/pt/users/marcoc |
@@ -25,7 +25,8 @@
 
 //input int    QTD_BAR_PROC_HIST        = 0       ; // Quantidade de barras historicas a processar. Em modo DEBUG, convem deixar este valor baixo pra nao sobrecarregar o arquivo de log.
 input bool   GERAR_VOLUME           = false ; // se true, gera volume baseado nos ticks. Usa em papeis que nao informam volume, tais como o DJ30.
-input string PAIR2                  = "WDOJ21"; // segundo ativo do par. O primeiro é o do gráfico.
+input string PAIR2                  = "EURUSD"; // segundo ativo do par. O primeiro é o do gráfico.
+//input string PAIR2                = "WDOJ21"; // segundo ativo do par. O primeiro é o do gráfico.
 //input string PAIR2                = "GBPUSD"; // par do simbolo do grafico.
 input int    PERIODOS_MEDIA           = 60   ; // quantidade de periodos para calcular a media do ratio.
 input double MU_STD1                  = 1.0  ; // qtd desvios do primeiro desvio padrao.
@@ -56,25 +57,25 @@ input double MU_STD3                  = 3.0  ; // qtd desvios do terceiro desvio
 
 #property indicator_label3  "STD1+"
 #property indicator_type3   DRAW_LINE
-#property indicator_color3  clrRed
+#property indicator_color3  clrGoldenrod
 #property indicator_style3  STYLE_SOLID //STYLE_DASH    //STYLE_SOLID
 #property indicator_width3  1
 
 #property indicator_label4  "STD1-"
 #property indicator_type4   DRAW_LINE
-#property indicator_color4  clrRed
+#property indicator_color4  clrGoldenrod
 #property indicator_style4  STYLE_SOLID //STYLE_DASH    //STYLE_SOLID
 #property indicator_width4  1
 
 #property indicator_label5  "STD2+"
 #property indicator_type5   DRAW_LINE
-#property indicator_color5  clrRed
+#property indicator_color5  clrMagenta
 #property indicator_style5  STYLE_DASH //STYLE_DASH    //STYLE_SOLID
 #property indicator_width5  1
 
 #property indicator_label6  "STD2-"
 #property indicator_type6   DRAW_LINE
-#property indicator_color6  clrRed
+#property indicator_color6  clrMagenta
 #property indicator_style6  STYLE_DASH //STYLE_DASH    //STYLE_SOLID
 #property indicator_width6  1
 
@@ -220,7 +221,7 @@ int OnCalculate(const int        rates_total,
     //);
     
     // atualizando o spread...
-      double my_spread = log(m_tick.last) - log(m_tick2.last);
+    double my_spread = log(m_tick.last) - log(m_tick2.last);
     //double my_spread = m_par.calcSpread(m_tick, m_tick2);
     
     
@@ -229,6 +230,10 @@ int OnCalculate(const int        rates_total,
         // colocando o ultimo spread em todo o historico...
         MqlRates  rates_array[1];
         for( int i=prev_calculated; i<rates_total; i++ ){ 
+            
+            // 
+            //if(i < rates_total - PERIODOS_MEDIA*2){continue;}
+            Print("rates_tot:",rates_total," prev_calc:",prev_calculated, " i:", i, " dt:", time[i] );
             
             if(  CopyRates( 
                             PAIR2         ,  // nome do ativo 

@@ -36,8 +36,21 @@ public:
 //static bool isTkTra(MqlTick& tick){ return (  isTkBuy(tick) || isTkSel(tick)                 );} // Aconteceu uma compra ou uma venda
   static bool isTkTra(MqlTick& tick){ return (  isTkVol(tick) || isTkLas(tick) ||
                                                 isTkBuy(tick) || isTkSel(tick)                 );} // Aconteceu uma compra ou uma venda
-  
+
   uint getQtdTicksConsertados(){return m_qtd_tick_consertado;}
+
+  string strTick(MqlTick& tick){
+    return " ask:"   + tick.ask      +
+           " bid:"   + tick.bid      +
+           " last:"  + tick.last     +
+           " vol:"   + tick.volume   +
+           " isBuy:" + isTkBuy(tick) +
+           " isSel:" + isTkSel(tick) +
+           " isAsk:" + isTkAsk(tick) +
+           " isBid:" + isTkBid(tick) +
+           " isLas:" + isTkLas(tick) +
+           " isVol:" + isTkVol(tick);
+  }
   
   void consertarTickSemFlag(MqlTick& tick){
       // tick tem flag. atualizo tick anterior e termino...

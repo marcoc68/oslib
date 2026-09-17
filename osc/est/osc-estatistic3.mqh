@@ -1,4 +1,4 @@
-﻿//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
 //|                                              osc-estatistic2.mqh |
 //|                                                           marcoc |
 //|                             https://www.mql5.com/pt/users/marcoc |
@@ -716,8 +716,8 @@ void osc_estatistic3::addBook(const datetime pTime, MqlBookInfo& book[], const i
    int tamanhoBids = (int)round((bid-minBid)/tickSize);
 
    double tamanho = (book[0].price - book[tamanhoBook-1].price ) / tickSize;
-   Print("tamanhoBookReal:", tamanho, " arred:", (int)round(tamanho));
-   Print("tamanhoAsk:", tamanhoAsks, " tamanhoBid:", tamanhoBids);
+   //Print("tamanhoBookReal:", tamanho, " arred:", (int)round(tamanho));
+   //Print("tamanhoAsk:", tamanhoAsks, " tamanhoBid:", tamanhoBids);
    
    double pesoAsk = 0; double pesoBid = 0;// peso adicional das ofertas de venda e compra (peso referente a posicao do preco no book)
 
