@@ -2,7 +2,8 @@ rem defina a variavel com a localizacaodo repositorio oslib
 set REPOGIT_OSLIB=D:\repogit\oslib
 
 rem defina a variavel com a instalacao do terminal de desenvolvimento do mt5
-set TERMINAL=D:\programs\mt5\desen\MQL5
+@REM set TERMINAL=D:\programs\mt5\desen\MQL5
+set TERMINAL=D:\programs\mt5\modal\MQL5
 
 rem compilacao: execute este comando na pasta "include" do terminal onde ocorrerah a compilacao
 mklink /D %TERMINAL%\Include\oslib %REPOGIT_OSLIB%

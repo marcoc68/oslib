@@ -1,4 +1,8 @@
-﻿@echo off
+﻿rem
+rem Use este script para copiar executaveis do terminal de desenvolvimento para outro terminal
+rem
+
+@echo off
 rem terminal-clear: novo:3BA9A43D10A400EE3A5C25C340D7DDC6 antigo:EA37C0754F237DDDDEF8384B5002F42E
 rem terminal-modal: novo:8204B85248FF5705904F2EEC17F50E0C antigo:EA13603EB37E6287EDEEDAA079727CB2
 rem terminal-desen: novo:1359089FFD8DE572A105C49A845B99B2 antigo:995BCF30F4F7DC34883107ECA947C5D7 
@@ -31,11 +35,8 @@ rem comando para buscar arquivos binarios que deveria ser utf8 (execute no shell
 rem  find $PWD -type f | grep -E 'py|mq5|mqh'  | xargs file -i * | grep -v -E 'utf-8|ascii|directo|pyc'
 rem
 
-set TERMINAL_CLEAR=D:\programs\metatrader\clear
-set TERMINAL_CLDES=D:\programs\metatrader\clear-desen
-set TERMINAL_MODAL=D:\programs\metatrader\modal
-set TERMINAL_DESEN=D:\programs\metatrader\desen
-set TERMINAL_MODES=D:\programs\metatrader\modal-desen
+set TERMINAL_MODAL=D:\programs\mt5\modal
+set TERMINAL_DESEN=D:\programs\mt5\desen
 
 @echo on
 
@@ -47,57 +48,37 @@ goto :EOF
 
 rem copiando indicadores
 :copy-ind
-cd %TERMINAL_DESEN%\MQL5\Indicators
-xcopy /s /d /y "oslib-osi" "%TERMINAL_CLEAR%\MQL5\Indicators\"
-xcopy /s /d /y "oslib-osi" "%TERMINAL_CLDES%\MQL5\Indicators\"
-xcopy /s /d /y "oslib-osi" "%TERMINAL_MODAL%\MQL5\Indicators\"
-xcopy /s /d /y "oslib-osi" "%TERMINAL_MODES%\MQL5\Indicators\"
+cd "%TERMINAL_DESEN%\MQL5\Indicators"
+robocopy "oslib-osi\" "%TERMINAL_MODAL%\MQL5\Indicators\" *.ex5 /S
+
+D:\programs\mt5\desen\MQL5\Experts>robocopy "oslib-ose\" "D:\programs\mt5\modal\MQL5\Experts\" *.ex5 /S
+D:\programs\mt5\desen\MQL5\Experts>robocopy "oslib-ose\" "D:\programs\mt5\modal\MQL5\Experts\" *.ex5 /S
 
 
 rem copiando experts
 :copy-exp
-cd %TERMINAL_DESEN%\MQL5\Experts
-xcopy /s /d /y "oslib-ose" "%TERMINAL_CLEAR%\MQL5\Experts\"
-xcopy /s /d /y "oslib-ose" "%TERMINAL_CLDES%\MQL5\Experts\"
-xcopy /s /d /y "oslib-ose" "%TERMINAL_MODAL%\MQL5\Experts\"
-xcopy /s /d /y "oslib-ose" "%TERMINAL_MODES%\MQL5\Experts\"
+cd "%TERMINAL_DESEN%\MQL5\Experts"
+robocopy "oslib-ose\" "%TERMINAL_MODAL%\MQL5\Experts\" *.ex5 /S
 
 rem copiando scripts
 :copy-scr
-cd %TERMINAL_DESEN%\MQL5\Scripts
-xcopy /s /d /y "oslib-scr" "%TERMINAL_CLEAR%\MQL5\Scripts\"
-xcopy /s /d /y "oslib-scr" "%TERMINAL_CLDES%\MQL5\Scripts\"
-xcopy /s /d /y "oslib-scr" "%TERMINAL_MODAL%\MQL5\Scripts\"
-xcopy /s /d /y "oslib-scr" "%TERMINAL_MODES%\MQL5\Scripts\"
-
-xcopy /s /d /y "oslib-tst" "%TERMINAL_CLEAR%\MQL5\Scripts\"
-xcopy /s /d /y "oslib-tst" "%TERMINAL_CLDES%\MQL5\Scripts\"
-xcopy /s /d /y "oslib-tst" "%TERMINAL_MODAL%\MQL5\Scripts\"
-xcopy /s /d /y "oslib-tst" "%TERMINAL_MODES%\MQL5\Scripts\"
+cd "%TERMINAL_DESEN%\MQL5\Scripts"
+robocopy "oslib-scr\" "%TERMINAL_MODAL%\MQL5\Scripts\" *.ex5 /S
+robocopy "oslib-tst\" "%TERMINAL_MODAL%\MQL5\Scripts\" *.ex5 /S
 
 rem copiando servicos
 :copy-svc
-cd %TERMINAL_DESEN%\MQL5\Services
-xcopy /s /d /y "oslib-svc" "%TERMINAL_CLEAR%\MQL5\Services\"
-xcopy /s /d /y "oslib-svc" "%TERMINAL_CLDES%\MQL5\Services\"
-xcopy /s /d /y "oslib-svc" "%TERMINAL_MODAL%\MQL5\Services\"
-xcopy /s /d /y "oslib-svc" "%TERMINAL_MODES%\MQL5\Services\"
+cd "%TERMINAL_DESEN%\MQL5\Services"
+robocopy "oslib-svc\" "%TERMINAL_MODAL%\MQL5\Services\" *.ex5 /S
 
 rem copiando templates...
 :copy-templates
-xcopy /d /y %TERMINAL_DESEN%\MQL5\Profiles\Templates\my*.tpl %TERMINAL_CLEAR%\MQL5\Profiles\Templates\
-xcopy /d /y %TERMINAL_DESEN%\MQL5\Profiles\Templates\my*.tpl %TERMINAL_CLDES%\MQL5\Profiles\Templates\
-xcopy /d /y %TERMINAL_DESEN%\MQL5\Profiles\Templates\my*.tpl %TERMINAL_MODAL%\MQL5\Profiles\Templates\
-xcopy /d /y %TERMINAL_DESEN%\MQL5\Profiles\Templates\my*.tpl %TERMINAL_MODES%\MQL5\Profiles\Templates\
+robocopy "%TERMINAL_DESEN%\MQL5\Profiles\Templates\" "%TERMINAL_MODAL%\MQL5\Profiles\Templates\" my*.tpl /S
 
 rem copiando configuracoes de EA...
 :copy-ea-config
-xcopy /d /y %TERMINAL_DESEN%\MQL5\Presets\*.set %TERMINAL_CLEAR%\MQL5\Presets\
-xcopy /d /y %TERMINAL_DESEN%\MQL5\Presets\*.set %TERMINAL_CLDES%\MQL5\Presets\
-xcopy /d /y %TERMINAL_DESEN%\MQL5\Presets\*.set %TERMINAL_MODAL%\MQL5\Presets\
-xcopy /d /y %TERMINAL_DESEN%\MQL5\Presets\*.set %TERMINAL_MODES%\MQL5\Presets\
-xcopy /d /y %TERMINAL_DESEN%\MQL5\Presets\*.set %TERMINAL_ACDES%\MQL5\Presets\
+robocopy "%TERMINAL_DESEN%\MQL5\Presets\" "%TERMINAL_MODAL%\MQL5\Presets\" *.set /S
 
-cd %TERMINAL_DESEN%\MQL5\include\oslib\osres
+cd "%TERMINAL_DESEN%\MQL5\include\oslib\osres"
 
 :EOF
