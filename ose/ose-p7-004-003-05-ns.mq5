@@ -565,7 +565,7 @@ int OnInit(){
     m_gerentePos1.inicializar(m_symb_str1,EA_MAGIC,EA_LAG_RAJADA1,EA_TAMANHO_RAJADA,EA_REDUZ_T4G_A_CADA_X_SEG);
   //m_gerentePos1.setSpread(m_lag_rajada1*m_tick_size1);
     m_gerentePos1.setSpread(             m_tick_size1);
-  //m_gerentePos1.setT4gMin((int)EA_QTD_TICKS_4_GAIN_MIN_1 );
+  //m_gerentePos1.setT4gMin((int)EA_QTD_TSICK_4_GAIN_MIN_1 );
     m_gerentePos1.setT4gMin((int)EA_QTD_TICKS_4_GAIN_INI_1 );
 
     m_canal1.inicializar(m_symb1, EA_TAMANHO_CANAL, EA_PORC_REGIAO_OPERACIONAL_CANAL);
@@ -3181,7 +3181,7 @@ void abrirPosicaoHFTarbitragemPar(){
     }
 
     // ativo estah barato em ralacao ao seu par...
-    if( m_par.getSpreadStd() <= m_par.getSpreadStd(-EA_QTD_DP_FIRE_ORDEM) ){
+    if( m_par.getSpread() <= m_par.getSpreadStd(-EA_QTD_DP_FIRE_ORDEM) ){
 
         // providenciando a ordem de entrada na posicao...
         m_precoOrdem1 = m_bid;
@@ -3197,7 +3197,7 @@ void abrirPosicaoHFTarbitragemPar(){
     }else{
 
         // ativo estah caro em relacao ao seu par...
-        if( m_par.getSpreadStd() >= m_par.getSpreadStd(EA_QTD_DP_FIRE_ORDEM) ){
+        if( m_par.getSpread() >= m_par.getSpreadStd(EA_QTD_DP_FIRE_ORDEM) ){
 
             // providenciando a ordem de entrada na posicao...
             m_precoOrdem1 = m_ask;
