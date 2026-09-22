@@ -1,4 +1,4 @@
-﻿//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
 //|                                                   osc-padrao.mqh |
 //|                                                           marcoc |
 //|                             https://www.mql5.com/pt/users/marcoc |
@@ -40,16 +40,16 @@ public:
   uint getQtdTicksConsertados(){return m_qtd_tick_consertado;}
 
   string strTick(MqlTick& tick){
-    return " ask:"   + tick.ask      +
-           " bid:"   + tick.bid      +
-           " last:"  + tick.last     +
-           " vol:"   + tick.volume   +
-           " isBuy:" + isTkBuy(tick) +
-           " isSel:" + isTkSel(tick) +
-           " isAsk:" + isTkAsk(tick) +
-           " isBid:" + isTkBid(tick) +
-           " isLas:" + isTkLas(tick) +
-           " isVol:" + isTkVol(tick);
+    return " ask:"   + (string)tick.ask      +
+           " bid:"   + (string)tick.bid      +
+           " last:"  + (string)tick.last     +
+           " vol:"   + (string)tick.volume   +
+           " isBuy:" + (string)isTkBuy(tick) +
+           " isSel:" + (string)isTkSel(tick) +
+           " isAsk:" + (string)isTkAsk(tick) +
+           " isBid:" + (string)isTkBid(tick) +
+           " isLas:" + (string)isTkLas(tick) +
+           " isVol:" + (string)isTkVol(tick);
   }
   
   void consertarTickSemFlag(MqlTick& tick){
