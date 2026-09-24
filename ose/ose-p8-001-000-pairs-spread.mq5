@@ -80,14 +80,14 @@ input double         EA_DESVIOS_ENTRADA = 2.0         ; //DESVIOS_ENTRADA afasta
 input double         EA_DESVIOS_SAIDA   = 0.0         ; //DESVIOS_SAIDA distancia da media, em desvios, onde a posicao eh fechada. 0=fecha na media
 
 input group "=== Volume ===";
-input double         EA_VOLUME          = 0.10        ; //VOLUME lote aplicado igualmente nas duas pernas
+input double         EA_VOLUME_1        = 0.01        ; //VOLUME lote aplicado na primeira perna
+input double         EA_VOLUME_2        = 0.01        ; //VOLUME lote aplicado na segunda perna
 input bool           EA_SUGERIR_VOLUME  = true        ; //SUGERIR_VOLUME loga, no OnInit, o menor volume de equilibrio financeiro de cada perna
 input double         EA_TOLERANCIA_EQUIL= 0.01        ; //TOLERANCIA_EQUIL desequilibrio aceito entre as pernas no calculo da sugestao. 0.01=1%
 
 input group "=== Stop ===";
 input double         EA_STOP_FINANCEIRO = 0.0         ; //STOP_FINANCEIRO perda maxima somada das duas pernas, na moeda da conta. 0=desligado
 input bool           EA_STOP_MEDIA_ABERTURA = false   ; //STOP_MEDIA_ABERTURA fecha qd a media alcanca o spread de abertura +- desvios de abertura
-input double         EA_STOP_DESVIOS_MEDIA  = 1.0     ; //STOP_DESVIOS_MEDIA qtos desvios da abertura sao somados ao spread de abertura no stop acima
 
 input group "=== Operacao ===";
 input bool           EA_OPERACAO_AUTOMATICA = true    ; //OPERACAO_AUTOMATICA false=nao abre nem fecha sozinho, apenas loga o que faria
@@ -133,7 +133,6 @@ bool          m_abertura_reg   = false; // jah temos a referencia da abertura?
 double        m_spread_abert   = 0    ; // spread no momento da abertura
 double        m_med_abert      = 0    ; // media  do spread no momento da abertura
 double        m_std_abert      = 0    ; // desvio do spread no momento da abertura
-double        m_nivel_stop_med = 0    ; // nivel da media que aciona o stop
 datetime      m_dt_abert       = 0    ; // data da abertura
 
 string        m_ult_simulado   = ""   ; // ultima acao simulada logada (evita repetir no log)
@@ -244,24 +243,19 @@ bool inicializarParametros(){
         return false;
     }
 
-    if( EA_STOP_MEDIA_ABERTURA && EA_STOP_DESVIOS_MEDIA < 0 ){
-        Print(":-( ", __FUNCTION__, " STOP_DESVIOS_MEDIA nao pode ser negativo. informado:", EA_STOP_DESVIOS_MEDIA );
+    if( EA_VOLUME_1 <= 0 || EA_VOLUME_2 <= 0 ){
+        Print(":-( ", __FUNCTION__, " VOLUME_1 e VOLUME_2 devem ser maiores que zero. informados:", EA_VOLUME_1, " e ", EA_VOLUME_2 );
         return false;
     }
 
-    if( EA_VOLUME <= 0 ){
-        Print(":-( ", __FUNCTION__, " VOLUME deve ser maior que zero. informado:", EA_VOLUME );
-        return false;
-    }
-
-    m_volume1 = osc_trade_util::normalizarVolume( m_symb1, EA_VOLUME );
-    m_volume2 = osc_trade_util::normalizarVolume( m_symb2, EA_VOLUME );
+    m_volume1 = osc_trade_util::normalizarVolume( m_symb1, EA_VOLUME_1 );
+    m_volume2 = osc_trade_util::normalizarVolume( m_symb2, EA_VOLUME_2 );
 
     Print(":-| ", __FUNCTION__, " volume ", EA_SYMBOL_1, ":", m_volume1,
                                 " volume ", EA_SYMBOL_2, ":", m_volume2 );
 
-    if( m_volume1 != EA_VOLUME || m_volume2 != EA_VOLUME ){
-        Print(":-| ", __FUNCTION__, " VOLUME ", EA_VOLUME, " foi ajustado aos limites dos ativos." );
+    if( m_volume1 != EA_VOLUME_1 || m_volume2 != EA_VOLUME_2 ){
+        Print(":-| ", __FUNCTION__, " VOLUMES de ", EA_SYMBOL_1,":" ,EA_VOLUME_1, " e de", EA_SYMBOL_2, ":", EA_VOLUME_2, " foram ajustados aos limites dos ativos." );
     }
     return true;
 }
@@ -352,7 +346,7 @@ void sugerirVolumeEquilibrio(){
                       "nao permitem um casamento melhor nesta faixa de volume." );
     }
 
-    Print(":-| ", __FUNCTION__, " a sugestao nao altera o EA: ele continua operando com VOLUME=", EA_VOLUME, "." );
+    Print(":-| ", __FUNCTION__, " a sugestao nao altera o EA: ele continua operando com VOLUME1=", EA_VOLUME_1, " e VOLUME2=", EA_VOLUME_2, "." );
 }
 
 //+------------------------------------------------------------------+
@@ -589,17 +583,11 @@ void registrarAbertura(const int direcao, const bool herdada){
     m_dt_abert     = TimeCurrent();
     m_ult_simulado = "";
 
-    // o stop eh acionado quando a media se desloca ateh o spread de abertura, no sentido
-    // contrario ao da operacao: para cima em quem estah vendido no spread, para baixo em
-    // quem estah comprado.
-    m_nivel_stop_med = (direcao==PAR_SHORT_SPREAD)
-                     ? m_spread_abert + EA_STOP_DESVIOS_MEDIA*m_std_abert
-                     : m_spread_abert - EA_STOP_DESVIOS_MEDIA*m_std_abert;
-
     Print(":-| ", __FUNCTION__, (herdada?" (posicao jah estava aberta - referencia adotada do mercado atual) ":" "),
                   "referencia da abertura. spread:", m_spread_abert,
                   " media:", m_med_abert, " desvio:", m_std_abert,
-                  (EA_STOP_MEDIA_ABERTURA ? "  stop da media em:"+DoubleToString(m_nivel_stop_med,8)
+                  // o stop eh acionado quando a media se desloca ateh o spread de abertura.
+                  (EA_STOP_MEDIA_ABERTURA ? "  stop se spread medio atingir:"+DoubleToString(m_spread_abert,8)
                                           : "  (stop da media desligado)") );
 }
 
@@ -608,7 +596,6 @@ void limparAbertura(){
     m_spread_abert   = 0;
     m_med_abert      = 0;
     m_std_abert      = 0;
-    m_nivel_stop_med = 0;
     m_dt_abert       = 0;
     m_ult_simulado   = "";
 }
@@ -648,15 +635,11 @@ void verificarSaida(){
     }
 
     // 2. stop pelo deslocamento da media...
-    //    a media alcancou o spread registrado na abertura (mais os desvios daquele momento),
-    //    no sentido contrario ao da operacao. Nao foi o spread que voltou para a media: foi a
-    //    media que foi atras do spread. A premissa de reversao nao vale mais.
-    if( atingiuStopDaMedia() ){
-        string motivo = "stop da media. media:" + DoubleToString(m_spread_med,8) +
-                        " alcancou o nivel de abertura:" + DoubleToString(m_nivel_stop_med,8) +
-                        " (spread abertura:" + DoubleToString(m_spread_abert,8) +
-                        " +- " + DoubleToString(EA_STOP_DESVIOS_MEDIA,2) +
-                        " x desvio:" + DoubleToString(m_std_abert,8) + ")";
+    //    a media alcancou o spread registrado na abertura da posicao. Nao foi o spread que voltou para a media: foi a
+    //    media que foi atras do spread da abertura da posicao. A premissa de reversao nao vale mais.
+    if( spreadMedioAtingiuSpreadDaAbertura() ){
+        string motivo = "stop da media. media atual:" + DoubleToString(m_spread_med,8) +
+                        " alcancou o spread da abertura da posicao:" + DoubleToString(m_spread_abert,8) + ")";
         solicitarFechamento( "FECHAR_STOP_MEDIA", motivo, false );
         return;
     }
@@ -701,15 +684,15 @@ bool jahNoAlvoDeSaida(const int direcao){
     return false;
 }
 
-// a media do spread alcancou o nivel registrado na abertura da posicao?
-bool atingiuStopDaMedia(){
+// spread medio alcancou o spread registrado na abertura da posicao?
+bool spreadMedioAtingiuSpreadDaAbertura(){
 
     if( !EA_STOP_MEDIA_ABERTURA ) return false;
     if( !m_abertura_reg         ) return false;
     if( m_estado == PAR_FLAT    ) return false;
 
-    if( m_estado == PAR_SHORT_SPREAD ) return ( m_spread_med >= m_nivel_stop_med );
-    return ( m_spread_med <= m_nivel_stop_med );
+    if( m_estado == PAR_SHORT_SPREAD ) return ( m_spread_med >= m_spread_abert );
+    return ( m_spread_med <= m_spread_abert );
 }
 
 // fecha as duas pernas do par.
@@ -952,8 +935,8 @@ string strTelaAbertura(){
                "   desvio " + DoubleToString(m_std_abert,8) + "\n";
 
     if( EA_STOP_MEDIA_ABERTURA ){
-        s += "Stop da media  : " + DoubleToString(m_nivel_stop_med,8) +
-             "   (media atual " + DoubleToString(m_spread_med,8) + ")\n";
+        s += "Spread na abertura  : " + DoubleToString(m_spread_abert,8) +
+             "   (Spread medio " + DoubleToString(m_spread_med,8) + ")\n";
     }
     return s;
 }
