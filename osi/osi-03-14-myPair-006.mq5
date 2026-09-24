@@ -172,7 +172,7 @@ int OnCalculate(const int        rates_total,
         for( int i=prev_calculated; i<rates_total; i++ ){
             
             if(i < rates_total - PERIODOS_MEDIA*6){continue;}
-            Print("rates_tot:",rates_total," prev_calc:",prev_calculated, " i:", i, " dt:", time[i] );
+//            Print("rates_tot:",rates_total," prev_calc:",prev_calculated, " i:", i, " dt:", time[i] );
 
             close2 = getClose(PAIR2, time[i]);
             if( close2 > 0 ){
