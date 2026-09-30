@@ -77,9 +77,9 @@ public:
     }
 
     string toString() const {
-        string result = "VetorCircularDouble: [";
+        string result = "VetorCircularDouble[";
         for(uint i = 0; i < m_size; i++){
-            result += DoubleToString(at(i), 5);
+            result += DoubleToString(at(i), 4);
             if(i < m_size - 1) result += ", ";
         }
         result += "]";

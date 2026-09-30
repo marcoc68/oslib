@@ -10,10 +10,10 @@
 #include <Trade/Trade.mqh>
 #include <Trade/SymbolInfo.mqh>
 //+-----------------------------------------------------------------------------------------------+
-//| Metodos utilitarios de negociacao, reaproveitaveis por qualquer EA.                            |
-//|                                                                                                |
-//| Todos os metodos sao estaticos e sem estado. Uso:                                              |
-//|    double vol = osc_trade_util::normalizarVolume( "PETR4", 1.37 );                             |
+//| Metodos utilitarios de negociacao, reaproveitaveis por qualquer EA.                           |
+//|                                                                                               |
+//| Todos os metodos sao estaticos e sem estado. Uso:                                             |
+//|    double vol = osc_trade_util::normalizarVolume( "PETR4", 1.37 );                            |
 //+-----------------------------------------------------------------------------------------------+
 
 class osc_trade_util {
@@ -21,7 +21,7 @@ private:
 public:
 
     //+--------------------------------------------------------------+
-    //| Simbolos                                                      |
+    //| Simbolos                                                     |
     //+--------------------------------------------------------------+
 
     // coloca o ativo na Observacao de Mercado, se ainda nao estiver.
@@ -50,7 +50,7 @@ public:
     }
 
     //+--------------------------------------------------------------+
-    //| Volume                                                        |
+    //| Volume                                                       |
     //+--------------------------------------------------------------+
 
     // quantidade de casas decimais correspondente ao passo de volume informado.

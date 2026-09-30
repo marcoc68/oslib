@@ -67,17 +67,18 @@
 #define PAR_FLAT          0  // sem posicao
 #define PAR_LONG_SPREAD   1  // comprado no spread : COMPRA ativo1 / VENDE  ativo2
 #define PAR_SHORT_SPREAD -1  // vendido  no spread : VENDE  ativo1 / COMPRA ativo2
+#define TERMINAL         "TERMIANAL"  // nome especial para indicar o simbolo do terminal.
 
 //---------------------------------------------------------------------------------------------
 input group "=== Par de ativos ===";
-input string         EA_SYMBOL_1        = "EURUSD"    ; //SYMBOL_1 primeiro ativo do par (p1 do spread)
-input string         EA_SYMBOL_2        = "GBPUSD"    ; //SYMBOL_2 segundo  ativo do par (p2 do spread)
-
-input group "=== Spread ===";
+input string         EA_SYMBOL_1            = "TERMINAL" ; //SYMBOL_1 primeiro ativo do par (p1 do spread)
+input string         EA_SYMBOL_2            = "GBPUSD"   ; //SYMBOL_2 segundo  ativo do par (p2 do spread)
+input double         EA_COEF_CORRELACAO_MIN = 0.85       ; //COEF_CORRELACAO_MIN coeficiente de correlacao minimo entre os dois ativos para operar
+input group "=== Spread do PAR ===";
 input int            EA_QTD_PERIODOS    = 60          ; //QTD_PERIODOS qtd de barras usadas na media e no desvio do spread
-input ENUM_TIMEFRAMES EA_TIMEFRAME      = PERIOD_M1   ; //TIMEFRAME timeframe das barras da janela do spread
-input double         EA_DESVIOS_ENTRADA = 2.0         ; //DESVIOS_ENTRADA afastamento em desvios padrao para disparar a operacao
-input double         EA_DESVIOS_SAIDA   = 0.0         ; //DESVIOS_SAIDA distancia da media, em desvios, onde a posicao eh fechada. 0=fecha na media
+input ENUM_TIMEFRAMES EA_TIMEFRAME      = PERIOD_M3   ; //TIMEFRAME timeframe das barras da janela do spread
+input double         EA_DESVIOS_ENTRADA = 3.0         ; //DESVIOS_ENTRADA afastamento em desvios padrao para disparar a operacao
+input double         EA_DESVIOS_SAIDA   = 0.2         ; //DESVIOS_SAIDA distancia da media, em desvios, onde a posicao eh fechada. 0=fecha na media
 
 input group "=== Volume ===";
 input double         EA_VOLUME_1        = 0.01        ; //VOLUME lote aplicado na primeira perna
@@ -90,16 +91,17 @@ input double         EA_STOP_FINANCEIRO = 0.0         ; //STOP_FINANCEIRO perda 
 input bool           EA_STOP_MEDIA_ABERTURA = false   ; //STOP_MEDIA_ABERTURA fecha qd a media alcanca o spread de abertura +- desvios de abertura
 
 input group "=== Operacao ===";
+input int            EA_SPREAD_PIPS_MAX_PARA_ABRIR_POSICAO = 5    ; // Spread em pips maior que este valor. Não abre posição.
 input bool           EA_OPERACAO_AUTOMATICA = true    ; //OPERACAO_AUTOMATICA false=nao abre nem fecha sozinho, apenas loga o que faria
 input bool           EA_TECLAS_HABILITADAS  = true    ; //TECLAS_HABILITADAS abre/fecha o par por combinacao de teclas (grafico precisa ter o foco)
 input bool           EA_TECLA_CTRL      = true        ; //TECLA_CTRL exige CTRL na combinacao de teclas
-input bool           EA_TECLA_ALT       = true        ; //TECLA_ALT exige ALT na combinacao de teclas
-input bool           EA_TECLA_SHIFT     = false       ; //TECLA_SHIFT exige SHIFT na combinacao de teclas
+input bool           EA_TECLA_ALT       = false       ; //TECLA_ALT exige ALT na combinacao de teclas
+input bool           EA_TECLA_SHIFT     = true        ; //TECLA_SHIFT exige SHIFT na combinacao de teclas
 input int            EA_TECLA_ABRIR     = 65          ; //TECLA_ABRIR codigo da tecla que abre o par. 65='A'
 input int            EA_TECLA_FECHAR    = 70          ; //TECLA_FECHAR codigo da tecla que fecha o par. 70='F'
 
 input group "=== Diversos ===";
-input ulong          EA_MAGIC           = 26090800100000; //MAGIC numero magico do EA. yy-mm-vv-vvv-vvv-vv
+input ulong          EA_MAGIC           = 260908001000; //MAGIC numero magico do EA. yy-mm-vv-vvv-vvv-vv
 input ulong          EA_DESVIO_PONTOS   = 20          ; //DESVIO_PONTOS desvio maximo aceito do preco nas ordens a mercado
 input bool           EA_SHOW_TELA       = true        ; //SHOW_TELA mostra o estado do EA no grafico
 input int            EA_QTD_MILISEG_TIMER = 250       ; //QTD_MILISEG_TIMER tempo de acionamento do timer
@@ -111,9 +113,13 @@ C00021Pairs   m_pairs                 ; // calculo do spread, da media e do desv
 CTrade        m_trade                 ; // execucao das ordens
 CSymbolInfo   m_symb1                 ; // propriedades do ativo 1
 CSymbolInfo   m_symb2                 ; // propriedades do ativo 2
+string        m_nm_symb1             ; // nome do ativo 1
+string        m_nm_symb2             ; // nome do ativo 2
 
-double        m_volume1        = 0    ; // volume normalizado para o ativo 1
-double        m_volume2        = 0    ; // volume normalizado para o ativo 2
+double        m_volume1          = 0    ; // volume normalizado para o ativo 1
+double        m_volume2          = 0    ; // volume normalizado para o ativo 2
+double        m_volume_sugerido1 = 0    ; // volume sugerido normalizado para o ativo 1
+double        m_volume_sugerido2 = 0    ; // volume sugerido normalizado para o ativo 2
 
 datetime      m_dt_ult_barra   = 0    ; // data da ultima barra ja contabilizada na janela
 int           m_qtd_amostras   = 0    ; // qtd de spreads ja adicionados a janela
@@ -122,6 +128,7 @@ double        m_spread_atu     = 0    ; // spread instantaneo
 double        m_spread_med     = 0    ; // media do spread na janela
 double        m_spread_std     = 0    ; // desvio padrao do spread na janela
 double        m_zscore         = 0    ; // (spread - media)/desvio
+double        m_coef_correlacao = 0    ; // coeficiente de correlacao entre os dois ativos
 double        m_banda_sup      = 0    ; // media + k*desvio
 double        m_banda_inf      = 0    ; // media - k*desvio
 
@@ -139,6 +146,7 @@ string        m_ult_simulado   = ""   ; // ultima acao simulada logada (evita re
 bool          m_pos_invalida   = false; // pernas abertas que nao formam um spread e nao foram desmontadas
 
 bool          m_inicializado   = false;
+ulong         m_magic          = 0;
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -148,20 +156,21 @@ int OnInit(){
     Print(":-| ", __FUNCTION__, " ************************************************");
     Print(":-| ", __FUNCTION__, " Iniciando : ", TimeCurrent() );
     Print(":-| ", __FUNCTION__, " EA        : ", m_name        );
-    Print(":-| ", __FUNCTION__, " MAGIC     : ", EA_MAGIC      );
     Print(":-| ", __FUNCTION__, " BUILDER   : ", __MQLBUILD__  );
     Print(":-| ", __FUNCTION__, " ************************************************");
 
     if( !inicializarSimbolos()  ) return INIT_PARAMETERS_INCORRECT;
     if( !inicializarParametros()) return INIT_PARAMETERS_INCORRECT;
 
-    m_trade.SetExpertMagicNumber( EA_MAGIC         );
+    m_magic = criar_magic(m_nm_symb1 + m_nm_symb2); // magic unico para cada par de ativos
+
+    m_trade.SetExpertMagicNumber( m_magic         );
     m_trade.SetDeviationInPoints( EA_DESVIO_PONTOS );
     m_trade.LogLevel            ( LOG_LEVEL_ERRORS );
 
     // janela de EA_QTD_PERIODOS amostras. A classe filtra adicoes com menos de 1 segundo
     // de intervalo, o que nao nos afeta pois adicionamos no maximo uma amostra por barra.
-    m_pairs.initialize( EA_QTD_PERIODOS );
+    m_pairs.initialize( EA_QTD_PERIODOS, EA_TIMEFRAME );
 
     logarModoOperacao();
     sugerirVolumeEquilibrio();
@@ -195,23 +204,29 @@ void OnTimer(){ processar(); } // o grafico pode ser de um terceiro ativo, ou o 
 //+------------------------------------------------------------------+
 bool inicializarSimbolos(){
 
-    if( EA_SYMBOL_1 == EA_SYMBOL_2 ){
+    m_nm_symb1 = EA_SYMBOL_1;
+    m_nm_symb2 = EA_SYMBOL_2;
+
+    if( m_nm_symb1 == TERMINAL ) m_nm_symb1 = _Symbol;
+    if( m_nm_symb2 == TERMINAL ) m_nm_symb2 = _Symbol;
+
+    if( m_nm_symb1 == m_nm_symb2 ){
         Print(":-( ", __FUNCTION__, " SYMBOL_1 e SYMBOL_2 devem ser ativos diferentes." );
         return false;
     }
 
-    if( !osc_trade_util::selecionarSimbolo(EA_SYMBOL_1) ) return false;
-    if( !osc_trade_util::selecionarSimbolo(EA_SYMBOL_2) ) return false;
+    if( !osc_trade_util::selecionarSimbolo(m_nm_symb1) ) return false;
+    if( !osc_trade_util::selecionarSimbolo(m_nm_symb2) ) return false;
 
-    m_symb1.Name( EA_SYMBOL_1 );
-    m_symb2.Name( EA_SYMBOL_2 );
+    m_symb1.Name( m_nm_symb1 );
+    m_symb2.Name( m_nm_symb2 );
     m_symb1.Refresh(); m_symb1.RefreshRates();
     m_symb2.Refresh(); m_symb2.RefreshRates();
 
-    Print(":-| ", __FUNCTION__, " ativo1:", EA_SYMBOL_1,
+    Print(":-| ", __FUNCTION__, " ativo1:", m_nm_symb1,
                   " digits:"   , m_symb1.Digits(),
                   " lots min/step/max:", m_symb1.LotsMin(), "/", m_symb1.LotsStep(), "/", m_symb1.LotsMax() );
-    Print(":-| ", __FUNCTION__, " ativo2:", EA_SYMBOL_2,
+    Print(":-| ", __FUNCTION__, " ativo2:", m_symb2.Name(),
                   " digits:"   , m_symb2.Digits(),
                   " lots min/step/max:", m_symb2.LotsMin(), "/", m_symb2.LotsStep(), "/", m_symb2.LotsMax() );
     return true;
@@ -251,11 +266,11 @@ bool inicializarParametros(){
     m_volume1 = osc_trade_util::normalizarVolume( m_symb1, EA_VOLUME_1 );
     m_volume2 = osc_trade_util::normalizarVolume( m_symb2, EA_VOLUME_2 );
 
-    Print(":-| ", __FUNCTION__, " volume ", EA_SYMBOL_1, ":", m_volume1,
-                                " volume ", EA_SYMBOL_2, ":", m_volume2 );
+    Print(":-| ", __FUNCTION__, " volume ", m_nm_symb1, ":", m_volume1,
+                                " volume ", m_nm_symb2, ":", m_volume2 );
 
     if( m_volume1 != EA_VOLUME_1 || m_volume2 != EA_VOLUME_2 ){
-        Print(":-| ", __FUNCTION__, " VOLUMES de ", EA_SYMBOL_1,":" ,EA_VOLUME_1, " e de", EA_SYMBOL_2, ":", EA_VOLUME_2, " foram ajustados aos limites dos ativos." );
+        Print(":-| ", __FUNCTION__, " VOLUMES de ", m_nm_symb1,":" ,EA_VOLUME_1, " e de", m_nm_symb2, ":", EA_VOLUME_2, " foram ajustados aos limites dos ativos." );
     }
     return true;
 }
@@ -307,15 +322,15 @@ void sugerirVolumeEquilibrio(){
     if( !EA_SUGERIR_VOLUME ) return;
 
     // quanto vale, em dinheiro, 1% de variacao do preco, para o volume configurado...
-    double val1_atu = osc_trade_util::valorPorPercentual( EA_SYMBOL_1, m_volume1, 0.01 );
-    double val2_atu = osc_trade_util::valorPorPercentual( EA_SYMBOL_2, m_volume2, 0.01 );
+    double val1_atu = osc_trade_util::valorPorPercentual( m_nm_symb1, m_volume1, 0.01 );
+    double val2_atu = osc_trade_util::valorPorPercentual( m_nm_symb2, m_volume2, 0.01 );
 
     Print(":-| ", __FUNCTION__, " --- equilibrio financeiro das pernas (1% de variacao) ---" );
-    Print(":-| ", __FUNCTION__, " ", EA_SYMBOL_1, " vol:", m_volume1,
-                  " preco:", osc_trade_util::precoReferencia(EA_SYMBOL_1),
+    Print(":-| ", __FUNCTION__, " ", m_nm_symb1, " vol:", m_volume1,
+                  " preco:", osc_trade_util::precoReferencia(m_nm_symb1),
                   " valor de 1%:", DoubleToString(val1_atu,2), " ", AccountInfoString(ACCOUNT_CURRENCY) );
-    Print(":-| ", __FUNCTION__, " ", EA_SYMBOL_2, " vol:", m_volume2,
-                  " preco:", osc_trade_util::precoReferencia(EA_SYMBOL_2),
+    Print(":-| ", __FUNCTION__, " ", m_nm_symb2, " vol:", m_volume2,
+                  " preco:", osc_trade_util::precoReferencia(m_nm_symb2),
                   " valor de 1%:", DoubleToString(val2_atu,2), " ", AccountInfoString(ACCOUNT_CURRENCY) );
 
     if( val1_atu > 0 && val2_atu > 0 ){
@@ -324,20 +339,20 @@ void sugerirVolumeEquilibrio(){
                       DoubleToString(desequil*100,2), "%" );
     }
 
-    double vol1=0, vol2=0, erro=0;
-    if( !osc_trade_util::calcVolumesEquilibrio( EA_SYMBOL_1, EA_SYMBOL_2, vol1, vol2, erro,
+    double erro=0;
+    if( !osc_trade_util::calcVolumesEquilibrio( m_nm_symb1, m_nm_symb2, m_volume_sugerido1, m_volume_sugerido2, erro,
                                                 EA_TOLERANCIA_EQUIL ) ){
         Print(":-( ", __FUNCTION__, " nao foi possivel calcular o volume de equilibrio. ",
                       "Verifique cotacao e tick value dos ativos." );
         return;
     }
 
-    double val1_sug = osc_trade_util::valorPorPercentual( EA_SYMBOL_1, vol1, 0.01 );
-    double val2_sug = osc_trade_util::valorPorPercentual( EA_SYMBOL_2, vol2, 0.01 );
+    double val1_sug = osc_trade_util::valorPorPercentual( m_nm_symb1, m_volume_sugerido1, 0.01 );
+    double val2_sug = osc_trade_util::valorPorPercentual( m_nm_symb2, m_volume_sugerido2, 0.01 );
 
     Print(":-) ", __FUNCTION__, " SUGESTAO de volume minimo para equilibrio: ",
-                  EA_SYMBOL_1, ":", vol1, " (1% = ", DoubleToString(val1_sug,2), ") ",
-                  EA_SYMBOL_2, ":", vol2, " (1% = ", DoubleToString(val2_sug,2), ") ",
+                  m_nm_symb1, ":", m_volume_sugerido1, " (1% = ", DoubleToString(val1_sug,2), ") ",
+                  m_nm_symb2, ":", m_volume_sugerido2, " (1% = ", DoubleToString(val2_sug,2), ") ",
                   " desequilibrio residual:", DoubleToString(erro*100,2), "%" );
 
     if( erro > EA_TOLERANCIA_EQUIL ){
@@ -357,16 +372,16 @@ void carregarHistorico(){
     MqlRates rates1[];
     ArraySetAsSeries(rates1,false); // ordem crescente de data
 
-    int qtd = CopyRates( EA_SYMBOL_1, EA_TIMEFRAME, 1, EA_QTD_PERIODOS, rates1 );
+    int qtd = CopyRates( m_nm_symb1, EA_TIMEFRAME, 1, EA_QTD_PERIODOS, rates1 );
     if( qtd <= 0 ){
-        Print(":-| ", __FUNCTION__, " sem historico de ", EA_SYMBOL_1,
+        Print(":-| ", __FUNCTION__, " sem historico de ", m_nm_symb1,
                       " ainda. A janela serah preenchida barra a barra. erro=", GetLastError() );
         return;
     }
 
     // forcando o carregamento do historico do ativo 2...
     MqlRates aux[];
-    CopyRates( EA_SYMBOL_2, EA_TIMEFRAME, 1, EA_QTD_PERIODOS, aux );
+    CopyRates( m_nm_symb2, EA_TIMEFRAME, 1, EA_QTD_PERIODOS, aux );
 
     for(int i=0; i<qtd; i++){
         double preco2 = 0;
@@ -388,15 +403,15 @@ bool getFechamentoAtivo2(const datetime dt, double &preco){
 
     MqlRates rates2[];
     ArraySetAsSeries(rates2,false);
-    if( CopyRates( EA_SYMBOL_2, EA_TIMEFRAME, dt, 1, rates2 ) == 1 ){
+    if( CopyRates( m_nm_symb2, EA_TIMEFRAME, dt, 1, rates2 ) == 1 ){
         preco = rates2[0].close;
         return (preco > 0);
     }
 
-    int shift = iBarShift( EA_SYMBOL_2, EA_TIMEFRAME, dt, false );
+    int shift = iBarShift( m_nm_symb2, EA_TIMEFRAME, dt, false );
     if( shift < 0 ) return false;
 
-    preco = iClose( EA_SYMBOL_2, EA_TIMEFRAME, shift );
+    preco = iClose( m_nm_symb2, EA_TIMEFRAME, shift );
     return (preco > 0);
 }
 
@@ -409,6 +424,7 @@ void adicionarAmostra(const double p1, const double p2, const datetime dt){
 
     m_spread_med = m_pairs.getSpreadMed();
     m_spread_std = m_pairs.getSpreadStd();
+    m_coef_correlacao = m_pairs.calcCoefCorr();
 }
 
 //+------------------------------------------------------------------+
@@ -418,7 +434,7 @@ void atualizarEstatistica(){
 
     MqlRates rates1[];
     ArraySetAsSeries(rates1,false);
-    if( CopyRates( EA_SYMBOL_1, EA_TIMEFRAME, 1, 1, rates1 ) != 1 ) return;
+    if( CopyRates( m_nm_symb1, EA_TIMEFRAME, 1, 1, rates1 ) != 1 ) return;
 
     if( rates1[0].time <= m_dt_ult_barra ) return; // barra ja contabilizada
 
@@ -462,17 +478,23 @@ void processar(){
 
 // atualiza o spread instantaneo e as bandas de operacao. Retorna falso se nao
 // foi possivel obter cotacao dos dois ativos.
+MqlTick m_tick1, m_tick2;
+int m_spread_em_pips1, m_spread_em_pips2;
 bool atualizarPrecos(){
 
-    MqlTick t1, t2;
-    if( !SymbolInfoTick(EA_SYMBOL_1,t1) ) return false;
-    if( !SymbolInfoTick(EA_SYMBOL_2,t2) ) return false;
+    // spread instantaneo em pips. Usado para saber se podemos operar...
+    m_spread_em_pips1 = m_symb1.Spread();
+    m_spread_em_pips2 = m_symb2.Spread();
 
-    double p1 = m_pairs.getLast(t1);
-    double p2 = m_pairs.getLast(t2);
+    if( !SymbolInfoTick(m_nm_symb1,m_tick1) ) return false;
+    if( !SymbolInfoTick(m_nm_symb2,m_tick2) ) return false;
+
+   // spread instantaneo entre os ativos do par que queremos negociar.
+    double p1 = m_pairs.getLast(m_tick1);
+    double p2 = m_pairs.getLast(m_tick2);
     if( p1 <= 0 || p2 <= 0 ) return false;
 
-    m_spread_atu = log(p1) - log(p2);
+    m_spread_atu = m_pairs.calcSpread( p1, p2, TimeCurrent() );
     if( !MathIsValidNumber(m_spread_atu) ) return false;
 
     m_spread_med = m_pairs.getSpreadMed();
@@ -496,7 +518,7 @@ bool janelaCompleta(){
 //+------------------------------------------------------------------+
 void verificarEntrada(){
 
-    if( m_spread_atu > m_banda_sup ){
+    if( m_spread_atu > m_banda_sup && coef_correlacao_ok() && spread_em_pips_ok() ){
         // ativo1 caro em relacao ao ativo2: vende o caro e compra o barato.
         string motivo = "spread " + DoubleToString(m_spread_atu,8) + " acima da banda " +
                         DoubleToString(m_banda_sup,8) + " (z=" + DoubleToString(m_zscore,2) + ")";
@@ -504,7 +526,7 @@ void verificarEntrada(){
         return;
     }
 
-    if( m_spread_atu < m_banda_inf ){
+    if( m_spread_atu < m_banda_inf && coef_correlacao_ok() && spread_em_pips_ok() ){
         // ativo1 barato em relacao ao ativo2: compra o barato e vende o caro.
         string motivo = "spread " + DoubleToString(m_spread_atu,8) + " abaixo da banda " +
                         DoubleToString(m_banda_inf,8) + " (z=" + DoubleToString(m_zscore,2) + ")";
@@ -514,6 +536,10 @@ void verificarEntrada(){
 
     limparSimulado(); // spread dentro das bandas: nenhuma entrada pendente
 }
+
+bool coef_correlacao_ok(){ return ( m_coef_correlacao >= EA_COEF_CORRELACAO_MIN ); }
+bool spread_em_pips_ok(){ return ( m_spread_em_pips1 >= 0 && m_spread_em_pips1 <= EA_SPREAD_PIPS_MAX_PARA_ABRIR_POSICAO &&
+                                   m_spread_em_pips2 >= 0 && m_spread_em_pips2 <= EA_SPREAD_PIPS_MAX_PARA_ABRIR_POSICAO   ); }
 
 // porta de entrada de toda abertura. Quando a operacao automatica estah desligada,
 // as entradas do EA (manual=false) viram apenas log. As teclas (manual=true) passam.
@@ -552,15 +578,15 @@ bool abrirPar(const int direcao){
     ENUM_ORDER_TYPE tipo1 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_BUY  : ORDER_TYPE_SELL;
     ENUM_ORDER_TYPE tipo2 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_SELL : ORDER_TYPE_BUY ;
 
-    if( !enviarMercado( EA_SYMBOL_1, tipo1, m_volume1 ) ){
-        Print(":-( ", __FUNCTION__, " falha na perna 1 (", EA_SYMBOL_1, "). operacao abortada." );
+    if( !enviarMercado( m_nm_symb1, tipo1, m_volume1 ) ){
+        Print(":-( ", __FUNCTION__, " falha na perna 1 (", m_nm_symb1, "). operacao abortada." );
         return false;
     }
 
-    if( !enviarMercado( EA_SYMBOL_2, tipo2, m_volume2 ) ){
-        Print(":-( ", __FUNCTION__, " falha na perna 2 (", EA_SYMBOL_2,
-                      "). desfazendo a perna 1 (", EA_SYMBOL_1, ")..." );
-        fecharSimbolo( EA_SYMBOL_1 );
+    if( !enviarMercado( m_nm_symb2, tipo2, m_volume2 ) ){
+        Print(":-( ", __FUNCTION__, " falha na perna 2 (", m_nm_symb2,
+                      "). desfazendo a perna 1 (", m_nm_symb1, ")..." );
+        fecharSimbolo( m_nm_symb1 );
         return false;
     }
 
@@ -601,8 +627,8 @@ void limparAbertura(){
 }
 
 string descreverDirecao(const int direcao){
-    if( direcao == PAR_LONG_SPREAD  ) return "LONG SPREAD (COMPRA "+EA_SYMBOL_1+" / VENDE "+EA_SYMBOL_2+")";
-    if( direcao == PAR_SHORT_SPREAD ) return "SHORT SPREAD (VENDE "+EA_SYMBOL_1+" / COMPRA "+EA_SYMBOL_2+")";
+    if( direcao == PAR_LONG_SPREAD  ) return "LONG SPREAD (COMPRA "+m_nm_symb1+" / VENDE "+m_nm_symb2+")";
+    if( direcao == PAR_SHORT_SPREAD ) return "SHORT SPREAD (VENDE "+m_nm_symb1+" / COMPRA "+m_nm_symb2+")";
     return "FLAT";
 }
 
@@ -698,11 +724,11 @@ bool spreadMedioAtingiuSpreadDaAbertura(){
 // fecha as duas pernas do par.
 void fecharPar(const string motivo){
 
-    Print(":-| ", __FUNCTION__, "(", motivo, ") fechando ", EA_SYMBOL_1, " e ", EA_SYMBOL_2,
+    Print(":-| ", __FUNCTION__, "(", motivo, ") fechando ", m_nm_symb1, " e ", m_nm_symb2,
                   ". resultado do par:", m_lucro_par );
 
-    bool ok1 = fecharSimbolo( EA_SYMBOL_1 );
-    bool ok2 = fecharSimbolo( EA_SYMBOL_2 );
+    bool ok1 = fecharSimbolo( m_nm_symb1 );
+    bool ok2 = fecharSimbolo( m_nm_symb2 );
 
     if( ok1 && ok2 ){
         m_estado = PAR_FLAT;
@@ -710,7 +736,7 @@ void fecharPar(const string motivo){
         Print(":-) ", __FUNCTION__, "(", motivo, ") par fechado." );
     }else{
         Print(":-( ", __FUNCTION__, "(", motivo, ") fechamento incompleto. ",
-                      EA_SYMBOL_1, ":", ok1, " ", EA_SYMBOL_2, ":", ok2,
+                      m_nm_symb1, ":", ok1, " ", m_nm_symb2, ":", ok2,
                       ". nova tentativa no proximo ciclo." );
     }
 }
@@ -725,10 +751,10 @@ void reconhecerPosicoes(){
 
     m_pos_invalida = false;
 
-    int dir1 = direcaoPosicao( EA_SYMBOL_1 );
-    int dir2 = direcaoPosicao( EA_SYMBOL_2 );
+    int dir1 = direcaoPosicao( m_nm_symb1 );
+    int dir2 = direcaoPosicao( m_nm_symb2 );
 
-    m_lucro_par = lucroSimbolo( EA_SYMBOL_1 ) + lucroSimbolo( EA_SYMBOL_2 );
+    m_lucro_par = lucroSimbolo( m_nm_symb1 ) + lucroSimbolo( m_nm_symb2 );
 
     if( dir1 == 0 && dir2 == 0 ){
         if( m_abertura_reg ) limparAbertura();
@@ -739,8 +765,8 @@ void reconhecerPosicoes(){
     // perna orfa: uma das pontas ficou aberta sozinha. Nao eh operacao de spread,
     // eh exposicao direcional. Desmonta.
     if( dir1 == 0 || dir2 == 0 ){
-        desmontarPosicaoInvalida( "perna orfa detectada. " + EA_SYMBOL_1 + ":" + IntegerToString(dir1) +
-                                  " " + EA_SYMBOL_2 + ":" + IntegerToString(dir2) );
+        desmontarPosicaoInvalida( "perna orfa detectada. " + m_nm_symb1 + ":" + IntegerToString(dir1) +
+                                  " " + m_nm_symb2 + ":" + IntegerToString(dir2) );
         return;
     }
 
@@ -768,25 +794,25 @@ void desmontarPosicaoInvalida(const string motivo){
     }
 
     Print(":-( ", __FUNCTION__, " ", motivo, ". desmontando..." );
-    fecharSimbolo( EA_SYMBOL_1 );
-    fecharSimbolo( EA_SYMBOL_2 );
+    fecharSimbolo( m_nm_symb1 );
+    fecharSimbolo( m_nm_symb2 );
     m_estado = PAR_FLAT;
     limparAbertura();
 }
 
 // +1 comprado, -1 vendido, 0 sem posicao do EA no ativo informado.
 int direcaoPosicao(const string symb){
-    return osc_trade_util::direcaoPosicao( symb, EA_MAGIC );
+    return osc_trade_util::direcaoPosicao( symb, m_magic );
 }
 
 // resultado nao realizado (lucro + swap) das posicoes do EA no ativo informado.
 double lucroSimbolo(const string symb){
-    return osc_trade_util::lucroPosicao( symb, EA_MAGIC );
+    return osc_trade_util::lucroPosicao( symb, m_magic );
 }
 
 // fecha todas as posicoes do EA no ativo informado. Retorna true se nao restou posicao.
 bool fecharSimbolo(const string symb){
-    return osc_trade_util::fecharSimbolo( m_trade, symb, EA_MAGIC, EA_DESVIO_PONTOS );
+    return osc_trade_util::fecharSimbolo( m_trade, symb, m_magic, EA_DESVIO_PONTOS );
 }
 
 // envia ordem a mercado para o ativo informado.
@@ -891,8 +917,8 @@ void fecharPorTecla(){
 //| Tela                                                             |
 //+------------------------------------------------------------------+
 string estadoStr(){
-    if( m_estado == PAR_LONG_SPREAD  ) return "LONG SPREAD  (C " +EA_SYMBOL_1+" / V "+EA_SYMBOL_2+")";
-    if( m_estado == PAR_SHORT_SPREAD ) return "SHORT SPREAD (V " +EA_SYMBOL_1+" / C "+EA_SYMBOL_2+")";
+    if( m_estado == PAR_LONG_SPREAD  ) return "LONG SPREAD  (C " +m_nm_symb1+" / V "+m_nm_symb2+")";
+    if( m_estado == PAR_SHORT_SPREAD ) return "SHORT SPREAD (V " +m_nm_symb1+" / C "+m_nm_symb2+")";
     return "FLAT";
 }
 
@@ -901,23 +927,30 @@ void showTela(){
     if( !EA_SHOW_TELA ) return;
 
     Comment(
-        m_name, "\n",
-        "Par            : ", EA_SYMBOL_1, " / ", EA_SYMBOL_2, "\n",
+        "Par            : ", m_nm_symb1, " / ", m_nm_symb2, "  CoefCorr: ", DoubleToString(m_coef_correlacao, 2)," Magic: ", m_magic,"\n",
+
+        " vol: "         , DoubleToString(m_volume1         ,2), "/", DoubleToString(m_volume2         ,2),
+        " vol sugerido: ", DoubleToString(m_volume_sugerido1,2), "/", DoubleToString(m_volume_sugerido2,2), "\n",
+
         "Janela         : ", EA_QTD_PERIODOS, " barras de ", EnumToString(EA_TIMEFRAME),
-                             "   (", m_qtd_amostras, " amostras", (janelaCompleta()?"":" - AGUARDANDO"), ")\n",
-        "Spread atual   : ", DoubleToString(m_spread_atu, 8), "\n",
-        "Spread medio   : ", DoubleToString(m_spread_med, 8), "\n",
-        "Desvio padrao  : ", DoubleToString(m_spread_std, 8), "\n",
-        "Banda superior : ", DoubleToString(m_banda_sup , 8), "  (+", DoubleToString(EA_DESVIOS_ENTRADA,2), " dp)\n",
-        "Banda inferior : ", DoubleToString(m_banda_inf , 8), "  (-", DoubleToString(EA_DESVIOS_ENTRADA,2), " dp)\n",
-        "Z-score        : ", DoubleToString(m_zscore    , 2), "\n",
-        "Alvo de saida  : ", DoubleToString(alvoDeSaida(), 8),
+                            "   (", m_qtd_amostras, " amostras", (janelaCompleta()?"":" - AGUARDANDO"), ")\n",
+                            
+        "Spread in PIPs : ", m_spread_em_pips1, " / ", m_spread_em_pips2,"\n",
+//        "Spread in PIPs : ", m_symb1.Spread(), " / ", m_symb2.Spread(),"\n",
+
+        "Spread atual   : ", DoubleToString(m_spread_atu  , 8), "\n",
+        "Spread medio   : ", DoubleToString(m_spread_med  , 8), "\n",
+        "Desvio padrao  : ", DoubleToString(m_spread_std  , 8), "\n",
+        "Banda superior : ", DoubleToString(m_banda_sup   , 8), "  (+", DoubleToString(EA_DESVIOS_ENTRADA,2), " dp)\n",
+        "Banda inferior : ", DoubleToString(m_banda_inf   , 8), "  (-", DoubleToString(EA_DESVIOS_ENTRADA,2), " dp)\n",
+        "Z-score        : ", DoubleToString(m_zscore      , 2), "\n",
+        "Alvo de saida  : ", DoubleToString(alvoDeSaida() , 8),
                              (EA_DESVIOS_SAIDA>0 ? "  ("+DoubleToString(EA_DESVIOS_SAIDA,2)+" dp da media)"
                                                  : "  (na media)"), "\n",
         "Estado         : ", estadoStr(), (m_pos_invalida?"   *** PERNAS INVALIDAS - NAO DESMONTADAS ***":""), "\n",
         strTelaAbertura(),
         "Resultado par  : ", DoubleToString(m_lucro_par , 2),
-                             (EA_STOP_FINANCEIRO>0 ? "   (stop em -"+DoubleToString(EA_STOP_FINANCEIRO,2)+")" : "   (sem stop)"), "\n",
+                             (EA_STOP_FINANCEIRO>0 ? "   (stop em -"+DoubleToString(EA_STOP_FINANCEIRO,2)+")" : EA_STOP_MEDIA_ABERTURA ? "   (stop na media)" : "   (sem stop)"), "\n",
         "Operacao       : ", (EA_OPERACAO_AUTOMATICA ? "AUTOMATICA" : "MANUAL (o EA so loga o que faria)"), "\n",
         "Teclas         : ", (EA_TECLAS_HABILITADAS
                               ? strTeclaAbrir()+" abre  /  "+strTeclaFechar()+" fecha"
@@ -939,5 +972,33 @@ string strTelaAbertura(){
              "   (Spread medio " + DoubleToString(m_spread_med,8) + ")\n";
     }
     return s;
+}
+
+
+ulong criar_magic(string symbols_concatenados){
+
+  string symbols_cortado = "";
+  int tamanho = StringLen(symbols_concatenados);
+  for(int i = 0; i < tamanho; i++){
+    symbols_cortado += StringSubstr(symbols_concatenados,i,1);
+    i++;
+  }
+  return toAsciiText(symbols_cortado);
+}
+
+// Função para converter os caracteres de uma string em seus códigos numéricos concatenados
+ulong toAsciiText(string texto){
+    string texto_numerico = "";
+    int tamanho = StringLen(texto);
+
+    for(int i = 0; i < tamanho; i++){
+        // Obtém o código numérico (ushort) do caractere na posição 'i'
+        ushort char_code = StringGetCharacter(texto, i);
+
+        // Concatena o código convertido para string no resultado
+        texto_numerico += IntegerToString(char_code);
+    }
+
+    return StringToInteger(texto_numerico);
 }
 //+------------------------------------------------------------------+

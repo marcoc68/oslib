@@ -103,7 +103,7 @@ public:
             m_vet_ativo1.add(p1,t);
             m_vet_ativo2.add(p2,t);
             
-            m_vet_spread.print();
+            //m_vet_spread.print();
         }
 
         return m_spread;

@@ -83,10 +83,11 @@ public:
     //----------------------------------------------------------------------------------------------------
     double add(const double val, bool calc_var=false){
     
-        if( m_len_calc < m_len ) m_len_calc++;
-         
-        m_tot += val        ; // adicionando o valor atual a media/;
-        m_tot -= m_vet.at(0); // retirando o valor do elemento mais antigo do calculo da media
+        m_tot += val; // adicionando o valor atual a media;
+        if(++m_len_calc > m_len){
+            m_tot -= m_vet.at(0); // retirando o valor do elemento mais antigo do calculo da media
+            m_len_calc = m_len; // ajustando o tamanho calculado para o tamanho máximo
+        }
         m_vet.add(val)      ; // e adicionando o novo valor
 
         m_mean = ( m_tot/(double)m_len_calc ); // recalculando  a media
@@ -117,7 +118,7 @@ public:
 
     // metodo print util para debug;
     void print(string nome=""){
-        Print(__FUNCTION__, " :-| Logando vetor ", nome, ": media:", m_mean, " var:", getVar(), " ind=", m_ind, " len_calc=",m_len_calc, " tot=", m_tot );
+        Print(__FUNCTION__, " :-| Logando vetor ", nome, ": media:", DoubleToString(m_mean, 4), " var:", DoubleToString(getVar(), 4), " ind=", m_ind, " len_calc=",m_len_calc, " tot=", DoubleToString(m_tot, 4) );
         Print(m_vet.toString());
     }
 
