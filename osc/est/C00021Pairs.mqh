@@ -15,48 +15,52 @@
 #property link      "http://www.os.net"
 
 #include <oslib\osc\est\osc-estatistic3.mqh>
-#include <oslib\osc\osc-media.mqh>
+#include <oslib\osc\osc-media2.mqh>
 
 class C00021Pairs{
 private:
     double           m_spread    ;
     double           m_spread_std;
     double           m_spread_med;
-    int              m_qtd_seg_media;
+    uint             m_qtd_seg_entre_ocorrencias;
+    uint             m_qtd_ocorrencias;
+    osc_media        m_vet_ativo1; // vetor de precos do ativo 1
+    osc_media        m_vet_ativo2; // vetor de precos do ativo 2
     osc_media        m_vet_spread; // vetor de spreads deve ter o tamanho da quantidade de segundos
                                    // usados no calculo da media do spread. Eh uma janela.
-    void setQtdSegMedia(const int qtd=60*60){
-        
-        // inicializa o vetor de spreads para guardar 1h por padrao.
-        // acumularemos o spread a cada segundo. Isto fica garantido colocando 1(um) no 
-        // segundo parametro da funcao initialize do vetor. Este parametro eh o time_frame,
-        // em segundos no qual o metodo de adicao ao vetor aceitara novas adicoes.
-        //
-        // Isto cria um vetor capaz de acumular 3600 segundos (padrao) e orienta o vetor a 
-        // rejeitar adicoes ateh que chegue o proximo segundo.
-        m_vet_spread.initialize(qtd,1);
-        m_qtd_seg_media = qtd;
-    }
 protected:
 public:
-     C00021Pairs(){}
+     // default sao 60 ocorrencias com uma a cada minuto.
+     C00021Pairs(uint qtd_ocorrencias=60, uint qtd_seg_entre_ocorrencias=60){
+         initialize(qtd_ocorrencias, qtd_seg_entre_ocorrencias);
+     }
     ~C00021Pairs(){}
 
     double getSpread   (){ return m_spread    ; } // spread instantaneo   
     double getSpreadStd(){ return m_spread_std; } // desvio padrao do spread
     double getSpreadMed(){ return m_spread_med; } // media do spread
-    int    getQtdSegMedia() { return m_qtd_seg_media; }
+    uint   getQtdSegMedia() { return m_qtd_seg_entre_ocorrencias; }
 
     // inicializacao antes de comecar a acumular.
     // deve informar a quantidade de segundos usados do calculo da media dos spreads.
     // se nao informar, calcularah a media da ultima hora de spreads.
-    void initialize(int qtdSegMedia=60*60){ 
-        setQtdSegMedia(qtdSegMedia);
-        m_spread         = 0;
-        m_spread_std     = 0;                
-        m_spread_med     = 0;                
+    void initialize(uint qtd_ocorrencias=60, uint qtd_seg_entre_ocorrencias=60){ 
+        
+        m_vet_ativo1.initialize(qtd_ocorrencias,qtd_seg_entre_ocorrencias);
+        m_vet_ativo2.initialize(qtd_ocorrencias,qtd_seg_entre_ocorrencias);
+        m_vet_spread.initialize(qtd_ocorrencias,qtd_seg_entre_ocorrencias);
+        
+        m_qtd_seg_entre_ocorrencias = qtd_seg_entre_ocorrencias;
+        m_qtd_ocorrencias           = qtd_ocorrencias;
+        m_spread                    = 0;
+        m_spread_std                = 0;                
+        m_spread_med                = 0;                
     }
     
+    void initialize(uint qtd_ocorrencias=60, ENUM_TIMEFRAMES TIMEFRAME=PERIOD_CURRENT){ 
+        initialize(qtd_ocorrencias, PeriodSeconds(TIMEFRAME));
+    }
+
     // in  t1    : tick do primeiro ativo
     // in  t2    : tick do segundo  ativo
     // out spread: spread calculado como o retorno do ativo t1 sobre t2: log(t1)-log(t2)
@@ -72,7 +76,9 @@ public:
             return m_spread;
         }
 
-        double spread = log(p1) - log(p2);
+        double logp1 = log(p1);
+        double logp2 = log(p2);
+        double spread = logp1 - logp2;
         if( spread != 0 && MathIsValidNumber(spread) ){ 
             m_spread = spread;
         }else{
@@ -83,8 +89,7 @@ public:
             Print("spread invalido: p2             :", p2      );
             return m_spread;
         }
-      //if( m_spread == 0 || !MathIsValidNumber(m_spread) )return m_spread;
-        
+
         //m_vet_spread.add(m_spread,t1.time); // por enquanto usamos a data ativo1, mas provavelmente
         //                                    // passaremos a usar a data mais recente entre os dois
         //                                    // ativos. Isto serah para evitar o problema causado
@@ -94,9 +99,18 @@ public:
             m_vet_spread.calcVar();
             m_spread_med = m_vet_spread.getMed();
             m_spread_std = sqrt( m_vet_spread.getVar() );
+
+            m_vet_ativo1.add(p1,t);
+            m_vet_ativo2.add(p2,t);
+            
+            m_vet_spread.print();
         }
-        
+
         return m_spread;
+    }
+
+    double calcCoefCorr(){ 
+       return m_vet_ativo1.calcCoefCorr(m_vet_ativo2); 
     }
     
     double getSpreadStd(double shift){ return getSpreadMed()+getSpreadStd()*shift; }
