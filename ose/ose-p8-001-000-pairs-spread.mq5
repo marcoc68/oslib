@@ -71,7 +71,7 @@
 
 //---------------------------------------------------------------------------------------------
 input group "=== Par de ativos ===";
-input string         EA_SYMBOL_1            = "TERMINAL" ; //SYMBOL_1 primeiro ativo do par (p1 do spread)
+input string         EA_SYMBOL_1            = TERMINAL ; //SYMBOL_1 primeiro ativo do par (p1 do spread)
 input string         EA_SYMBOL_2            = "GBPUSD"   ; //SYMBOL_2 segundo  ativo do par (p2 do spread)
 input double         EA_COEF_CORRELACAO_MIN = 0.85       ; //COEF_CORRELACAO_MIN coeficiente de correlacao minimo entre os dois ativos para operar
 input group "=== Spread do PAR ===";
@@ -83,8 +83,8 @@ input double         EA_DESVIOS_SAIDA   = 0.2         ; //DESVIOS_SAIDA distanci
 input group "=== Volume ===";
 input double         EA_VOLUME_1        = 0.01        ; //VOLUME lote aplicado na primeira perna
 input double         EA_VOLUME_2        = 0.01        ; //VOLUME lote aplicado na segunda perna
-input bool           EA_SUGERIR_VOLUME  = true        ; //SUGERIR_VOLUME loga, no OnInit, o menor volume de equilibrio financeiro de cada perna
-input double         EA_TOLERANCIA_EQUIL= 0.01        ; //TOLERANCIA_EQUIL desequilibrio aceito entre as pernas no calculo da sugestao. 0.01=1%
+input bool           EA_APLICAR_SUGESTAO_DE_VOLUME = true ; //APLICAR_SUGESTAO_DE_VOLUME aplica a sugestao de volume de lotes
+input double         EA_TOLERANCIA_EQUIL= 0.10        ; //TOLERANCIA_EQUIL desequilibrio aceito entre as pernas no calculo da sugestao. 0.01=1%
 
 input group "=== Stop ===";
 input double         EA_STOP_FINANCEIRO = 0.0         ; //STOP_FINANCEIRO perda maxima somada das duas pernas, na moeda da conta. 0=desligado
@@ -319,8 +319,6 @@ string strTeclaFechar(){
 //+------------------------------------------------------------------+
 void sugerirVolumeEquilibrio(){
 
-    if( !EA_SUGERIR_VOLUME ) return;
-
     // quanto vale, em dinheiro, 1% de variacao do preco, para o volume configurado...
     double val1_atu = osc_trade_util::valorPorPercentual( m_nm_symb1, m_volume1, 0.01 );
     double val2_atu = osc_trade_util::valorPorPercentual( m_nm_symb2, m_volume2, 0.01 );
@@ -361,7 +359,13 @@ void sugerirVolumeEquilibrio(){
                       "nao permitem um casamento melhor nesta faixa de volume." );
     }
 
-    Print(":-| ", __FUNCTION__, " a sugestao nao altera o EA: ele continua operando com VOLUME1=", EA_VOLUME_1, " e VOLUME2=", EA_VOLUME_2, "." );
+    if( EA_APLICAR_SUGESTAO_DE_VOLUME  && erro <= EA_TOLERANCIA_EQUIL ){
+        m_volume1 = m_volume_sugerido1;
+        m_volume2 = m_volume_sugerido2;
+        Print(":-) ", __FUNCTION__, " aplicada sugestao de volume de lotes: VOLUME1=", m_volume1, " e VOLUME2=", m_volume2, "." );
+    }else{
+        Print(":-| ", __FUNCTION__, " a sugestao nao altera o EA: ele continua operando com VOLUME1=", EA_VOLUME_1, " e VOLUME2=", EA_VOLUME_2, "." );
+    }
 }
 
 //+------------------------------------------------------------------+
