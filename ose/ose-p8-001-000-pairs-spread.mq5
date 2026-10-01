@@ -61,6 +61,7 @@
 #include <Trade/Trade.mqh>
 #include <Trade/SymbolInfo.mqh>
 #include <oslib/osc/est/C00021Pairs.mqh>
+#include <oslib/osc/osc-media2.mqh>
 #include <oslib/osc-trade-util.mqh>
 
 //--- estado do par (direcao da operacao sobre o spread)
@@ -75,12 +76,13 @@ input group "=== Par de ativos ===";
 input string         EA_SYMBOL_1            = TERMINAL  ; //SYMBOL_1 primeiro ativo do par (p1 do spread)
 input string         EA_SYMBOL_2            = BUSCAR_PAR; //SYMBOL_2 segundo  ativo do par (p2 do spread)
 input double         EA_COEF_CORRELACAO_MIN = 0.85      ; //COEF_CORRELACAO_MIN coeficiente de correlacao minimo entre os dois ativos para operar
-input string         EA_SYMBOLS_CANDIDATES   = "AUDCAD, AUDCHF, AUDJPY, AUDNZD, AUDSGD, AUDUSD, CADCHF, CADJPY, CHFJPY, CHFSGD, EURAUD, EURCAD, EURCHF, EURDKK, EURGBP, EURHKD, EURJPY, EURNOK, EURNZD, EURPLN, EURSEK, EURSGD, EURTRY, EURUSD, EURZAR, GBPAUD, GBPCAD, GBPCHF, GBPDKK, GBPJPY, GBPNOK, GBPNZD, GBPSEK, GBPSGD, GBPTRY, GBPUSD, NOKJPY, NOKSEK, NZDCAD, NZDCHF, NZDJPY, NZDUSD, SEKJPY, SGDJPY, USDCAD, USDCHF, USDCNH, USDCZK, USDDKK, USDHKD, USDHUF, USDJPY, USDMXN, USDNOK, USDPLN, USDSEK, USDSGD, USDTHB, USDTRY, USDZAR"; //SYMBOLS_CANDIDATES lista de ativos candidatos a formar par com SYMBOL_1. separados por ','
+input string         EA_SYMBOLS_CANDIDATES   = "AUDCAD, AUDCHF, AUDJPY, AUDNZD, AUDSGD, AUDUSD, CADCHF, CADJPY, CHFJPY, CHFSGD, EURAUD, EURCAD, EURCHF, EURDKK, EURGBP, EURJPY, EURNOK, EURNZD, EURPLN, EURSEK, EURSGD, EURUSD, EURZAR, GBPAUD, GBPCAD, GBPCHF, GBPDKK, GBPJPY, GBPNOK, GBPNZD, GBPSEK, GBPSGD, GBPTRY, GBPUSD, NOKJPY, NOKSEK, NZDCAD, NZDCHF, NZDJPY, NZDUSD, SEKJPY, SGDJPY, USDCAD, USDCHF, USDCNH, USDCZK, USDDKK, USDHKD, USDHUF, USDJPY, USDMXN, USDNOK, USDPLN, USDSEK, USDSGD, USDTHB, USDTRY, USDZAR"; //SYMBOLS_CANDIDATES lista de ativos candidatos a formar par com SYMBOL_1. separados por ','
+// retirados:  EURHKD, EURTRY -> (spread alto)
 input group "=== Spread do PAR ===";
 input int            EA_QTD_PERIODOS    = 60          ; //QTD_PERIODOS qtd de barras usadas na media e no desvio do spread
 input ENUM_TIMEFRAMES EA_TIMEFRAME      = PERIOD_M3   ; //TIMEFRAME timeframe das barras da janela do spread
-input double         EA_DESVIOS_ENTRADA = 3.0         ; //DESVIOS_ENTRADA afastamento em desvios padrao para disparar a operacao
-input double         EA_DESVIOS_SAIDA   = 0.2         ; //DESVIOS_SAIDA distancia da media, em desvios, onde a posicao eh fechada. 0=fecha na media
+input double         EA_DESVIOS_ENTRADA = 3.0        ; //DESVIOS_ENTRADA afastamento em desvios padrao para disparar a operacao
+input double         EA_DESVIOS_SAIDA   = 0.0        ; //DESVIOS_SAIDA distancia da media, em desvios, onde a posicao eh fechada. 0=fecha na media
 
 input group "=== Volume ===";
 input double         EA_VOLUME_1        = 0.01        ; //VOLUME lote aplicado na primeira perna
@@ -111,10 +113,12 @@ input int            EA_QTD_MILISEG_TIMER = 250       ; //QTD_MILISEG_TIMER temp
 
 string        m_name = "OSE-P8-001-000-PAIRS-SPREAD";
 
-C00021Pairs   m_pairs                 ; // calculo do spread, da media e do desvio padrao
-CTrade        m_trade                 ; // execucao das ordens
-CSymbolInfo   m_symb1                 ; // propriedades do ativo 1
-CSymbolInfo   m_symb2                 ; // propriedades do ativo 2
+C00021Pairs   m_pairs                ; // calculo do spread, da media e do desvio padrao
+CTrade        m_trade                ; // execucao das ordens
+CSymbolInfo   m_symb1                ; // propriedades do ativo 1
+CSymbolInfo   m_symb2                ; // propriedades do ativo 2
+osc_media     m_media_spread_symb1   ; // media do spread na janela
+osc_media     m_media_spread_symb2   ; // media do spread na janela
 string        m_nm_symb1             ; // nome do ativo 1
 string        m_nm_symb2             ; // nome do ativo 2
 
@@ -164,9 +168,12 @@ int OnInit(){
     if( !inicializarSimbolos()  ) return INIT_PARAMETERS_INCORRECT;
     if( !inicializarParametros()) return INIT_PARAMETERS_INCORRECT;
 
+    m_media_spread_symb1.initialize( EA_QTD_PERIODOS, EA_TIMEFRAME ); // media do spread na janela
+    m_media_spread_symb2.initialize( EA_QTD_PERIODOS, EA_TIMEFRAME ); // media do spread na janela
+
     m_magic = criar_magic(m_nm_symb1 + m_nm_symb2); // magic unico para cada par de ativos
 
-    m_trade.SetExpertMagicNumber( m_magic         );
+    m_trade.SetExpertMagicNumber( m_magic          );
     m_trade.SetDeviationInPoints( EA_DESVIO_PONTOS );
     m_trade.LogLevel            ( LOG_LEVEL_ERRORS );
 
@@ -397,9 +404,10 @@ void carregarHistorico(){
     CopyRates( m_nm_symb2, EA_TIMEFRAME, 1, EA_QTD_PERIODOS, aux );
 
     for(int i=0; i<qtd; i++){
-        double preco2 = 0;
-        if( !getFechamentoAtivo2( rates1[i].time, preco2 ) ) continue;
-        adicionarAmostra( rates1[i].close, preco2, rates1[i].time );
+        double preco2 = 0, spread2 = 0;
+        if( !getFechamentoAtivo2( rates1[i].time, preco2, spread2 ) ) continue;
+        adicionarAmostra( rates1[i].close, preco2 , rates1[i].time );
+        adicionarSpreadOperacional( rates1[i].spread, spread2, rates1[i].time );
     }
 
     m_dt_ult_barra = rates1[qtd-1].time;
@@ -411,20 +419,22 @@ void carregarHistorico(){
 
 // fechamento do ativo 2 na barra de data dt. Se o ativo 2 nao tiver barra nessa data
 // exata (nao negociou no periodo), usa o fechamento da barra imediatamente anterior.
-bool getFechamentoAtivo2(const datetime dt, double &preco){
+bool getFechamentoAtivo2(const datetime dt, double &preco, double &spread){
     preco = 0;
 
     MqlRates rates2[];
     ArraySetAsSeries(rates2,false);
     if( CopyRates( m_nm_symb2, EA_TIMEFRAME, dt, 1, rates2 ) == 1 ){
         preco = rates2[0].close;
+        spread = rates2[0].spread;
         return (preco > 0);
     }
 
     int shift = iBarShift( m_nm_symb2, EA_TIMEFRAME, dt, false );
     if( shift < 0 ) return false;
 
-    preco = iClose( m_nm_symb2, EA_TIMEFRAME, shift );
+    preco  = iClose ( m_nm_symb2, EA_TIMEFRAME, shift );
+    spread = iSpread( m_nm_symb2, EA_TIMEFRAME, shift );
     return (preco > 0);
 }
 
@@ -440,6 +450,13 @@ void adicionarAmostra(const double p1, const double p2, const datetime dt){
     m_coef_correlacao = m_pairs.calcCoefCorr();
 }
 
+// spread medio usado pra saber se vale a pena negociar o ativo.
+void adicionarSpreadOperacional(const double s1, const double s2, const datetime dt){
+    if( s1 <= 0 || s2 <= 0 ) return;
+    m_media_spread_symb1.add( s1, dt );
+    m_media_spread_symb2.add( s2, dt );
+}
+
 //+------------------------------------------------------------------+
 //| Alimenta a janela quando uma nova barra fecha                    |
 //+------------------------------------------------------------------+
@@ -451,9 +468,10 @@ void atualizarEstatistica(){
 
     if( rates1[0].time <= m_dt_ult_barra ) return; // barra ja contabilizada
 
-    double preco2 = 0;
-    if( getFechamentoAtivo2( rates1[0].time, preco2 ) ){
+    double preco2 = 0, spread2 = 0;
+    if( getFechamentoAtivo2( rates1[0].time, preco2, spread2 ) ){
         adicionarAmostra( rates1[0].close, preco2, rates1[0].time );
+        adicionarSpreadOperacional ( rates1[0].spread, spread2, rates1[0].time );
     }
 
     // marca a barra como processada mesmo sem o par, para nao travar a janela
@@ -498,6 +516,7 @@ bool atualizarPrecos(){
     // spread instantaneo em pips. Usado para saber se podemos operar...
     m_spread_em_pips1 = m_symb1.Spread();
     m_spread_em_pips2 = m_symb2.Spread();
+    adicionarSpreadOperacional( m_spread_em_pips1, m_spread_em_pips2, TimeCurrent() );
 
     if( !SymbolInfoTick(m_nm_symb1,m_tick1) ) return false;
     if( !SymbolInfoTick(m_nm_symb2,m_tick2) ) return false;
@@ -531,7 +550,7 @@ bool janelaCompleta(){
 //+------------------------------------------------------------------+
 void verificarEntrada(){
 
-    if( m_spread_atu > m_banda_sup && coef_correlacao_ok() && spread_em_pips_ok() ){
+    if( m_spread_atu > m_banda_sup && coef_correlacao_ok() && spread_operacional_ok() ){
         // ativo1 caro em relacao ao ativo2: vende o caro e compra o barato.
         string motivo = "spread " + DoubleToString(m_spread_atu,8) + " acima da banda " +
                         DoubleToString(m_banda_sup,8) + " (z=" + DoubleToString(m_zscore,2) + ")";
@@ -539,7 +558,7 @@ void verificarEntrada(){
         return;
     }
 
-    if( m_spread_atu < m_banda_inf && coef_correlacao_ok() && spread_em_pips_ok() ){
+    if( m_spread_atu < m_banda_inf && coef_correlacao_ok() && spread_operacional_ok() ){
         // ativo1 barato em relacao ao ativo2: compra o barato e vende o caro.
         string motivo = "spread " + DoubleToString(m_spread_atu,8) + " abaixo da banda " +
                         DoubleToString(m_banda_inf,8) + " (z=" + DoubleToString(m_zscore,2) + ")";
@@ -551,8 +570,14 @@ void verificarEntrada(){
 }
 
 bool coef_correlacao_ok(){ return ( m_coef_correlacao >= EA_COEF_CORRELACAO_MIN ); }
-bool spread_em_pips_ok(){ return ( m_spread_em_pips1 >= 0 && m_spread_em_pips1 <= EA_SPREAD_PIPS_MAX_PARA_ABRIR_POSICAO &&
-                                   m_spread_em_pips2 >= 0 && m_spread_em_pips2 <= EA_SPREAD_PIPS_MAX_PARA_ABRIR_POSICAO   ); }
+
+bool spread_operacional_ok(){ 
+    return ( m_spread_em_pips1             >= 0 && m_spread_em_pips1             <= EA_SPREAD_PIPS_MAX_PARA_ABRIR_POSICAO &&
+             m_spread_em_pips2             >= 0 && m_spread_em_pips2             <= EA_SPREAD_PIPS_MAX_PARA_ABRIR_POSICAO &&
+             m_media_spread_symb1.getMed() >= 0 && m_media_spread_symb1.getMed() <= EA_SPREAD_PIPS_MAX_PARA_ABRIR_POSICAO && 
+             m_media_spread_symb2.getMed() >= 0 && m_media_spread_symb2.getMed() <= EA_SPREAD_PIPS_MAX_PARA_ABRIR_POSICAO
+           ); 
+}
 
 // porta de entrada de toda abertura. Quando a operacao automatica estah desligada,
 // as entradas do EA (manual=false) viram apenas log. As teclas (manual=true) passam.
@@ -588,8 +613,21 @@ bool solicitarFechamento(const string chave, const string motivo, const bool man
 // deixar posicao direcional em aberto.
 bool abrirPar(const int direcao){
 
-    ENUM_ORDER_TYPE tipo1 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_BUY  : ORDER_TYPE_SELL;
-    ENUM_ORDER_TYPE tipo2 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_SELL : ORDER_TYPE_BUY ;
+    ENUM_ORDER_TYPE tipo1, tipo2;
+
+    if( m_coef_correlacao > 0 ){
+        // correlacao positiva:
+        // spread abaixo da media: compra ativo1 e vende ativo2
+        // spread acima da media : vende ativo1 e compra ativo2
+        tipo1 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_BUY  : ORDER_TYPE_SELL;
+        tipo2 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_SELL : ORDER_TYPE_BUY ;
+    }else{
+        // correlacao negativa:
+        // spread abaixo da media: compra ambos os ativos
+        // spread acima da media : vende ambos os ativos
+        tipo1 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_BUY : ORDER_TYPE_SELL ;
+        tipo2 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
+    }
 
     if( !enviarMercado( m_nm_symb1, tipo1, m_volume1 ) ){
         Print(":-( ", __FUNCTION__, " falha na perna 1 (", m_nm_symb1, "). operacao abortada." );
@@ -940,22 +978,22 @@ void showTela(){
     if( !EA_SHOW_TELA ) return;
 
     Comment(
-        "Par            : ", m_nm_symb1, " / ", m_nm_symb2, "  CoefCorr: ", DoubleToString(m_coef_correlacao, 2)," Magic: ", m_magic,"\n",
+        "Par            : ", m_nm_symb1, " / ", m_nm_symb2, "  CoefCorr: ", DoubleToString(m_coef_correlacao, 2),"  [COINT ",m_pairs.parEhCointegrado()?"SIM":"NAO","]  Magic: ", m_magic,"\n",
 
-        " vol: "         , DoubleToString(m_volume1         ,2), "/", DoubleToString(m_volume2         ,2),
-        " vol sugerido: ", DoubleToString(m_volume_sugerido1,2), "/", DoubleToString(m_volume_sugerido2,2), "\n",
+        "Vol: "         , DoubleToString(m_volume1         ,2), "/", DoubleToString(m_volume2         ,2),
+        " Vol sugerido: ", DoubleToString(m_volume_sugerido1,2), "/", DoubleToString(m_volume_sugerido2,2), "\n",
 
         "Janela         : ", EA_QTD_PERIODOS, " barras de ", EnumToString(EA_TIMEFRAME),
                             "   (", m_qtd_amostras, " amostras", (janelaCompleta()?"":" - AGUARDANDO"), ")\n",
                             
-        "Spread in PIPs : ", m_spread_em_pips1, " / ", m_spread_em_pips2,"\n",
-//        "Spread in PIPs : ", m_symb1.Spread(), " / ", m_symb2.Spread(),"\n",
+        "Spread in PIPs : [instataneo  ", m_spread_em_pips1, " / ", m_spread_em_pips2,"  ]  [ ",
+        "Medio  ", DoubleToString(m_media_spread_symb1.getMed(), 2), " / ", DoubleToString(m_media_spread_symb2.getMed(), 2),"  ]\n",
 
-        "Spread atual   : ", DoubleToString(m_spread_atu  , 8), "\n",
-        "Spread medio   : ", DoubleToString(m_spread_med  , 8), "\n",
-        "Desvio padrao  : ", DoubleToString(m_spread_std  , 8), "\n",
-        "Banda superior : ", DoubleToString(m_banda_sup   , 8), "  (+", DoubleToString(EA_DESVIOS_ENTRADA,2), " dp)\n",
-        "Banda inferior : ", DoubleToString(m_banda_inf   , 8), "  (-", DoubleToString(EA_DESVIOS_ENTRADA,2), " dp)\n",
+//        "Spread atual   : ", DoubleToString(m_spread_atu  , 8), "\n",
+//        "Spread medio   : ", DoubleToString(m_spread_med  , 8), "\n",
+//        "Desvio padrao  : ", DoubleToString(m_spread_std  , 8), "\n",
+//        "Banda superior : ", DoubleToString(m_banda_sup   , 8), "  (+", DoubleToString(EA_DESVIOS_ENTRADA,2), " dp)\n",
+//        "Banda inferior : ", DoubleToString(m_banda_inf   , 8), "  (-", DoubleToString(EA_DESVIOS_ENTRADA,2), " dp)\n",
         "Z-score        : ", DoubleToString(m_zscore      , 2), "\n",
         "Alvo de saida  : ", DoubleToString(alvoDeSaida() , 8),
                              (EA_DESVIOS_SAIDA>0 ? "  ("+DoubleToString(EA_DESVIOS_SAIDA,2)+" dp da media)"

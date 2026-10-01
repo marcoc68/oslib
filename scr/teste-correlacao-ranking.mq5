@@ -13,6 +13,7 @@
 > **Dica de uso no MetaTrader 5:** Certifique-se de que todos os ativos da lista estejam adicionados à janela **Observatório do Mercado (Market Watch)** antes de rodar o script, para garantir que o MT5 tenha o histórico de preços baixado.
 */
 #include <oslib/osc-trade-util.mqh>
+#include <oslib/osc/est/CStat.mqh>
 
 #property script_show_inputs
 
@@ -29,13 +30,13 @@ struct PairCorr
    string symbolB;
    double correlation;
    double absCorrelation;
+   string cointegracao;
 };
 
 //+------------------------------------------------------------------+
 //| Script program start function                                    |
 //+------------------------------------------------------------------+
-void OnStart()
-{
+void OnStart(){
    // 1. Separar a lista de ativos por vírgula
    string symbols[];
    ushort u_sep = StringGetCharacter(",", 0);
@@ -98,6 +99,7 @@ void OnStart()
          // Cálculo nativo da correlação de Pearson via MQL5 vector
          pairList[pairIndex].correlation    = prices[i].CorrCoef(prices[j]);
          pairList[pairIndex].absCorrelation = MathAbs(pairList[pairIndex].correlation);
+         pairList[pairIndex].cointegracao   = calcCointegracao(prices[i],prices[j]);
          pairIndex++;
       }
    }
@@ -123,14 +125,14 @@ void OnStart()
    PrintFormat("==================================================");
 
    double pesoLote1, pesoLote2, erro;
-   for(int i = 0; i < totalPairs && i<11; i++) {
+   for(int i = 0; i < totalPairs && pairList[i].absCorrelation >= 0.85; i++) {
 
       if( !osc_trade_util::calcVolumesEquilibrio( pairList[i].symbolA, pairList[i].symbolB, pesoLote1, pesoLote2, erro, 0.10 ) ){
           pesoLote1 = 0;
           pesoLote2 = 0;
       }
 
-      PrintFormat("#%02d | %s vs %s : Correlação = %.4f | Lote %s = %.4f | Lote %s = %.4f",
+      PrintFormat("#%02d | %s vs %s : Correlação = %.4f | Lote %s = %.4f | Lote %s = %.4f | %s",
                   i + 1, 
                   pairList[i].symbolA, 
                   pairList[i].symbolB, 
@@ -138,73 +140,24 @@ void OnStart()
                   pairList[i].symbolA,
                   pesoLote1,
                   pairList[i].symbolB,
-                  pesoLote2);
+                  pesoLote2,
+                  pairList[i].cointegracao);
    }
    PrintFormat("==================================================");
 }
 
-//input int    BarCount   = 500;       // Número de barras históricas para análise
-//input string Symbol1    = "EURUSD";  // Primeiro ativo do par
-//input string Symbol2    = "GBPUSD";  // Segundo ativo do par
-void calc_volumes_para_equilibrio_de_lotes_do_par(string Symbol1, string Symbol2, double &pesoLote1, double &pesoLote2) {
-    // 1. Assegurar que os símbolos estão selecionados no Market Watch
-    if(!SymbolSelect(Symbol1, true) || !SymbolSelect(Symbol2, true))
-    {
-        Print("Erro ao selecionar os ativos no Market Watch.");
-        return;
+string calcCointegracao(vector &prices1, vector &prices2){
+    double betaOut, tStatOut;
+    bool isCointegratedOut;
+    string explicacao = "tStudent deve ser < que -2.86";
+    string retorno = "ERRO AO_CALCULAR_COINTEGRACAO";
+
+    if(CStat::testarCointegracaoADF( prices1,
+                                  prices2,
+                                  betaOut,
+                                  tStatOut,
+                                  isCointegratedOut)){
+        retorno = "tStudent=" + DoubleToString(tStatOut, 2) + " | " + (isCointegratedOut ? "COINTEGRADOS" : "NAO_COINTEGRADOS | " + explicacao);
     }
-
-    // 2. Obter as propriedades de volume mínimo de cada ativo
-    double minLot1 = SymbolInfoDouble(Symbol1, SYMBOL_VOLUME_MIN);
-    double minLot2 = SymbolInfoDouble(Symbol2, SYMBOL_VOLUME_MIN);
-
-    // 3. Obter os valores de tick e pontos
-    double tickValue1 = SymbolInfoDouble(Symbol1, SYMBOL_TRADE_TICK_VALUE);
-    double tickSize1  = SymbolInfoDouble(Symbol1, SYMBOL_TRADE_TICK_SIZE);
-    double point1     = SymbolInfoDouble(Symbol1, SYMBOL_POINT);
-    int    digits1    = (int)SymbolInfoInteger(Symbol1, SYMBOL_DIGITS);
-
-    double tickValue2 = SymbolInfoDouble(Symbol2, SYMBOL_TRADE_TICK_VALUE);
-    double tickSize2  = SymbolInfoDouble(Symbol2, SYMBOL_TRADE_TICK_SIZE);
-    double point2     = SymbolInfoDouble(Symbol2, SYMBOL_POINT);
-    int    digits2    = (int)SymbolInfoInteger(Symbol2, SYMBOL_DIGITS);
-
-    if(tickValue1 <= 0 || tickValue2 <= 0)
-    {
-        Print("Erro ao recuperar o valor do tick dos ativos. Verifique se o mercado está aberto ou se os dados estão disponíveis.");
-        return;
-    }
-
-    // 4. Determinar o multiplicador de pip (ex: 5 dígitos = 10 pontos por pip; 4 dígitos = 1 ponto por pip)
-    double pipMultiplier1 = (digits1 == 3 || digits1 == 5) ? 10.0 : 1.0;
-    double pipMultiplier2 = (digits2 == 3 || digits2 == 5) ? 10.0 : 1.0;
-
-    double pipSize1 = point1 * pipMultiplier1;
-    double pipSize2 = point2 * pipMultiplier2;
-
-    // 5. Calcular o valor financeiro de 1 pip para o LOTE MÍNIMO de cada ativo
-    // Fórmula: (Valor do Tick / Tamanho do Tick) * Tamanho do Pip * Lote Mínimo
-    double pipValueMinLot1 = (tickValue1 / tickSize1) * pipSize1 * minLot1;
-    double pipValueMinLot2 = (tickValue2 / tickSize2) * pipSize2 * minLot2;
-
-    // 6. Calcular a proporção de lotes para atingir o equilíbrio financeiro por pip
-    // Queremos que: Fator1 * PipValueMinLot1 = Fator2 * PipValueMinLot2
-    // Se fixarmos o Ativo 1 com 1 lote mínimo (Fator1 = 1.0), qual deve ser o múltiplo do lote mínimo do Ativo 2?
-    double proporcaoAtivo2 = pipValueMinLot1 / pipValueMinLot2;
-
-    // Exibição dos resultados no log
-    Print("==================================================");
-    Print("       EQUILÍBRIO FINANCEIRO BASEADO EM PIP       ");
-    Print("==================================================");
-    Print("Ativo 1: ", Symbol1);
-    Print(" - Lote Mínimo: ", minLot1);
-    Print(" - Valor de 1 Pip (lote mín): R$ / $ ", DoubleToString(pipValueMinLot1, 2));
-    Print("--------------------------------------------------");
-    Print("Ativo 2: ", Symbol2);
-    Print(" - Lote Mínimo: ", minLot2);
-    Print(" - Valor de 1 Pip (lote mín): R$ / $ ", DoubleToString(pipValueMinLot2, 2));
-    Print("==================================================");
-    Print("RESULTADO DO EQUILÍBRIO:");
-    Print("Para cada **1 lote mínimo** operado em ", Symbol1, ", você deve operar **", DoubleToString(proporcaoAtivo2, 4), " vezes o lote mínimo** de ", Symbol2, " para que o impacto financeiro de 1 pip seja perfeitamente neutralizado.");
-    Print("==================================================");
+    return retorno;
 }

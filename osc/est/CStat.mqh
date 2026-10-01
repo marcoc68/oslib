@@ -1,4 +1,4 @@
-﻿//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
 //|                                                         CStat.mqh|
 //|                               Copyright 2020,oficina de software.|
 //|                                 https://www.metaquotes.net/marcoc.|
@@ -238,7 +238,6 @@ class CStat{
 
     //void calcCorrel(double& v1[], double& v2[]){ }
 
-
     bool testeNormal(const int n, const int pile, const int rep, double &v[]){
         // 1. gerar pile numeros aleatorios no intervalo 0...n
         // 2. calcular a media dos 5 e ordenar no vetor de tamanho rep
@@ -264,6 +263,7 @@ class CStat{
 
         return true;
     }
+
     double calcZscore(double &X[]){
         int    len    = ArraySize(X); if(len==0) return 0;
         double media  = calcMedia(X);
@@ -378,5 +378,122 @@ class CStat{
         return -H;
     }
 
+    //+----------------------------------------------------------------------------------------------+
+    //| 1. Função Base: Regressão de Engle-Granger para extrair o Spread entre dois vetores de precos|
+    //| Retorna                                                                                      |
+    //| Coefiente de Hedge: betaOut                                                                  |
+    //| Intercepto        : interceptoOut                                                            |
+    //| Vetor de spread   : spreadOut                                                                |
+    //+----------------------------------------------------------------------------------------------+
+    static bool calcBetaAndSpread(const vector &preco1, const vector &preco2, double &betaOut, double interceptoOut, vector &spreadOut) {
+        // Validação de integridade dos dados
+        if(preco1.Size() != preco2.Size() || preco1.Size() < 3) return false;
 
+        ulong n = preco1.Size();
+
+        // Matriz de variáveis independentes (Preço 2 + Intercepto constante)
+        matrix modelo(n, 2);
+        for(ulong i = 0; i < n; i++) {
+            modelo[i, 0] = preco2[i];
+            modelo[i, 1] = 1.0;
+        }
+
+        // OLS (Mínimos Quadrados) para encontrar Beta e Intercepto (Alpha)
+        vector parametros = modelo.LstSq(preco1);
+        if(parametros.Size() < 2) return false;
+
+        betaOut = parametros[0];
+        interceptoOut = parametros[1];
+
+        // Geração da série temporal de resíduos (Spread)
+        spreadOut.Resize(n);
+        for(ulong i = 0; i < n; i++) { spreadOut[i] = preco1[i] - (betaOut * preco2[i] + interceptoOut);  }
+        return true;
+    }
+
+    //+------------------------------------------------------------------+
+    //| 2. Função de Validação: Teste Dickey-Fuller (ADF) em MQL5 Puro   |
+    //+------------------------------------------------------------------+
+    static bool testarCointegracaoADF( const  vector &preco1,
+                                       const  vector &preco2,
+                                       double &betaOut,
+                                       double &tStatOut,
+                                       bool   &isCointegratedOut) {
+        vector spread;
+        double intercepto = 0;
+
+        // 1. Obtém o beta de hedge e a série do spread via Engle-Granger
+        if(!calcBetaAndSpread(preco1, preco2, betaOut, intercepto, spread)){
+            Print("Erro ao calcular o spread de cointegração.");
+            return false;
+        }
+
+        if(spread.Size() < 10) {
+            Print("Amostra insuficiente para o teste estatístico (mínimo de 10 barras).");
+            return false;
+        }
+
+        // 2. Prepara as séries para o modelo Dickey-Fuller: Delta(Spread) ~ Gamma * Spread_Lag
+        ulong n_reg = spread.Size() - 1;
+        vector deltaSpread(n_reg);
+        vector spreadLag(n_reg);
+
+        for(ulong i = 0; i < n_reg; i++) {
+            deltaSpread[i] = spread[i + 1] - spread[i]; // Variável dependente: diferença de variação
+            spreadLag[i]   = spread[i];                 // Variável independente: valor defasado em t-1
+        }
+
+        // 3. Monta a matriz OLS sem constante (os resíduos já possuem média zero por construção)
+        matrix xMatrix(n_reg, 1);
+        for(ulong i = 0; i < n_reg; i++) {
+            xMatrix[i, 0] = spreadLag[i];
+        }
+
+        // Estima o coeficiente Gamma da autoregressão
+        vector gammaVec = xMatrix.LstSq(deltaSpread);
+        if(gammaVec.Size() < 1) return false;
+
+        double gamma = gammaVec[0];
+
+        // 4. Calcula a soma dos resíduos quadráticos (SSR) para determinar o Erro Padrão
+        double somaResiduosSq = 0.0;
+        for(ulong i = 0; i < n_reg; i++) {
+            double predito = gamma * spreadLag[i];
+            double residuo = deltaSpread[i] - predito;
+            somaResiduosSq += residuo * residuo;
+        }
+
+        // Soma de quadrados do regressor
+        double somaSpreadLagSq = spreadLag.Dot(spreadLag);
+        if(somaSpreadLagSq == 0.0) return false;
+
+        // Erro Padrão do coeficiente Gamma
+        double varianciaResidual = somaResiduosSq / (double)(n_reg - 1);
+        double stderrGamma = MathSqrt(varianciaResidual / somaSpreadLagSq);
+
+        if(stderrGamma == 0.0) return false;
+
+        // 5. Cálculo da estatística t de Student para o teste ADF
+        tStatOut = gamma / stderrGamma;
+
+        // 6. Valor crítico estatístico (Tabela de MacKinnon para 95% de confiança)
+        // Se a estatística t for menor (mais negativa) que -2.86, o spread é estacionário.
+        double valorCritico95 = -2.86;
+
+        // Retorna verdadeiro se os resíduos rejeitarem a hipótese nula de raiz unitária
+        isCointegratedOut = (tStatOut < valorCritico95);
+
+        return true;
+    }
+
+    static bool parEhCointegrado(const vector &preco1, const vector &preco2) {
+        double beta, tStat;
+        bool isCointegrated;
+        if( testarCointegracaoADF( preco1, preco2, beta, tStat, isCointegrated) ) {
+            return isCointegrated;
+        } else {
+            Print(__FUNCTION__ + ": Erro ao testar cointegracao.");
+            return false;
+        }
+    }
 };

@@ -175,6 +175,17 @@ public:
         vector vet2 = vetor_de_media.toVector();
         return calcCoefCorr(vet2); 
     }
+
+    // Teste de cointegração de Engle-Granger / ADF
+    bool ehCointegradoCom(vector <double> &vet2){
+        vector vet1 = m_vet.toVector();
+        return CStat::parEhCointegrado(vet1, vet2);
+    }
+
+    bool ehCointegradoCom(osc_media &vetor_de_media){
+        vector vet2 = vetor_de_media.toVector();
+        return ehCointegradoCom(vet2);
+    }
     
     vector toVector(){ return m_vet.toVector();}
     
