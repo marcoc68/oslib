@@ -67,13 +67,15 @@
 #define PAR_FLAT          0  // sem posicao
 #define PAR_LONG_SPREAD   1  // comprado no spread : COMPRA ativo1 / VENDE  ativo2
 #define PAR_SHORT_SPREAD -1  // vendido  no spread : VENDE  ativo1 / COMPRA ativo2
-#define TERMINAL         "TERMIANAL"  // nome especial para indicar o simbolo do terminal.
+#define TERMINAL         "TERMINAL"  // nome especial para indicar o simbolo do terminal.
+#define BUSCAR_PAR       "BUSCAR_PAR"  // nome especial para indicar que o EA deve buscar um par adequado.
 
 //---------------------------------------------------------------------------------------------
 input group "=== Par de ativos ===";
-input string         EA_SYMBOL_1            = TERMINAL ; //SYMBOL_1 primeiro ativo do par (p1 do spread)
-input string         EA_SYMBOL_2            = "GBPUSD"   ; //SYMBOL_2 segundo  ativo do par (p2 do spread)
-input double         EA_COEF_CORRELACAO_MIN = 0.85       ; //COEF_CORRELACAO_MIN coeficiente de correlacao minimo entre os dois ativos para operar
+input string         EA_SYMBOL_1            = TERMINAL  ; //SYMBOL_1 primeiro ativo do par (p1 do spread)
+input string         EA_SYMBOL_2            = BUSCAR_PAR; //SYMBOL_2 segundo  ativo do par (p2 do spread)
+input double         EA_COEF_CORRELACAO_MIN = 0.85      ; //COEF_CORRELACAO_MIN coeficiente de correlacao minimo entre os dois ativos para operar
+input string         EA_SYMBOLS_CANDIDATES   = "AUDCAD, AUDCHF, AUDJPY, AUDNZD, AUDSGD, AUDUSD, CADCHF, CADJPY, CHFJPY, CHFSGD, EURAUD, EURCAD, EURCHF, EURDKK, EURGBP, EURHKD, EURJPY, EURNOK, EURNZD, EURPLN, EURSEK, EURSGD, EURTRY, EURUSD, EURZAR, GBPAUD, GBPCAD, GBPCHF, GBPDKK, GBPJPY, GBPNOK, GBPNZD, GBPSEK, GBPSGD, GBPTRY, GBPUSD, NOKJPY, NOKSEK, NZDCAD, NZDCHF, NZDJPY, NZDUSD, SEKJPY, SGDJPY, USDCAD, USDCHF, USDCNH, USDCZK, USDDKK, USDHKD, USDHUF, USDJPY, USDMXN, USDNOK, USDPLN, USDSEK, USDSGD, USDTHB, USDTRY, USDZAR"; //SYMBOLS_CANDIDATES lista de ativos candidatos a formar par com SYMBOL_1. separados por ','
 input group "=== Spread do PAR ===";
 input int            EA_QTD_PERIODOS    = 60          ; //QTD_PERIODOS qtd de barras usadas na media e no desvio do spread
 input ENUM_TIMEFRAMES EA_TIMEFRAME      = PERIOD_M3   ; //TIMEFRAME timeframe das barras da janela do spread
@@ -187,6 +189,10 @@ int OnInit(){
     return(INIT_SUCCEEDED);
 }
 
+string buscarParAdequado(string symbol){
+    return C00021Pairs::buscarParAdequado(symbol, EA_SYMBOLS_CANDIDATES, EA_QTD_PERIODOS, EA_TIMEFRAME);
+}
+
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason){
     EventKillTimer();
@@ -209,6 +215,9 @@ bool inicializarSimbolos(){
 
     if( m_nm_symb1 == TERMINAL ) m_nm_symb1 = _Symbol;
     if( m_nm_symb2 == TERMINAL ) m_nm_symb2 = _Symbol;
+
+    if( m_nm_symb1 == BUSCAR_PAR ) m_nm_symb1 = buscarParAdequado( m_nm_symb2 );
+    if( m_nm_symb2 == BUSCAR_PAR ) m_nm_symb2 = buscarParAdequado( m_nm_symb1 );
 
     if( m_nm_symb1 == m_nm_symb2 ){
         Print(":-( ", __FUNCTION__, " SYMBOL_1 e SYMBOL_2 devem ser ativos diferentes." );

@@ -125,5 +125,98 @@ public:
                                           return tick.bid;
     }
 
+    static string buscarParAdequado(string symbol, string InpSymbols, int InpBars, ENUM_TIMEFRAMES InpTimeframe=PERIOD_CURRENT) {
 
+       // Estrutura para armazenar o par e sua correlação
+       struct PairCorr {
+          string symbolA;
+          string symbolB;
+          double correlation;
+          double absCorrelation;
+       };
+
+       // 1. Separar a lista de ativos por vírgula
+       string symbols[];
+       ushort u_sep = StringGetCharacter(",", 0);
+       int totalSymbols = StringSplit(InpSymbols, u_sep, symbols);
+
+       // Limpar espaços em branco dos nomes dos ativos
+       for(int i = 0; i < totalSymbols; i++){
+          StringTrimLeft(symbols[i]);
+          StringTrimRight(symbols[i]);
+       }
+
+       if(totalSymbols < 1){ return "PAR_CANDIDATO_NAO_INFORMADO"; }
+       if(totalSymbols < 2){ return symbols[0]; }
+
+       // 2. Carregar os vetores de preços de fechamento (Close) para cada ativo
+       vector prices[];
+       ArrayResize(prices, totalSymbols);
+
+       int validCount = 0;
+       string validSymbols[];
+       ArrayResize(validSymbols, totalSymbols);
+
+       for(int i = 0; i < totalSymbols; i++){
+          // Tenta copiar os preços históricos para o vetor
+          if(prices[validCount].CopyRates(symbols[i], InpTimeframe, COPY_RATES_CLOSE, 0, InpBars)) {
+             validSymbols[validCount] = symbols[i];
+             validCount++;
+          }else{
+             PrintFormat("Aviso: Não foi possível carregar dados para o ativo '%s'. Verifique se está na Observação do Mercado.", symbols[i]);
+          }
+       }
+
+       if(validCount < 1){ return "COTACOES_NAO_ENCONTRADAS_PARA_OS_PARES_CANDIDATO"; }
+       if(validCount < 2){ return validSymbols[0]; }
+
+       // 3. Calcular a correlação para todas as combinações com o ativo informado
+       int totalPairs = (validCount * (validCount - 1)) / 2;
+       PairCorr pairList[];
+       ArrayResize(pairList, totalPairs);
+
+       int pairIndex = 0;
+       for(int i = 0; i < validCount - 1; i++) {
+          for(int j = i + 1; j < validCount; j++) {
+             pairList[pairIndex].symbolA = validSymbols[i];
+             pairList[pairIndex].symbolB = validSymbols[j];
+
+             // Cálculo nativo da correlação de Pearson via MQL5 vector
+             pairList[pairIndex].correlation    = prices[i].CorrCoef(prices[j]);
+             pairList[pairIndex].absCorrelation = MathAbs(pairList[pairIndex].correlation);
+             pairIndex++;
+          }
+       }
+
+       // 4. Ordenar a lista da maior correlação para a menor (Selection Sort)
+       for(int i = 0; i < totalPairs - 1; i++){
+          for(int j = i + 1; j < totalPairs; j++){
+             if(pairList[j].absCorrelation > pairList[i].absCorrelation){
+                PairCorr temp = pairList[i];
+                pairList[i] = pairList[j];
+                pairList[j] = temp;
+             }
+          }
+       }
+
+       // 5. Exibir o Ranking de Correlação no Log
+       PrintFormat("==================================================");
+       PrintFormat(" RANKING DE CORRELAÇÃO DE ATIVOS (%d BARRAS, %s)", InpBars, EnumToString(InpTimeframe));
+       PrintFormat(" Total de ativos válidos: %d | Total de pares: %d", validCount, totalPairs);
+       PrintFormat("==================================================");
+
+       for(int i = 0; i < totalPairs; i++) {
+
+           if( pairList[i].correlation > 0 && (pairList[i].symbolA == symbol || pairList[i].symbolB == symbol) ) {
+                PrintFormat("Par: %s - %s | Correlação: %.4f", pairList[i].symbolA, pairList[i].symbolB, pairList[i].correlation);
+              if(pairList[i].symbolA == symbol)
+                return pairList[i].symbolB;
+              else
+                return pairList[i].symbolA;
+
+           }
+       }
+       
+       return "PAR_NAO_ENCONTRADO";
+    }
 };
