@@ -109,10 +109,10 @@ public:
         return m_spread;
     }
 
-    double calcCoefCorr(){ 
-       return m_vet_ativo1.calcCoefCorr(m_vet_ativo2); 
-    }
-    
+    double calcCoefCorr(){ return m_vet_ativo1.calcCoefCorr(m_vet_ativo2); }
+
+    bool parEhCointegrado(){ return m_vet_ativo1.ehCointegradoCom(m_vet_ativo2); }
+
     double getSpreadStd(double shift){ return getSpreadMed()+getSpreadStd()*shift; }
     
     double regLinFit  (){return m_vet_spread.regLinFit     ();}
@@ -207,7 +207,7 @@ public:
 
        for(int i = 0; i < totalPairs; i++) {
 
-           if( pairList[i].correlation > 0 && (pairList[i].symbolA == symbol || pairList[i].symbolB == symbol) ) {
+           if( pairList[i].symbolA == symbol || pairList[i].symbolB == symbol ) {
                 PrintFormat("Par: %s - %s | Correlação: %.4f", pairList[i].symbolA, pairList[i].symbolB, pairList[i].correlation);
               if(pairList[i].symbolA == symbol)
                 return pairList[i].symbolB;
