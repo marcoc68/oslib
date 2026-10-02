@@ -133,6 +133,7 @@ public:
           string symbolB;
           double correlation;
           double absCorrelation;
+          bool   saoCointegrados;
        };
 
        // 1. Separar a lista de ativos por vírgula
@@ -184,6 +185,7 @@ public:
              // Cálculo nativo da correlação de Pearson via MQL5 vector
              pairList[pairIndex].correlation    = prices[i].CorrCoef(prices[j]);
              pairList[pairIndex].absCorrelation = MathAbs(pairList[pairIndex].correlation);
+             pairList[pairIndex].saoCointegrados = CStat::parEhCointegrado(prices[i], prices[j]);
              pairIndex++;
           }
        }
@@ -205,18 +207,29 @@ public:
        PrintFormat(" Total de ativos válidos: %d | Total de pares: %d", validCount, totalPairs);
        PrintFormat("==================================================");
 
+      // 6. Procurar o par mais adequado para o ativo informado. Se achar um cointegrado, dah prioridade a ele. Se nao achar, retorna o par com maior correlacao.
        for(int i = 0; i < totalPairs; i++) {
 
-           if( pairList[i].symbolA == symbol || pairList[i].symbolB == symbol ) {
-                PrintFormat("Par: %s - %s | Correlação: %.4f", pairList[i].symbolA, pairList[i].symbolB, pairList[i].correlation);
+           if( pairList[i].saoCointegrados && (pairList[i].symbolA == symbol || pairList[i].symbolB == symbol) ) {
+                PrintFormat("Par Cointegrado: %s - %s | Correlação: %.4f", pairList[i].symbolA, pairList[i].symbolB, pairList[i].correlation);
               if(pairList[i].symbolA == symbol)
                 return pairList[i].symbolB;
               else
                 return pairList[i].symbolA;
-
            }
        }
-       
+
+       // Nao achou um cointegrado... Busca o maior correlacionado.
+       for(int i = 0; i < totalPairs; i++) {
+
+           if( pairList[i].symbolA == symbol || pairList[i].symbolB == symbol ) {
+                PrintFormat("Par nao Cointegrado: %s - %s | Correlação: %.4f", pairList[i].symbolA, pairList[i].symbolB, pairList[i].correlation);
+              if(pairList[i].symbolA == symbol)
+                return pairList[i].symbolB;
+              else
+                return pairList[i].symbolA;
+           }
+       }
        return "PAR_NAO_ENCONTRADO";
     }
 };

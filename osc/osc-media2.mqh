@@ -86,7 +86,7 @@ public:
         m_tot += val; // adicionando o valor atual a media;
         if(++m_len_calc > m_len){
             m_tot -= m_vet.at(0); // retirando o valor do elemento mais antigo do calculo da media
-            m_len_calc = m_len; // ajustando o tamanho calculado para o tamanho máximo
+            m_len_calc = m_len;   // ajustando o tamanho calculado para o tamanho máximo
         }
         m_vet.add(val)      ; // e adicionando o novo valor
 

@@ -19,7 +19,10 @@
 
 //--- Parâmetros de Entrada
 //input string          InpSymbols   = "EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, USDCHF"; // Ativos (separados por vírgula)
-input string          InpSymbols   = "AUDCAD, AUDCHF, AUDJPY, AUDNZD, AUDSGD, AUDUSD, CADCHF, CADJPY, CHFJPY, CHFSGD, EURAUD, EURCAD, EURCHF, EURDKK, EURGBP, EURHKD, EURJPY, EURNOK, EURNZD, EURPLN, EURSEK, EURSGD, EURTRY, EURUSD, EURZAR, GBPAUD, GBPCAD, GBPCHF, GBPDKK, GBPJPY, GBPNOK, GBPNZD, GBPSEK, GBPSGD, GBPTRY, GBPUSD, NOKJPY, NOKSEK, NZDCAD, NZDCHF, NZDJPY, NZDUSD, SEKJPY, SGDJPY, USDCAD, USDCHF, USDCNH, USDCZK, USDDKK, USDHKD, USDHUF, USDJPY, USDMXN, USDNOK, USDPLN, USDSEK, USDSGD, USDTHB, USDTRY, USDZAR"; // Ativos (separados por vírgula)
+//input string          InpSymbols   = "AUDCAD, AUDCHF, AUDJPY, AUDNZD, AUDSGD, AUDUSD, CADCHF, CADJPY, CHFJPY, CHFSGD, EURAUD, EURCAD, EURCHF, EURDKK, EURGBP, EURHKD, EURJPY, EURNOK, EURNZD, EURPLN, EURSEK, EURSGD, EURTRY, EURUSD, EURZAR, GBPAUD, GBPCAD, GBPCHF, GBPDKK, GBPJPY, GBPNOK, GBPNZD, GBPSEK, GBPSGD, GBPTRY, GBPUSD, NOKJPY, NOKSEK, NZDCAD, NZDCHF, NZDJPY, NZDUSD, SEKJPY, SGDJPY, USDCAD, USDCHF, USDCNH, USDCZK, USDDKK, USDHKD, USDHUF, USDJPY, USDMXN, USDNOK, USDPLN, USDSEK, USDSGD, USDTHB, USDTRY, USDZAR"; // Ativos (separados por vírgula)
+input string          InpSymbols   = "EURUSD, GBPUSD, USDCHF, USDJPY, USDCAD, AUDUSD"; // Ativos (separados por vírgula)
+
+
 input ENUM_TIMEFRAMES InpTimeframe = PERIOD_M3;   // Timeframe
 input int             InpBars      = 60;        // Quantidade de Barras
 
@@ -125,7 +128,7 @@ void OnStart(){
    PrintFormat("==================================================");
 
    double pesoLote1, pesoLote2, erro;
-   for(int i = 0; i < totalPairs && pairList[i].absCorrelation >= 0.85; i++) {
+   for(int i = 0; i < totalPairs; i++) {
 
       if( !osc_trade_util::calcVolumesEquilibrio( pairList[i].symbolA, pairList[i].symbolB, pesoLote1, pesoLote2, erro, 0.10 ) ){
           pesoLote1 = 0;
