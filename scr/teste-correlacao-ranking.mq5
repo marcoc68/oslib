@@ -18,9 +18,10 @@
 #property script_show_inputs
 
 //--- Parâmetros de Entrada
-//input string          InpSymbols   = "EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, USDCHF"; // Ativos (separados por vírgula)
-//input string          InpSymbols   = "AUDCAD, AUDCHF, AUDJPY, AUDNZD, AUDSGD, AUDUSD, CADCHF, CADJPY, CHFJPY, CHFSGD, EURAUD, EURCAD, EURCHF, EURDKK, EURGBP, EURHKD, EURJPY, EURNOK, EURNZD, EURPLN, EURSEK, EURSGD, EURTRY, EURUSD, EURZAR, GBPAUD, GBPCAD, GBPCHF, GBPDKK, GBPJPY, GBPNOK, GBPNZD, GBPSEK, GBPSGD, GBPTRY, GBPUSD, NOKJPY, NOKSEK, NZDCAD, NZDCHF, NZDJPY, NZDUSD, SEKJPY, SGDJPY, USDCAD, USDCHF, USDCNH, USDCZK, USDDKK, USDHKD, USDHUF, USDJPY, USDMXN, USDNOK, USDPLN, USDSEK, USDSGD, USDTHB, USDTRY, USDZAR"; // Ativos (separados por vírgula)
-input string          InpSymbols   = "EURUSD, GBPUSD, USDCHF, USDJPY, USDCAD, AUDUSD"; // Ativos (separados por vírgula)
+//input string        InpSymbols   = "EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, USDCHF"; // Ativos (separados por vírgula)
+//input string        InpSymbols   = "EURUSD, GBPUSD, USDCHF, USDJPY, USDCAD, AUDUSD"; // Ativos (separados por vírgula)
+input string          InpSymbols1   = "AUDCAD,AUDCHF,AUDJPY,AUDNZD,AUDSGD,AUDUSD,CADCHF,CADJPY,CHFJPY,CHFSGD,EURAUD,EURCAD,EURCHF,EURDKK,EURGBP,EURHKD,EURJPY,EURNOK,EURNZD,EURPLN,EURSEK,EURSGD,EURTRY,EURUSD,EURZAR,GBPAUD,GBPCAD,GBPCHF,GBPDKK,GBPJPY"; // Ativos (separados por vírgula)
+input string          InpSymbols2   = "GBPNOK,GBPNZD,GBPSEK,GBPSGD,GBPTRY,GBPUSD,NOKJPY,NOKSEK,NZDCAD,NZDCHF,NZDJPY,NZDUSD,SEKJPY,SGDJPY,USDCAD,USDCHF,USDCNH,USDCZK,USDDKK,USDHKD,USDHUF,USDJPY,USDMXN,USDNOK,USDPLN,USDSEK,USDSGD,USDTHB,USDTRY,USDZAR"; // Ativos (separados por vírgula)
 
 
 input ENUM_TIMEFRAMES InpTimeframe = PERIOD_M3;   // Timeframe
@@ -34,12 +35,15 @@ struct PairCorr
    double correlation;
    double absCorrelation;
    string cointegracao;
+   double spreadMedioA;
+   double spreadMedioB;
 };
 
 //+------------------------------------------------------------------+
 //| Script program start function                                    |
 //+------------------------------------------------------------------+
 void OnStart(){
+   string InpSymbols = InpSymbols1 + "," + InpSymbols2;
    // 1. Separar a lista de ativos por vírgula
    string symbols[];
    ushort u_sep = StringGetCharacter(",", 0);
@@ -60,7 +64,9 @@ void OnStart(){
 
    // 2. Carregar os vetores de preços de fechamento (Close) para cada ativo
    vector prices[];
+   vector spread[];
    ArrayResize(prices, totalSymbols);
+   ArrayResize(spread, totalSymbols);
 
    int validCount = 0;
    string validSymbols[];
@@ -69,10 +75,15 @@ void OnStart(){
    for(int i = 0; i < totalSymbols; i++)
    {
       // Tenta copiar os preços históricos para o vetor
-      if(prices[validCount].CopyRates(symbols[i], InpTimeframe, COPY_RATES_CLOSE, 0, InpBars))
+      if(prices[validCount].CopyRates(symbols[i], InpTimeframe, COPY_RATES_CLOSE , 0, InpBars) &&
+         spread[validCount].CopyRates(symbols[i], InpTimeframe, COPY_RATES_SPREAD, 0, InpBars))
       {
-         validSymbols[validCount] = symbols[i];
-         validCount++;
+        double point = SymbolInfoDouble(symbols[i], SYMBOL_POINT);
+        
+//        div(spread[validCount], point); // Ajusta o spread para o valor real
+
+        validSymbols[validCount] = symbols[i];
+        validCount++;
       }
       else
       {
@@ -103,6 +114,8 @@ void OnStart(){
          pairList[pairIndex].correlation    = prices[i].CorrCoef(prices[j]);
          pairList[pairIndex].absCorrelation = MathAbs(pairList[pairIndex].correlation);
          pairList[pairIndex].cointegracao   = calcCointegracao(prices[i],prices[j]);
+         pairList[pairIndex].spreadMedioA   = spread[i].Mean();
+         pairList[pairIndex].spreadMedioB   = spread[j].Mean();
          pairIndex++;
       }
    }
@@ -135,16 +148,14 @@ void OnStart(){
           pesoLote2 = 0;
       }
 
-      PrintFormat("#%02d | %s vs %s : Correlação = %.4f | Lote %s = %.4f | Lote %s = %.4f | %s",
+      PrintFormat("#%02d| %s vs %s: Corr( %.4f Coint:%s) | Spread( %.2f,%.2f)",
                   i + 1, 
                   pairList[i].symbolA, 
                   pairList[i].symbolB, 
                   pairList[i].correlation,
-                  pairList[i].symbolA,
-                  pesoLote1,
-                  pairList[i].symbolB,
-                  pesoLote2,
-                  pairList[i].cointegracao);
+                  pairList[i].cointegracao,
+                  pairList[i].spreadMedioA,
+                  pairList[i].spreadMedioB);
    }
    PrintFormat("==================================================");
 }
@@ -160,7 +171,14 @@ string calcCointegracao(vector &prices1, vector &prices2){
                                   betaOut,
                                   tStatOut,
                                   isCointegratedOut)){
-        retorno = "tStudent=" + DoubleToString(tStatOut, 2) + " | " + (isCointegratedOut ? "COINTEGRADOS" : "NAO_COINTEGRADOS | " + explicacao);
+        retorno = "tStudent=" + DoubleToString(tStatOut, 2) + " | " + (isCointegratedOut ? "SIM" : "NAO");
     }
     return retorno;
+}
+
+// multiplica um vetor por um numero. armazena o resultado no vetor.
+void div(vector<double> &m1, double num){
+    if(num == 0) return;
+    ulong size = m1.Size();
+    for( uint i=0; i<size; i++){ m1[i] = m1[i]/num; }
 }
