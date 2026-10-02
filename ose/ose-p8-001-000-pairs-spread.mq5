@@ -78,7 +78,8 @@ input group "=== Par de ativos ===";
 input string         EA_SYMBOL_1            = TERMINAL  ; //SYMBOL_1 primeiro ativo do par (p1 do spread)
 input string         EA_SYMBOL_2            = BUSCAR_PAR; //SYMBOL_2 segundo  ativo do par (p2 do spread)
 input double         EA_COEF_CORRELACAO_MIN = 0.80      ; //COEF_CORRELACAO_MIN coeficiente de correlacao minimo entre os dois ativos para operar
-input string         EA_SYMBOLS_CANDIDATES   = "GBPUSD, AUDCAD, AUDCHF, AUDJPY, AUDNZD, AUDSGD, AUDUSD, CADCHF, CADJPY, CHFJPY, CHFSGD, EURAUD, EURCAD, EURCHF, EURDKK, EURGBP, EURJPY, EURNOK, EURNZD, EURPLN, EURSEK, EURSGD, EURUSD, EURZAR, GBPAUD, GBPCAD, GBPCHF, GBPDKK, GBPJPY, GBPNOK, GBPNZD, GBPSEK, GBPSGD, GBPTRY, NOKJPY, NOKSEK, NZDCAD, NZDCHF, NZDJPY, NZDUSD, SEKJPY, SGDJPY, USDCAD, USDCHF, USDCNH, USDCZK, USDDKK, USDHKD, USDHUF, USDJPY, USDMXN, USDNOK, USDPLN, USDSEK, USDSGD, USDTHB, USDTRY, USDZAR"; //SYMBOLS_CANDIDATES lista de ativos candidatos a formar par com SYMBOL_1. separados por ','
+input string         EA_SYMBOLS_CANDIDATES1   = "AUDCAD,AUDCHF,AUDJPY,AUDNZD,AUDSGD,AUDUSD,CADCHF,CADJPY,CHFJPY,CHFSGD,EURAUD,EURCAD,EURCHF,EURDKK,EURGBP,EURHKD,EURJPY,EURNOK,EURNZD,EURPLN,EURSEK,EURSGD,EURTRY,EURUSD,EURZAR,GBPAUD,GBPCAD,GBPCHF,GBPDKK,GBPJPY"; //SYMBOLS_CANDIDATES1 lista de ativos candidatos a formar par com SYMBOL_1. separados por ','
+input string         EA_SYMBOLS_CANDIDATES2   = "GBPNOK,GBPNZD,GBPSEK,GBPSGD,GBPTRY,GBPUSD,NOKJPY,NOKSEK,NZDCAD,NZDCHF,NZDJPY,NZDUSD,SEKJPY,SGDJPY,USDCAD,USDCHF,USDCNH,USDCZK,USDDKK,USDHKD,USDHUF,USDJPY,USDMXN,USDNOK,USDPLN,USDSEK,USDSGD,USDTHB,USDTRY,USDZAR"; //SYMBOLS_CANDIDATES2 lista de ativos candidatos a formar par com SYMBOL_1. separados por ','
 // retirados:  EURHKD, EURTRY -> (spread alto)
 input group "=== Spread do PAR ===";
 input int             EA_QTD_PERIODOS    = 60         ; //QTD_PERIODOS qtd de barras usadas na media e no desvio do spread
@@ -125,7 +126,7 @@ int OnInit(){
     m_param.ea_symbol_1                           = EA_SYMBOL_1                          ;
     m_param.ea_symbol_2                           = EA_SYMBOL_2                          ;
     m_param.ea_coef_correlacao_min                = EA_COEF_CORRELACAO_MIN               ;
-    m_param.ea_symbols_candidates                 = EA_SYMBOLS_CANDIDATES                ;
+    m_param.ea_symbols_candidates                 = EA_SYMBOLS_CANDIDATES1 + "," + EA_SYMBOLS_CANDIDATES2 ;
     m_param.ea_qtd_periodos                       = EA_QTD_PERIODOS                      ;
     m_param.ea_timeframe                          = EA_TIMEFRAME                         ;
     m_param.ea_desvios_entrada                    = EA_DESVIOS_ENTRADA                   ;
