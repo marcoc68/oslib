@@ -75,7 +75,7 @@
 input group "=== Par de ativos ===";
 input string         EA_SYMBOL_1            = TERMINAL  ; //SYMBOL_1 primeiro ativo do par (p1 do spread)
 input string         EA_SYMBOL_2            = BUSCAR_PAR; //SYMBOL_2 segundo  ativo do par (p2 do spread)
-input double         EA_COEF_CORRELACAO_MIN = 0.85      ; //COEF_CORRELACAO_MIN coeficiente de correlacao minimo entre os dois ativos para operar
+input double         EA_COEF_CORRELACAO_MIN = 0.80      ; //COEF_CORRELACAO_MIN coeficiente de correlacao minimo entre os dois ativos para operar
 input string         EA_SYMBOLS_CANDIDATES   = "AUDCAD, AUDCHF, AUDJPY, AUDNZD, AUDSGD, AUDUSD, CADCHF, CADJPY, CHFJPY, CHFSGD, EURAUD, EURCAD, EURCHF, EURDKK, EURGBP, EURJPY, EURNOK, EURNZD, EURPLN, EURSEK, EURSGD, EURUSD, EURZAR, GBPAUD, GBPCAD, GBPCHF, GBPDKK, GBPJPY, GBPNOK, GBPNZD, GBPSEK, GBPSGD, GBPTRY, GBPUSD, NOKJPY, NOKSEK, NZDCAD, NZDCHF, NZDJPY, NZDUSD, SEKJPY, SGDJPY, USDCAD, USDCHF, USDCNH, USDCZK, USDDKK, USDHKD, USDHUF, USDJPY, USDMXN, USDNOK, USDPLN, USDSEK, USDSGD, USDTHB, USDTRY, USDZAR"; //SYMBOLS_CANDIDATES lista de ativos candidatos a formar par com SYMBOL_1. separados por ','
 // retirados:  EURHKD, EURTRY -> (spread alto)
 input group "=== Spread do PAR ===";
@@ -168,8 +168,8 @@ int OnInit(){
     if( !inicializarSimbolos()  ) return INIT_PARAMETERS_INCORRECT;
     if( !inicializarParametros()) return INIT_PARAMETERS_INCORRECT;
 
-    m_media_spread_symb1.initialize( EA_QTD_PERIODOS, EA_TIMEFRAME ); // media do spread na janela
-    m_media_spread_symb2.initialize( EA_QTD_PERIODOS, EA_TIMEFRAME ); // media do spread na janela
+    m_media_spread_symb1.initialize( EA_QTD_PERIODOS, 1 ); // media do spread operacional coletado a cada 5 segundos.
+    m_media_spread_symb2.initialize( EA_QTD_PERIODOS, 1 ); // media do spread operacional coletado a cada 5 segundos.
 
     m_magic = criar_magic(m_nm_symb1 + m_nm_symb2); // magic unico para cada par de ativos
 
