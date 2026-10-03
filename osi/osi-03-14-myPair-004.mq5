@@ -1,4 +1,4 @@
-﻿//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
 //|                                         osi-03-14-myPair-002.mq5 |
 //|                                                           marcoc |
 //|                             https://www.mql5.com/pt/users/marcoc |
@@ -25,7 +25,7 @@
 
 //input int    QTD_BAR_PROC_HIST        = 0       ; // Quantidade de barras historicas a processar. Em modo DEBUG, convem deixar este valor baixo pra nao sobrecarregar o arquivo de log.
 input bool   GERAR_VOLUME           = false ; // se true, gera volume baseado nos ticks. Usa em papeis que nao informam volume, tais como o DJ30.
-input string PAIR2                  = "WDOJ21"; // segundo ativo do par. O primeiro é o do gráfico.
+input string PAIR2                  = "EURUSD"; // segundo ativo do par. O primeiro é o do gráfico.
 //input string PAIR2                = "GBPUSD"; // par do simbolo do grafico.
 input int    PERIODOS_MEDIA           = 60   ; // quantidade de periodos para calcular a media do ratio.
 input double MU_STD1                  = 1.0  ; // qtd desvios do primeiro desvio padrao.
@@ -169,8 +169,6 @@ int OnInit() {
    return(INIT_SUCCEEDED);
 }
 
-
-
 void OnDeinit(const int i){
   MarketBookRelease( m_symb1.Name() );
   MarketBookRelease( m_symb2.Name() );
@@ -198,95 +196,76 @@ int OnCalculate(const int        rates_total,
     //===============================================================================================
     // Processando o hitorico...
     //===============================================================================================
-    //if(!m_prochist){ // para nao reprocessar a ultima barra sempre que mudar de barra.
-    //    setAsSeries(false);
-    //    doOnCalculateHistorico(rates_total, prev_calculated,time);
-    //    setAsSeries(true);
-    //}
+    if(!m_prochist){ // para nao reprocessar a ultima barra sempre que mudar de barra.
+        setAsSeries(false);
+        doOnCalculateHistorico(rates_total, prev_calculated,time);
+        setAsSeries(true);
+    }
 
     //===============================================================================================
     // Processamento o tick da barra atual...
     //===============================================================================================
+//    if( rates_total != prev_calculated && !m_prochist){
+//        setAsSeries(false);
+//        // colocando o ultimo spread em todo o historico...
+//        MqlRates  rates_array[1];
+//        for( int i=prev_calculated; i<rates_total; i++ ){
+//
+//            if(  CopyRates(
+//                            PAIR2         ,  // nome do ativo
+//                            PERIOD_CURRENT,  // período
+//                            time[i]       ,  // data e hora de início
+//                            1             ,  // quantidade de dados para copiar
+//                            rates_array      // array destino para copiar
+//                 ) > 0
+//            ){
+//                Print("rates_tot:",rates_total," prev_calc:",prev_calculated, " i:", i, " dt:", time[i] );
+//                m_buf_spread[i]= m_parH.calcSpread(close[i],rates_array[0].close,rates_array[0].time);
+//            }else{
+//                 if( i>0 ){
+//                     m_buf_spread[i]= m_buf_spread[i-1];
+//                     Print("i:",i," Rate nao encontrado ao processar historico de ",PAIR2," para data:",time[i],". Usando rate anterior:",m_buf_spread[i-1]);
+//                 }
+//            }
+//
+//            if( i>PERIODOS_MEDIA ){
+//                setBuffersFromPar(i,m_parH);
+//            }
+//         }
+//         m_prochist=true;
+//    }
+    
     // obtendo ultimos dados de ticks...
     if( !SymbolInfoTick  ( _Symbol,m_tick ) ){Print("Erro obtendo preco ", _Symbol,"..."); return prev_calculated;}// um tick por chamada a oncalculate [bova11]
     if( !SymbolInfoTick  ( PAIR2,m_tick2  ) ){Print("Erro obtendo preco ", PAIR2  ,"..."); return prev_calculated;}// um tick por chamada a oncalculate [win...]
-    normalizar2trade() ; // soh normaliza se GERAR_VOLUME for true
     
-    m_symb1.RefreshRates();
-    m_symb2.RefreshRates();
-    Comment(
-        "m_symb1.Name:",m_symb1.Name()," m_symb1.Last:",m_symb1.Last()," m_tick1.last:",m_tick.last ,"\n",
-        "m_symb2.Name:",m_symb2.Name()," m_symb2.Last:",m_symb2.Last()," m_tick2.last:",m_tick2.last,"\n"
-    );
-    
-    // atualizando o spread...
-    //double my_spread = log(m_tick.last) - log(m_tick2.last);
-    //double my_spread = m_par.calcSpread(m_tick, m_tick2);
-    
-    
-    if( rates_total != prev_calculated && !m_prochist){ 
-        setAsSeries(false);
-        // colocando o ultimo spread em todo o historico...
-        MqlRates  rates_array[1];
-        for( int i=prev_calculated; i<rates_total; i++ ){ 
-            
-            if(  CopyRates( 
-                            PAIR2         ,  // nome do ativo 
-                            PERIOD_CURRENT,  // período 
-                            time[i]       ,  // data e hora de início 
-                            1             ,  // quantidade de dados para copiar 
-                            rates_array      // array destino para copiar 
-                 ) > 0
-            ){
-                 //m_buf_spread[i]= log(close[i])-log(rates_array[0].close);
-                   m_buf_spread[i]= m_parH.calcSpread(close[i],rates_array[0].close,rates_array[0].time);
-            }else{
-                  if( i>0 ){ 
-                      m_buf_spread[i]= m_buf_spread[i-1];
-                      Print("i:",i," Rate nao encontrado ao processar historico de ",PAIR2," para data:",time[i],". Usando rate anterior:",m_buf_spread[i-1]);
-                  }
-            }
-            
-            if( i>PERIODOS_MEDIA ){
-                setBuffersFromPar(i,m_parH);
-                
-                //ArrayCopy(m_vetMoments,m_buf_spread,0,i-PERIODOS_MEDIA,PERIODOS_MEDIA);
-                //if( MathMoments(m_vetMoments,m_mmean,m_mvariance,m_mskewness,m_mkurtosis) ){
-                //    m_mdp = MathSqrt(m_mvariance);
-                //    m_buf_media   [i] = m_mmean;
-                //    m_buf_std_pos1[i] = m_mmean+m_mdp*MU_STD1;
-                //    m_buf_std_neg1[i] = m_mmean-m_mdp*MU_STD1;
-                //    m_buf_std_pos2[i] = m_mmean+m_mdp*MU_STD2;
-                //    m_buf_std_neg2[i] = m_mmean-m_mdp*MU_STD2;
-                //    m_buf_std_pos3[i] = m_mmean+m_mdp*MU_STD3;
-                //    m_buf_std_neg3[i] = m_mmean-m_mdp*MU_STD3;
-                //}
-            }
-         }
-         m_prochist=true;
-    }
+//    m_symb1.RefreshRates();
+//    m_symb2.RefreshRates();
+//    Comment(
+//        "m_symb1.Name:",m_symb1.Name()," m_symb1.Last:",m_symb1.Last()," m_tick1.last:",m_tick.last ," m_tick1.last:",m_tick.last ,"\n",
+//        "m_symb2.Name:",m_symb2.Name()," m_symb2.Last:",m_symb2.Last()," m_tick2.last:",m_tick2.last," m_tick1.last:",m_tick2.last ,"\n",
+//        "-----------------------\n",
+//        "m_symb1.Name:",m_symb1.Name()," m_symb1.Time:",m_symb1.Time()," m_tick1.time:",m_tick.time ,"\n",
+//        "m_symb2.Name:",m_symb2.Name()," m_symb2.Time:",m_symb2.Time()," m_tick2.time:",m_tick2.time,"\n",
+//        "-----------------------\n",
+//        "m_symb1.Name:",m_symb1.Name()," m_symb1.Bid:",m_symb1.Bid()," m_tick1.bid:",m_tick.bid ,"\n",
+//        "m_symb2.Name:",m_symb2.Name()," m_symb2.Bid:",m_symb2.Bid()," m_tick2.bid:",m_tick2.bid,"\n"
+//    );
     
     //double my_spread = m_par.calcSpread(m_tick, m_tick2);
-    setAsSeries(true);
-    m_buf_spread[0] = m_par.calcSpread(m_tick, m_tick2);
+//    setAsSeries(true);
+//    Print("Apos historico ra8133tes_tot:",rates_total," prev_calc:",prev_calculated, " dt:", time[rates_total-1], " dt0:", time[0] );
+    m_buf_spread[0] = m_parH.calcSpread(m_tick, m_tick2);
     
-    setBuffersFromPar(0,m_par);
-    
-    //ArrayCopy(m_vetMoments,m_buf_spread,0,0,PERIODOS_MEDIA);
-    //if( MathMoments(m_vetMoments,m_mmean,m_mvariance,m_mskewness,m_mkurtosis) ){
-    //    m_mdp = MathSqrt(m_mvariance);
-    //    m_buf_media   [0] = m_mmean;
-    //    m_buf_std_pos1[0] = m_mmean+m_mdp*MU_STD1;
-    //    m_buf_std_neg1[0] = m_mmean-m_mdp*MU_STD1;
-    //    m_buf_std_pos2[0] = m_mmean+m_mdp*MU_STD2;
-    //    m_buf_std_neg2[0] = m_mmean-m_mdp*MU_STD2;
-    //    m_buf_std_pos3[0] = m_mmean+m_mdp*MU_STD3;
-    //    m_buf_std_neg3[0] = m_mmean-m_mdp*MU_STD3;
-    //}
+    setBuffersFromPar(0,m_parH);
     return(rates_total);
 }
 
 void setBuffersFromPar(int i, C00021Pairs& par){
+       if(i<0){
+          Print(__FUNCTION__, ":Indice invalido:", i);
+          return;
+       }
         
         m_mdp   = par.getSpreadStd();
         m_mmean = par.getSpreadMed();
@@ -301,66 +280,66 @@ void setBuffersFromPar(int i, C00021Pairs& par){
         m_buf_std_neg3[i] = m_mmean-m_mdp*MU_STD3;
 }
 
-/*
+void inicializarPairTrading(){
+    m_par.initialize ( PERIODOS_MEDIA*PeriodSeconds() );
+    m_parH.initialize( PERIODOS_MEDIA                 );
+}
+
+int getIndiceTime(const datetime& p_times[], const datetime p_time){
+  int len = ArraySize(p_times);
+  for(int i=1; i<len; i++){
+     if( p_time>p_times[i-1] && p_time<=p_times[i]) return i;
+  }
+  return -1;
+}
 //===============================================================================================
 // Processando o historico de ticks no oncalculate...
 //===============================================================================================
 void doOnCalculateHistorico(const int        p_rates_total    ,
                             const int        p_prev_calculated,
-                            const datetime&  p_time[]         ){
-   MqlTick ticks[];
-   int     qtdTicks;
- //LOG_ONCALC_HIST;
-   setAsSeries(false);
+                            const datetime&  p_times[]        ){
+   MqlTick ticks1[], ticks2[];
    zerarBufAll(p_prev_calculated);
+   inicializarPairTrading();
 
-   // zerando lixo do historico...
-   for( int i=p_prev_calculated; i<p_rates_total; i++ ){zerarBufAll(i);}
-   Print("Feita a limpeza do historico desde a barra:"                   , p_prev_calculated              , " ateh a barra:", p_rates_total, "...");
-   Print("Iniciando processamento dos dados do historico, desde a barra:", p_rates_total-QTD_BAR_PROC_HIST, " ateh a barra:", p_rates_total, "...");
+   int ind_ini_historico = p_rates_total - PERIODOS_MEDIA*2;
+   if(ind_ini_historico<0) ind_ini_historico = 0;
 
-   // processando o historico...
-   for( int i=p_prev_calculated; i<p_rates_total; i++ ){ // O -1 eh pra nao processar o periodo atual dentro do laco.
+   Print(__FUNCTION__, " p_rates_total:",p_rates_total," PERIODOS_MEDIA:", PERIODOS_MEDIA, " ind_ini_historico:",ind_ini_historico);
+   Print(__FUNCTION__, " p_times[ind_ini_historico]     :",p_times[ind_ini_historico]     );
+   Print(__FUNCTION__, " p_times[ind_ini_historico]*1000:",p_times[ind_ini_historico]*1000);
 
-      // durante os testes, seguimos somente com as ultimas n barras
-      // se prev_calculated eh zero, acontece erro ao buscar o tempo de fechamento da barra anterior
-      if( (p_rates_total-i) > QTD_BAR_PROC_HIST || i==0 ){
-         zerarBufAll(p_prev_calculated); continue;
-         //continue;
+   int qtdTicks1 = CopyTicksRange( _Symbol                     , //const string symbol_name,          // nome do símbolo
+                                   ticks1                      , //MqlTick&     ticks_array[],        // matriz para recebimento de ticks
+                                   COPY_TICKS_ALL              , //uint         flags=COPY_TICKS_ALL, // sinalizador que define o tipo de ticks obtidos
+                                   p_times[ind_ini_historico]*1000 ); //ulong        from_msc=0,           // data a partir da qual são solicitados os ticks
+   int qtdTicks2 = CopyTicksRange( PAIR2                       , //const string symbol_name,          // nome do símbolo
+                                   ticks2                      , //MqlTick&     ticks_array[],        // matriz para recebimento de ticks
+                                   COPY_TICKS_ALL              , //uint         flags=COPY_TICKS_ALL, // sinalizador que define o tipo de ticks obtidos
+                                   p_times[ind_ini_historico]*1000 ); //ulong        from_msc=0,           // data a partir da qual são solicitados os ticks
+
+   Print(__FUNCTION__, " qtdTicks1:", qtdTicks1, " qtdTicks2:", qtdTicks2, " primData:", p_times[ind_ini_historico], " ultData:", p_times[p_rates_total-1]);
+   Print(__FUNCTION__, " primData ticks1:", ticks1[0          ].time, " primData ticks2:", ticks2[0          ].time);
+   Print(__FUNCTION__, " ultData  ticks1:", ticks1[qtdTicks1-1].time, " ultData  ticks2:", ticks2[qtdTicks2-1].time);
+   int posicao_ind2 = 0;
+   for(int ind1=0; ind1<qtdTicks1; ind1++){
+      Print(__FUNCTION__, " posicao_ind2:", posicao_ind2);
+      Print(__FUNCTION__, " ticks1[",ind1,"]:", m_tick_util1.toString(ticks1[ind1],2));
+      for(int ind2=posicao_ind2; ind2<qtdTicks2 && ticks2[ind2].time<=ticks1[ind1].time; ind2++){
+
+         Print(__FUNCTION__, " ticks2[",ind2,"]:", m_tick_util1.toString(ticks2[ind2],2));
+         m_par.calcSpread(ticks1[ind1],ticks2[ind2]);
+         
+         posicao_ind2++;
+         return;
       }
-
-      ///m_minion.fecharPeriodo(); // fechando o periodo anterior de coleta de estatisticas
-      qtdTicks = CopyTicksRange( _Symbol          , //const string     symbol_name,          // nome do símbolo
-                                 ticks            , //MqlTick&         ticks_array[],        // matriz para recebimento de ticks
-                                 COPY_TICKS_ALL   , //uint             flags=COPY_TICKS_ALL, // sinalizador que define o tipo de ticks obtidos
-                                 p_time[i-1]*1000 , //ulong            from_msc=0,           // data a partir da qual são solicitados os ticks
-                                 p_time[i  ]*1000); //ulong            to_msc=0              // data ate a qual são solicitados os ticks
-
-      for(int ind=0; ind<qtdTicks; ind++){
-
-       //m_minion .addTick(ticks [ind]);
-         //m_buf_media   [i] = 0;
-         //m_buf_std_pos [i] = 0;
-         //m_buf_std_neg [i] = 0;
-         m_buf_spread  [i] = 0; //m_minion2.getPrecoMedTrade()/m_minion.getPrecoMedTrade();
-
-        //===============================================================================================
-        // Imprimindo dados de depuracao...
-        //===============================================================================================
-       //imprimirComment();
-      }// final for processamento dos ticks
-
-      // mudou a barra, entao verificamos se eh necessario alterar o tamanho dos vetores de acumulacao de medias...
-      //m_minion.checkResize(0.3);
-
-   }// final for do processamento das barras
-
+      setBuffersFromPar(getIndiceTime(p_times, ticks1[ind1].time), m_par);
+   }
    m_prochist = true; Print( "Historico processado :-)" );
-
 }//doOnCalculateHistorico.
-*/
 
 void setAsSeries(bool modo){
+     Print(__FUNCTION__, " ", modo);
      ArraySetAsSeries(m_buf_media   , modo );
      ArraySetAsSeries(m_buf_spread  , modo );
      ArraySetAsSeries(m_buf_std_pos1, modo );
@@ -370,17 +349,6 @@ void setAsSeries(bool modo){
      ArraySetAsSeries(m_buf_std_pos3, modo );
      ArraySetAsSeries(m_buf_std_neg3, modo );
 }
-
-//void zerarBufForca(uint i){
-//   m_buf_media   [i] = 0;
-//   m_buf_spread  [i] = 0;
-//   m_buf_std_pos1[i] = 0;
-//   m_buf_std_neg1[i] = 0;
-//   m_buf_std_pos2[i] = 0;
-//   m_buf_std_neg2[i] = 0;
-//   m_buf_std_pos3[i] = 0;
-//   m_buf_std_neg3[i] = 0;
-//}
 
 void zerarBufAll(uint i){
    m_buf_media   [i] = 0;
@@ -392,15 +360,4 @@ void zerarBufAll(uint i){
    m_buf_std_pos3[i] = 0;
    m_buf_std_neg3[i] = 0;
 }
-
-// transforma o tick informativo em tick de trade. Usamos em mercados que nao informam volume ou last nos ticks.
-void normalizar2trade(){
-   if(GERAR_VOLUME){
-      //m_tick_util1.normalizar2trade(m_tick );
-      //m_tick_util2.normalizar2trade(m_tick2);
-      m_tick .last = m_tick .bid;
-      m_tick2.last = m_tick2.bid;
-   }
-}
-
 //+------------------------------------------------------------------+
