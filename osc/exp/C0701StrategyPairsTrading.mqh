@@ -136,6 +136,7 @@ public:
         m_spread_std       = 0       ; // desvio padrao do spread na janela
         m_zscore           = 0       ; // (spread - media)/desvio
         m_coef_correlacao  = 0       ; // coeficiente de correlacao entre os dois ativos
+        m_par_eh_cointegrado = false   ; // indica se o par eh cointegrado (teste de Engle-Granger)
         m_banda_sup        = 0       ; // media + k*desvio
         m_banda_inf        = 0       ; // media - k*desvio
 
@@ -238,7 +239,8 @@ public:
     }
 
     string buscarParAdequado(string symbol){
-        return C00021Pairs::buscarParAdequado(symbol, m_param.ea_symbols_candidates, m_param.ea_qtd_periodos, m_param.ea_timeframe);
+        return C00021Pairs::buscarParAdequado(symbol, m_param.ea_symbols_candidates, m_param.ea_qtd_periodos, m_param.ea_timeframe,
+                                              m_param.ea_coef_correlacao_min, true, m_param.ea_spread_pips_max_para_abrir_posicao);
     }
 
     //+------------------------------------------------------------------+
@@ -383,9 +385,10 @@ public:
     void carregarHistorico(){
 
         MqlRates rates1[];
+        ArrayResize(rates1, m_param.ea_qtd_periodos);
         ArraySetAsSeries(rates1,false); // ordem crescente de data
 
-        int qtd = CopyRates( m_nm_symb1, m_param.ea_timeframe, 1, m_param.ea_qtd_periodos, rates1 );
+        int qtd = CopyRates( m_nm_symb1, m_param.ea_timeframe, 0, m_param.ea_qtd_periodos, rates1 );
         if( qtd <= 0 ){
             Print(":-| ", __FUNCTION__, " sem historico de ", m_nm_symb1,
                           " ainda. A janela serah preenchida barra a barra. erro=", GetLastError() );
@@ -393,15 +396,13 @@ public:
         }
 
         // forcando o carregamento do historico do ativo 2...
-        MqlRates aux[];
-        CopyRates( m_nm_symb2, m_param.ea_timeframe, 1, m_param.ea_qtd_periodos, aux );
-
         for(int i=0; i<qtd; i++){
             double preco2 = 0, spread2 = 0;
             if( !getFechamentoAtivo2( rates1[i].time, preco2, spread2 ) ) continue;
             adicionarAmostra( rates1[i].close, preco2 , rates1[i].time );
             adicionarSpreadOperacional( rates1[i].spread, spread2, rates1[i].time );
         }
+        calcularCoeficenteCorrelacao();
 
         m_dt_ult_barra = rates1[qtd-1].time;
 
@@ -432,6 +433,7 @@ public:
     }
 
     // adiciona uma amostra de spread a janela e atualiza media e desvio.
+    // usado no processamento do historico.
     void adicionarAmostra(const double p1, const double p2, const datetime dt){
         if( p1 <= 0 || p2 <= 0 ) return;
 
@@ -440,7 +442,6 @@ public:
 
         m_spread_med = m_pairs.getSpreadMed();
         m_spread_std = m_pairs.getSpreadStd();
-        m_coef_correlacao = m_pairs.calcCoefCorr();
     }
 
     void calcularCoeficenteCorrelacao(){

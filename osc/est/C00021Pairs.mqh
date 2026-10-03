@@ -125,7 +125,14 @@ public:
                                           return tick.bid;
     }
 
-    static string buscarParAdequado(string symbol, string InpSymbols, int InpBars, ENUM_TIMEFRAMES InpTimeframe=PERIOD_CURRENT) {
+    static string buscarParAdequado(string          symbol,
+                                    string          InpSymbols,
+                                    int             InpBars,
+                                    ENUM_TIMEFRAMES InpTimeframe=PERIOD_CURRENT,
+                                    double          menorCorrelacaoAceitavel=0.85,
+                                    bool            sohCointegrados=true,
+                                    double          maiorSpreadMedioAceitavel=5
+                                    ) {
 
        // Estrutura para armazenar o par e sua correlação
        struct PairCorr {
@@ -134,6 +141,8 @@ public:
           double correlation;
           double absCorrelation;
           bool   saoCointegrados;
+          double spreadMedioA;
+          double spreadMedioB;
        };
 
        // 1. Separar a lista de ativos por vírgula
@@ -152,7 +161,9 @@ public:
 
        // 2. Carregar os vetores de preços de fechamento (Close) para cada ativo
        vector prices[];
+       vector spread[];
        ArrayResize(prices, totalSymbols);
+       ArrayResize(spread, totalSymbols);
 
        int validCount = 0;
        string validSymbols[];
@@ -160,7 +171,8 @@ public:
 
        for(int i = 0; i < totalSymbols; i++){
           // Tenta copiar os preços históricos para o vetor
-          if(prices[validCount].CopyRates(symbols[i], InpTimeframe, COPY_RATES_CLOSE, 0, InpBars)) {
+          if(prices[validCount].CopyRates(symbols[i], InpTimeframe, COPY_RATES_CLOSE , 0, InpBars) && 
+             spread[validCount].CopyRates(symbols[i], InpTimeframe, COPY_RATES_SPREAD, 0, InpBars)   ) {
              validSymbols[validCount] = symbols[i];
              validCount++;
           }else{
@@ -183,9 +195,12 @@ public:
              pairList[pairIndex].symbolB = validSymbols[j];
 
              // Cálculo nativo da correlação de Pearson via MQL5 vector
-             pairList[pairIndex].correlation    = prices[i].CorrCoef(prices[j]);
-             pairList[pairIndex].absCorrelation = MathAbs(pairList[pairIndex].correlation);
+             pairList[pairIndex].correlation     = prices[i].CorrCoef(prices[j]);
+             pairList[pairIndex].absCorrelation  = MathAbs(pairList[pairIndex].correlation);
              pairList[pairIndex].saoCointegrados = CStat::parEhCointegrado(prices[i], prices[j]);
+             
+             pairList[pairIndex].spreadMedioA    = spread[i].Mean();
+             pairList[pairIndex].spreadMedioB    = spread[j].Mean();
              pairIndex++;
           }
        }
@@ -210,8 +225,12 @@ public:
       // 6. Procurar o par mais adequado para o ativo informado. Se achar um cointegrado, dah prioridade a ele. Se nao achar, retorna o par com maior correlacao.
        for(int i = 0; i < totalPairs; i++) {
 
-           if( pairList[i].saoCointegrados && (pairList[i].symbolA == symbol || pairList[i].symbolB == symbol) ) {
-                PrintFormat("Par Cointegrado: %s - %s | Correlação: %.4f", pairList[i].symbolA, pairList[i].symbolB, pairList[i].correlation);
+           if( (pairList[i].symbolA == symbol || pairList[i].symbolB == symbol) &&
+               (pairList[i].spreadMedioA <= maiorSpreadMedioAceitavel && pairList[i].spreadMedioB <= maiorSpreadMedioAceitavel) &&
+               pairList[i].saoCointegrados &&
+               pairList[i].absCorrelation >= menorCorrelacaoAceitavel
+                ) {
+                PrintFormat("Par Cointegrado: %s - %s | Correlação: %.4f | Spread Médio(%.2f / %.2f)", pairList[i].symbolA, pairList[i].symbolB, pairList[i].correlation, pairList[i].spreadMedioA, pairList[i].spreadMedioB);
               if(pairList[i].symbolA == symbol)
                 return pairList[i].symbolB;
               else
@@ -220,16 +239,22 @@ public:
        }
 
        // Nao achou um cointegrado... Busca o maior correlacionado.
+       if(sohCointegrados) { return "PAR_NAO_ENCONTRADO"; }
+       
        for(int i = 0; i < totalPairs; i++) {
 
-           if( pairList[i].symbolA == symbol || pairList[i].symbolB == symbol ) {
-                PrintFormat("Par nao Cointegrado: %s - %s | Correlação: %.4f", pairList[i].symbolA, pairList[i].symbolB, pairList[i].correlation);
+           if( (pairList[i].symbolA == symbol || pairList[i].symbolB == symbol) &&
+               (pairList[i].spreadMedioA <= maiorSpreadMedioAceitavel && pairList[i].spreadMedioB <= maiorSpreadMedioAceitavel) &&
+               pairList[i].absCorrelation >= menorCorrelacaoAceitavel
+               ) {
+                PrintFormat("Par nao Cointegrado: %s - %s | Correlação: %.4f | Spread Médio(%.2f / %.2f)", pairList[i].symbolA, pairList[i].symbolB, pairList[i].correlation, pairList[i].spreadMedioA, pairList[i].spreadMedioB);
               if(pairList[i].symbolA == symbol)
                 return pairList[i].symbolB;
               else
                 return pairList[i].symbolA;
            }
        }
+       
        return "PAR_NAO_ENCONTRADO";
     }
 };
