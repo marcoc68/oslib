@@ -18,4 +18,27 @@ oslib-include: acrescentadas funcoes e constantes
 osc-minion-trade-03: acrscentado o metodo manterOrdemLimitadaNoRoom
 osc-book: acrescentado suporte para usar ateh 32 niveis do book de ofertas
 C0004GerentePosicao: passa a salvar o ticket da ordem de abertura no comentario da ordem de fechamento (doCloseOposite)
-ose-p7-004-003-06-ns: usando velocidade do volume; usando doCloseOposite somente quando é o fechamento de uma posicao; 
+ose-p7-004-003-06-ns: usando velocidade do volume; usando doCloseOposite somente quando é o fechamento de uma posicao;
+
+
+===============================
+ose-p8-001-000-pairs-spread.mq5
+===============================
+FASE 2
+1. Acrescente opção de saida (stop) qd o spread médio alcançar o (spread + desvio padrão) registrado na abertura da posição.
+2. Acrescente opção de abertura/fechamento de posição ao pressionar conjunto de teclas. Ex: CTRL+ALT+A / CTRL+ALT+F.
+3. Acrescente opção de fechamento de posição antes do spred atual alcançar o spread médio. Ex: Abre posição a 2dp de distância e fecha a 0,5dp de distância.
+4. Acrescente opção para não operar automaticamente. Nesse caso não deve abrir nem fechar posição automática, mas deve permanecer abrindo/fechando posição por pressionamento de tclas(item 2). Também deve logar que ação faria se estivesse operando automaticamente.
+5. Acrescente opção para calcular o volume mínimo ideal que deve ser operado em cada par para que aconteça o equilíbrio financeiro. Esse volume mínimo será apenas uma sugestão e deve ser descrito no log, na execução do OnInit.
+6. Construa uma arquivo mqh com funções utilitárias, que podem ser usadas em outros EAs. Ex: normalizarVolume, digitosDoPasso, etc. Passe as funções deste tipo para este arquivo de funções utilitárias.
+========================================================================================================================
+FASE 3
+1. Acrescentar opção para informar o volume de cada ativo separadamente. ok
+2. Acrescentar opção para informar a correção e a cointegração do par sendo negociado.
+3. Nas entradas após um nível de desvio padrão, caso o spread vá pra dentro do desvio padrão anterior e depois volte a cruzar o ponto de entrada, deve abrir nova posição, até um máximo de X vezes informado em parãmetro.
+3.1 Essas posições, abertas manualmente, devem ser fechadas automaticamente, junto com as demais, quando o spread voltar a média dos spreads.
+3.2 Nesse caso, o novo spred médio da entrada na posição deve ser a média entre o spread médio de entrada anterior e o atual.
+========================================================================================================================
+
+SUPORTE A ATIVOS INVERSAMENTE CORRELACIONADOS (ver estudo abaixo)
+=================================================================
