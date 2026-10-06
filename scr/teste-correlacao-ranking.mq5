@@ -20,11 +20,13 @@
 //--- Parâmetros de Entrada
 //input string        InpSymbols   = "EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, USDCHF"; // Ativos (separados por vírgula)
 //input string        InpSymbols   = "EURUSD, GBPUSD, USDCHF, USDJPY, USDCAD, AUDUSD"; // Ativos (separados por vírgula)
-input string          InpSymbols1   = "AUDCAD,AUDCHF,AUDJPY,AUDNZD,AUDSGD,AUDUSD,CADCHF,CADJPY,CHFJPY,CHFSGD,EURAUD,EURCAD,EURCHF,EURDKK,EURGBP,EURHKD,EURJPY,EURNOK,EURNZD,EURPLN,EURSEK,EURSGD,EURTRY,EURUSD,EURZAR,GBPAUD,GBPCAD,GBPCHF,GBPDKK,GBPJPY"; // Ativos (separados por vírgula)
-input string          InpSymbols2   = "GBPNOK,GBPNZD,GBPSEK,GBPSGD,GBPTRY,GBPUSD,NOKJPY,NOKSEK,NZDCAD,NZDCHF,NZDJPY,NZDUSD,SEKJPY,SGDJPY,USDCAD,USDCHF,USDCNH,USDCZK,USDDKK,USDHKD,USDHUF,USDJPY,USDMXN,USDNOK,USDPLN,USDSEK,USDSGD,USDTHB,USDTRY,USDZAR"; // Ativos (separados por vírgula)
+//input string          InpSymbols1   = "AUDCAD,AUDCHF,AUDJPY,AUDNZD,AUDSGD,AUDUSD,CADCHF,CADJPY,CHFJPY,CHFSGD,EURAUD,EURCAD,EURCHF,EURDKK,EURGBP,EURHKD,EURJPY,EURNOK,EURNZD,EURPLN,EURSEK,EURSGD,EURTRY,EURUSD,EURZAR,GBPAUD,GBPCAD,GBPCHF,GBPDKK,GBPJPY"; // Ativos (separados por vírgula)
+//input string          InpSymbols2   = "GBPNOK,GBPNZD,GBPSEK,GBPSGD,GBPTRY,GBPUSD,NOKJPY,NOKSEK,NZDCAD,NZDCHF,NZDJPY,NZDUSD,SEKJPY,SGDJPY,USDCAD,USDCHF,USDCNH,USDCZK,USDDKK,USDHKD,USDHUF,USDJPY,USDMXN,USDNOK,USDPLN,USDSEK,USDSGD,USDTHB,USDTRY,USDZAR"; // Ativos (separados por vírgula)
+input string         InpSymbols1  = "EURUSD,GBPUSD,USDCHF,USDJPY,USDCAD,AUDUSD";//Ativos (separados por vírgula)
+input string         InpSymbols2  = "AUDNZD,AUDCAD,AUDCHF,AUDJPY,CHFJPY,EURGBP,EURAUD,EURJPY,EURCHF,EURNZD,EURCAD,GBPCHF,GBPJPY,GBPAUD,GBPCAD,GBPNZD,NZDCAD,NZDCHF,NZDJPY,NZDUSD,USDSGD"; //Ativos (separados por vírgula)
 
 
-input ENUM_TIMEFRAMES InpTimeframe = PERIOD_M3;   // Timeframe
+input ENUM_TIMEFRAMES InpTimeframe = PERIOD_CURRENT;   // Timeframe
 input int             InpBars      = 60;        // Quantidade de Barras
 
 // Estrutura para armazenar o par e sua correlação
@@ -148,14 +150,18 @@ void OnStart(){
           pesoLote2 = 0;
       }
 
-      PrintFormat("#%02d| %s vs %s: Corr( %.4f Coint:%s) | Spread( %.2f,%.2f)",
-                  i + 1, 
-                  pairList[i].symbolA, 
-                  pairList[i].symbolB, 
-                  pairList[i].correlation,
-                  pairList[i].cointegracao,
-                  pairList[i].spreadMedioA,
-                  pairList[i].spreadMedioB);
+      if(            pairList[i].absCorrelation > 0.90 &&
+          terminaCom(pairList[i].cointegracao, "SIM")
+        ){
+          PrintFormat("#%02d| %s vs %s: Corr( %.4f Coint:%s) | Spread( %.2f,%.2f)",
+                      i + 1,
+                      pairList[i].symbolA,
+                      pairList[i].symbolB,
+                      pairList[i].correlation,
+                      pairList[i].cointegracao,
+                      pairList[i].spreadMedioA,
+                      pairList[i].spreadMedioB);
+      }
    }
    PrintFormat("==================================================");
 }
@@ -181,4 +187,15 @@ void div(vector<double> &m1, double num){
     if(num == 0) return;
     ulong size = m1.Size();
     for( uint i=0; i<size; i++){ m1[i] = m1[i]/num; }
+}
+
+bool terminaCom(string texto, string termino)
+{
+    int tamanho = StringLen(texto);
+
+    // Extrai os últimos 3 caracteres da string
+    string str = StringSubstr(texto, tamanho - 3, 3);
+
+    // Compara com termino
+    return (str == termino);
 }

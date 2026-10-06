@@ -58,11 +58,6 @@
 #property link      "http://www.os.org"
 #property version   "8.002"
 
-//#include <Trade/Trade.mqh>
-//#include <Trade/SymbolInfo.mqh>
-//#include <oslib/osc/est/C00021Pairs.mqh>
-//#include <oslib/osc/osc-media2.mqh>
-//#include <oslib/osc-trade-util.mqh>
 #include <oslib/osc/exp/C0701StrategyPairsTrading.mqh>
 
 

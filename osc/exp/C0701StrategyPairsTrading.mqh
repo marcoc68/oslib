@@ -66,6 +66,8 @@ struct ParametrosC0701StrategyPairsTrading{
     bool           ea_show_tela         ; //= true        ; //SHOW_TELA mostra o estado do EA no grafico
     int            ea_qtd_miliseg_timer ; //= 250       ; //QTD_MILISEG_TIMER tempo de acionamento do timer
     string         ea_name              ;
+
+    // parametros com o estado da operacao, que podem ser lido de fora deste objeto.
 };
 
 class C0701StrategyPairsTrading: public C0700Strategy{
@@ -116,6 +118,20 @@ public:
 
     bool          m_inicializado         ;
     ulong         m_magic                ;
+
+    string getNmSymbol1(){ return m_nm_symb1;}
+    string getNmSymbol2(){ return m_nm_symb2;}
+    double getCoefCorrelacao(){ return m_coef_correlacao; }
+    double getZscore(){ return m_zscore; }
+
+    double getVolume1(){ return m_volume1; }
+    double getVolume2(){ return m_volume2; }
+    double getSpreadOperacional1(){ return m_spread_em_pips1; }
+    double getSpreadOperacional2(){ return m_spread_em_pips2; }
+
+    double getLucroPar(){ return m_lucro_par; }
+    bool parCointegrado(){ return m_par_eh_cointegrado; }
+    int getEstado(){ return m_estado; }
 
     C0701StrategyPairsTrading(ParametrosC0701StrategyPairsTrading &param){
         C0701StrategyPairsTrading();
@@ -168,7 +184,8 @@ public:
         m_media_spread_symb1.initialize( m_param.ea_qtd_periodos, 1 ); // media do spread operacional coletado a cada 5 segundos.
         m_media_spread_symb2.initialize( m_param.ea_qtd_periodos, 1 ); // media do spread operacional coletado a cada 5 segundos.
 
-        m_magic = criar_magic(m_nm_symb1 + m_nm_symb2); // magic unico para cada par de ativos
+//        m_magic = criar_magic(m_nm_symb1 + m_nm_symb2); // magic unico para cada par de ativos
+        m_magic = gerarMagicDeterministico(m_nm_symb1, m_nm_symb2); // magic unico para cada par de ativos
 
         m_trade.SetExpertMagicNumber( m_magic          );
         m_trade.SetDeviationInPoints( m_param.ea_desvio_pontos );
@@ -184,13 +201,19 @@ public:
         carregarHistorico();
         reconhecerPosicoes(); // o EA pode estar sendo iniciado no meio de uma operacao
 
-        EventSetMillisecondTimer( m_param.ea_qtd_miliseg_timer );
-        Print(":-| ", __FUNCTION__, " Criado Timer de ", m_param.ea_qtd_miliseg_timer, " milisegundos." );
-        Print(":-) ", __FUNCTION__, " inicializado !! " );
+        criarTimer(m_param.ea_qtd_miliseg_timer);
 
         m_inicializado = true;
         processar();
         return(INIT_SUCCEEDED);
+    }
+
+    void criarTimer(int milisegundos_timer=0){
+        if( milisegundos_timer > 0 ){
+            EventSetMillisecondTimer( milisegundos_timer );
+            Print(":-| ", __FUNCTION__, " Criado Timer de ", milisegundos_timer, " milisegundos." );
+            Print(":-) ", __FUNCTION__, " inicializado !! " );
+        }
     }
 
     void onDeinit(const int reason) {
@@ -473,6 +496,7 @@ public:
         if( getFechamentoAtivo2( rates1[0].time, preco2, spread2 ) ){
             adicionarAmostra( rates1[0].close, preco2, rates1[0].time );
             adicionarSpreadOperacional ( rates1[0].spread, spread2, rates1[0].time );
+            calcularCoeficenteCorrelacao();
         }
 
         // marca a barra como processada mesmo sem o par, para nao travar a janela
@@ -487,9 +511,9 @@ public:
 
         if( !m_inicializado ) return status();
 
-        atualizarEstatistica();
-
         if( !atualizarPrecos() ) return status();
+
+        atualizarEstatistica();
 
         reconhecerPosicoes();
 
@@ -574,11 +598,17 @@ public:
 
     bool coef_correlacao_ok(){ return ( m_coef_correlacao >= m_param.ea_coef_correlacao_min ); }
 
-    bool spread_operacional_ok(){
-        return ( m_spread_em_pips1             >= 0 && m_spread_em_pips1             <= m_param.ea_spread_pips_max_para_abrir_posicao &&
-                 m_spread_em_pips2             >= 0 && m_spread_em_pips2             <= m_param.ea_spread_pips_max_para_abrir_posicao &&
-                 m_media_spread_symb1.getMed() >= 0 && m_media_spread_symb1.getMed() <= m_param.ea_spread_pips_max_para_abrir_posicao &&
+    bool spread_operacional_ok(){ return spread_medio_ok() && spread_instantaneo_ok(); }
+
+    bool spread_medio_ok(){
+        return ( m_media_spread_symb1.getMed() >= 0 && m_media_spread_symb1.getMed() <= m_param.ea_spread_pips_max_para_abrir_posicao &&
                  m_media_spread_symb2.getMed() >= 0 && m_media_spread_symb2.getMed() <= m_param.ea_spread_pips_max_para_abrir_posicao
+               );
+    }
+
+    bool spread_instantaneo_ok(){
+        return ( m_spread_em_pips1 >= 0 && m_spread_em_pips1 <= m_param.ea_spread_pips_max_para_abrir_posicao &&
+                 m_spread_em_pips2 >= 0 && m_spread_em_pips2 <= m_param.ea_spread_pips_max_para_abrir_posicao
                );
     }
 
@@ -874,6 +904,38 @@ public:
         return osc_trade_util::enviarMercado( m_trade, symb, tipo, volume, m_param.ea_name+"-"+IntegerToString(m_magic) );
     }
 
+    //+------------------------------------------------------------------+
+    //| Função para gerar um Magic Number determinístico para o par       |
+    //+------------------------------------------------------------------+
+    ulong gerarMagicDeterministico(string symbol1, string symbol2)
+    {
+        // 1. Ordena os símbolos alfabeticamente para evitar inversões
+        string s1 = symbol1;
+        string s2 = symbol2;
+        if(s1 > s2)
+        {
+            s1 = symbol2;
+            s2 = symbol1;
+        }
+
+        // Cria uma chave única combinando os dois ativos
+        string chave = s1 + "_" + s2;
+
+        // 2. Aplica o algoritmo de Hash (DJB2) para transformar a string em um número ulong
+        ulong hash = 5381;
+        int len = StringLen(chave);
+        for(int i = 0; i < len; i++)
+        {
+            ushort ch = StringGetCharacter(chave, i);
+            hash = ((hash << 5) + hash) + (ulong)ch; // hash * 33 + c
+        }
+
+        // 3. Mapeia o hash para uma faixa segura de Magic Number (ex: entre 100.000 e 2.000.000.000)
+        ulong magicFinal = 100000 + (hash % 1999900000);
+
+        return magicFinal;
+    }
+
     ulong criar_magic(string symbols_concatenados){
 
       string symbols_cortado = "";
@@ -927,6 +989,8 @@ public:
     }
 
     void showTela(){
+
+       if(!m_param.ea_show_tela) return;
 
         Comment(
             "Par            : ", m_nm_symb1, " / ", m_nm_symb2, "  CoefCorr: ", DoubleToString(m_coef_correlacao, 2),"  [COINT ",m_par_eh_cointegrado?"SIM":"NAO","]  Magic: ", m_magic,"\n",
