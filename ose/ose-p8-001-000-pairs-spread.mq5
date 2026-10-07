@@ -94,6 +94,7 @@ input bool           EA_STOP_MEDIA_ABERTURA = false   ; //STOP_MEDIA_ABERTURA fe
 
 input group "=== Operacao ===";
 input int            EA_SPREAD_PIPS_MAX_PARA_ABRIR_POSICAO = 5    ; // Spread em pips maior que este valor. Não abre posição.
+input double         EA_MARGIN_LEVEL_MINIMO = 150     ; //MARGIN_LEVEL_MINIMO nivel de margem minimo para abrir posicao.
 input bool           EA_OPERACAO_AUTOMATICA = true    ; //OPERACAO_AUTOMATICA false=nao abre nem fecha sozinho, apenas loga o que faria
 input bool           EA_TECLAS_HABILITADAS  = true    ; //TECLAS_HABILITADAS abre/fecha o par por combinacao de teclas (grafico precisa ter o foco)
 input bool           EA_TECLA_CTRL      = true        ; //TECLA_CTRL exige CTRL na combinacao de teclas
@@ -133,6 +134,7 @@ int OnInit(){
     m_param.ea_stop_financeiro                    = EA_STOP_FINANCEIRO                   ;
     m_param.ea_stop_media_abertura                = EA_STOP_MEDIA_ABERTURA               ;
     m_param.ea_spread_pips_max_para_abrir_posicao = EA_SPREAD_PIPS_MAX_PARA_ABRIR_POSICAO;
+    m_param.ea_margin_level_minimo                = EA_MARGIN_LEVEL_MINIMO               ;
     m_param.ea_operacao_automatica                = EA_OPERACAO_AUTOMATICA               ;
     m_param.ea_teclas_habilitadas                 = EA_TECLAS_HABILITADAS                ;
     m_param.ea_tecla_ctrl                         = EA_TECLA_CTRL                        ;

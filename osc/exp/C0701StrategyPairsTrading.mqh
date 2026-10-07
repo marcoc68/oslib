@@ -17,6 +17,7 @@
 #include <oslib/osc/est/C00021Pairs.mqh>
 #include <oslib/osc/osc-media2.mqh>
 #include <oslib/osc-trade-util.mqh>
+#include <Trade\AccountInfo.mqh>
 
 //--- estado do par (direcao da operacao sobre o spread)
 #define PAR_FLAT          0  // sem posicao
@@ -55,6 +56,7 @@ struct ParametrosC0701StrategyPairsTrading{
 
     //input group "=== Operacao ===";
     int            ea_spread_pips_max_para_abrir_posicao ; //= 5    ; // Spread em pips maior que este valor. Não abre posição.
+    double         ea_margin_level_minimo                ; //= 1.5  ; //MARGIN_LEVEL_MINIMO nivel de margem minimo para abrir posicoes.
     bool           ea_operacao_automatica                ; //= true ; //OPERACAO_AUTOMATICA false=nao abre nem fecha sozinho, apenas loga o que faria
     bool           ea_teclas_habilitadas                 ; //= true ; //TECLAS_HABILITADAS abre/fecha o par por combinacao de teclas (grafico precisa ter o foco)
     bool           ea_tecla_ctrl                         ; //= true ; //TECLA_CTRL exige CTRL na combinacao de teclas
@@ -83,6 +85,8 @@ public:
     CSymbolInfo   m_symb2                ; // propriedades do ativo 2
     osc_media     m_media_spread_symb1   ; // media do spread na janela
     osc_media     m_media_spread_symb2   ; // media do spread na janela
+    CAccountInfo  m_conta                ; // propriedades da conta
+
     string        m_nm_symb1             ; // nome do ativo 1
     string        m_nm_symb2             ; // nome do ativo 2
 
@@ -617,9 +621,16 @@ public:
     // as entradas do EA (manual=false) viram apenas log. As teclas (manual=true) passam.
     bool solicitarAbertura(const int direcao, const string motivo, const bool manual){
 
+        if( m_conta.MarginLevel() < m_param.ea_margin_level_minimo ){
+            logarSimulado( "ABRIR:"+IntegerToString(direcao),
+                           "NAO ABRIU " + descreverDirecao(direcao) + ". motivo: margem abaixo do minimo (" +
+                           DoubleToString(m_conta.MarginLevel(),2) + "% < " + DoubleToString(m_param.ea_margin_level_minimo,2) + "%)" );
+            return false;
+        }
+
         if( !manual && !m_param.ea_operacao_automatica ){
             logarSimulado( "ABRIR:"+IntegerToString(direcao),
-                           "ABRIRIA " + descreverDirecao(direcao) + ". motivo: " + motivo );
+                           "NAO ABRIU " + descreverDirecao(direcao) + ". motivo: " + motivo );
             return false;
         }
 
@@ -635,7 +646,7 @@ public:
         if( m_estado == PAR_FLAT ) return false;
 
         if( !manual && !m_param.ea_operacao_automatica ){
-            logarSimulado( chave, "FECHARIA o par (" + estadoStr() + "). motivo: " + motivo );
+            logarSimulado( chave, "NAO FECHOU o par (" + estadoStr() + "). motivo: " + motivo );
             return false;
         }
 
@@ -731,7 +742,7 @@ public:
     void logarSimulado(const string chave, const string acao){
         if( chave == m_ult_simulado ) return;
         m_ult_simulado = chave;
-        Print(":-| [SIMULADO] ", acao, " (OPERACAO_AUTOMATICA=false)" );
+        Print(":-| [SIMULADO] ", acao );
     }
 
     // nenhuma condicao de acao ativa neste ciclo: a proxima que aparecer volta a ser logada.

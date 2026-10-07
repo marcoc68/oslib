@@ -14,19 +14,15 @@
 #property link      "http://www.os.org"
 #property version   "8.002"
 
-//#include <Trade/Trade.mqh>
-//#include <Trade/SymbolInfo.mqh>
-//#include <oslib/osc/est/C00021Pairs.mqh>
-//#include <oslib/osc/osc-media2.mqh>
-//#include <oslib/osc-trade-util.mqh>
 #include <oslib/osc/exp/C0701StrategyPairsTrading.mqh>
+#include <Trade\AccountInfo.mqh>
 
 //---------------------------------------------------------------------------------------------
 input group "=== Par de ativos ===";
 input int            EA_QTD_PARES_A_OPERAR  = 8         ; //QTD_PARES_A_OPERAR quantidade de pares a operar
 input string         EA_SYMBOL_1            = TERMINAL  ; //SYMBOL_1 primeiro ativo do par (p1 do spread)
 input string         EA_SYMBOL_2            = BUSCAR_PAR; //SYMBOL_2 segundo  ativo do par (p2 do spread)
-input double         EA_COEF_CORRELACAO_MIN = 0.80      ; //COEF_CORRELACAO_MIN coeficiente de correlacao minimo entre os dois ativos para operar
+input double         EA_COEF_CORRELACAO_MIN = 0.95      ; //COEF_CORRELACAO_MIN coeficiente de correlacao minimo entre os dois ativos para operar
 input string         EA_SYMBOLS_CANDIDATES1  = "EURUSD,GBPUSD,USDCHF,USDJPY,USDCAD,AUDUSD"; //SYMBOLS_CANDIDATES1 lista de ativos candidatos a formar par com SYMBOL_1. separados por ','
 input string         EA_SYMBOLS_CANDIDATES2  = "AUDNZD,AUDCAD,AUDCHF,AUDJPY,CHFJPY,EURGBP,EURAUD,EURJPY,EURCHF,EURNZD,EURCAD,GBPCHF,GBPJPY,GBPAUD,GBPCAD,GBPNZD,NZDCAD,NZDCHF,NZDJPY,NZDUSD,USDSGD"; //SYMBOLS_CANDIDATES2 lista de ativos candidatos a formar par com SYMBOL_1. separados por ','
 
@@ -50,6 +46,7 @@ input bool           EA_STOP_MEDIA_ABERTURA = false   ; //STOP_MEDIA_ABERTURA fe
 
 input group "=== Operacao ===";
 input int            EA_SPREAD_PIPS_MAX_PARA_ABRIR_POSICAO = 5    ; // Spread em pips maior que este valor. Não abre posição.
+input double         EA_MARGIN_LEVEL_MINIMO = 150     ; //MARGIN_LEVEL_MINIMO nivel de margem minimo para abrir posicao.
 input bool           EA_OPERACAO_AUTOMATICA = true    ; //OPERACAO_AUTOMATICA false=nao abre nem fecha sozinho, apenas loga o que faria
 input bool           EA_TECLAS_HABILITADAS  = true    ; //TECLAS_HABILITADAS abre/fecha o par por combinacao de teclas (grafico precisa ter o foco)
 input bool           EA_TECLA_CTRL      = true        ; //TECLA_CTRL exige CTRL na combinacao de teclas
@@ -78,7 +75,8 @@ struct Par{
 
 ParametrosC0701StrategyPairsTrading m_param;
 Par                                 m_vet_pares[];    // vetor de pares de ativos.
-uint m_qtd_pares = 0;
+CAccountInfo                        m_conta;
+uint                                m_qtd_pares = 0;
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -235,6 +233,7 @@ void inicializarParametrosC0701StrategyPairsTrading(){
     m_param.ea_stop_financeiro                    = EA_STOP_FINANCEIRO                   ;
     m_param.ea_stop_media_abertura                = EA_STOP_MEDIA_ABERTURA               ;
     m_param.ea_spread_pips_max_para_abrir_posicao = EA_SPREAD_PIPS_MAX_PARA_ABRIR_POSICAO;
+    m_param.ea_margin_level_minimo                = EA_MARGIN_LEVEL_MINIMO               ;
     m_param.ea_operacao_automatica                = EA_OPERACAO_AUTOMATICA               ;
     m_param.ea_teclas_habilitadas                 = EA_TECLAS_HABILITADAS                ;
     m_param.ea_tecla_ctrl                         = EA_TECLA_CTRL                        ;
@@ -292,6 +291,8 @@ string linhaTela(Par &par){
 }
 
 string linhaTelaComum(){
-    return  "Janela: " + IntegerToString(m_param.ea_qtd_periodos) + " barras de " + EnumToString(m_param.ea_timeframe);
+    return m_name +"\n" +
+           "Account: " + m_conta.Company() + "  MarginLevel:" + DoubleToString(m_conta.MarginLevel(), 2) + "%" + " Equity: " + DoubleToString(m_conta.Equity(),2) + "\n" +
+           "QtdPares: " + IntegerToString(m_qtd_pares) + "  Janela: " + IntegerToString(m_param.ea_qtd_periodos) + " barras de " + EnumToString(m_param.ea_timeframe);
 }
 //+------------------------------------------------------------------+
