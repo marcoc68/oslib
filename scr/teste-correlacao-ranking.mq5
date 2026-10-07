@@ -14,6 +14,7 @@
 */
 #include <oslib/osc-trade-util.mqh>
 #include <oslib/osc/est/CStat.mqh>
+#include <oslib/osc/Log.mqh>
 
 #property script_show_inputs
 
@@ -60,7 +61,7 @@ void OnStart(){
 
    if(totalSymbols < 2)
    {
-      Print("Erro: Insira pelo menos 2 ativos separados por vírgula.");
+      Log::error("Erro: Insira pelo menos 2 ativos separados por vírgula.");
       return;
    }
 
@@ -89,13 +90,13 @@ void OnStart(){
       }
       else
       {
-         PrintFormat("Aviso: Não foi possível carregar dados para o ativo '%s'. Verifique se está no Observatório do Mercado.", symbols[i]);
+         Log::error(StringFormat("Erro: Não foi possível carregar dados para o ativo '%s'. Verifique se está no Observatório do Mercado.", symbols[i]));
       }
    }
 
    if(validCount < 2)
    {
-      Print("Erro: Menos de 2 ativos válidos para calcular a correlação.");
+      Log::error("Erro: Menos de 2 ativos válidos para calcular a correlação.");
       return;
    }
 
@@ -137,10 +138,11 @@ void OnStart(){
    }
 
    // 5. Exibir o Ranking de Correlação no Log
-   PrintFormat("==================================================");
-   PrintFormat(" RANKING DE CORRELAÇÃO DE ATIVOS (%d BARRAS, %s)", InpBars, EnumToString(InpTimeframe));
-   PrintFormat(" Total de ativos válidos: %d | Total de pares: %d", validCount, totalPairs);
-   PrintFormat("==================================================");
+   Log::infoExp("==================================================");
+   Log::infoExp(StringFormat(" RANKING DE CORRELAÇÃO DE ATIVOS (%d BARRAS, %s)", InpBars, EnumToString(InpTimeframe)));
+   Log::infoExp(StringFormat(" Total de ativos válidos: %d | Total de pares: %d", validCount, totalPairs));
+   Log::infoExp(             " Busque o resultado no log."          );
+   Log::infoExp("==================================================");
 
    double pesoLote1, pesoLote2, erro;
    for(int i = 0; i < totalPairs; i++) {
@@ -153,17 +155,17 @@ void OnStart(){
       if(            pairList[i].absCorrelation > 0.90 &&
           terminaCom(pairList[i].cointegracao, "SIM")
         ){
-          PrintFormat("#%02d| %s vs %s: Corr( %.4f Coint:%s) | Spread( %.2f,%.2f)",
+          Log::info(StringFormat("#%02d| %s vs %s: Corr( %.4f Coint:%s) | Spread( %.2f,%.2f)",
                       i + 1,
                       pairList[i].symbolA,
                       pairList[i].symbolB,
                       pairList[i].correlation,
                       pairList[i].cointegracao,
                       pairList[i].spreadMedioA,
-                      pairList[i].spreadMedioB);
+                      pairList[i].spreadMedioB));
       }
    }
-   PrintFormat("==================================================");
+   Log::info("==================================================");
 }
 
 string calcCointegracao(vector &prices1, vector &prices2){
