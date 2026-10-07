@@ -111,7 +111,7 @@ input int            EA_QTD_MILISEG_TIMER = 250       ; //QTD_MILISEG_TIMER temp
 
 string        m_name = "OSE-P8-001-000-PAIRS-SPREAD";
 
-C0701StrategyPairsTrading           m_strategy;
+C0701StrategyPairsTrading          *m_strategy;
 ParametrosC0701StrategyPairsTrading m_param;
 
 //+------------------------------------------------------------------+
@@ -153,9 +153,9 @@ int OnInit(){
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason){
     m_strategy.onDeinit(reason);
-    
     EventKillTimer();
     Comment("");
+    delete m_strategy;
     Print(":-| ", __FUNCTION__, " finalizado. reason=", reason );
 }
 

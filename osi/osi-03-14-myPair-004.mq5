@@ -27,7 +27,7 @@
 input bool   GERAR_VOLUME           = false ; // se true, gera volume baseado nos ticks. Usa em papeis que nao informam volume, tais como o DJ30.
 input string PAIR2                  = "EURUSD"; // segundo ativo do par. O primeiro é o do gráfico.
 //input string PAIR2                = "GBPUSD"; // par do simbolo do grafico.
-input int    PERIODOS_MEDIA           = 60   ; // quantidade de periodos para calcular a media do ratio.
+input uint   PERIODOS_MEDIA           = 60   ; // quantidade de periodos para calcular a media do ratio.
 input double MU_STD1                  = 1.0  ; // qtd desvios do primeiro desvio padrao.
 input double MU_STD2                  = 2.0  ; // qtd desvios do segundo desvio padrao.
 input double MU_STD3                  = 3.0  ; // qtd desvios do terceiro desvio padrao.
@@ -159,8 +159,8 @@ int OnInit() {
    m_tick_util1.setTickSize( m_symb1.TickSize(), m_symb1.Digits() );
    m_tick_util2.setTickSize( m_symb2.TickSize(), m_symb2.Digits() );
 
-   m_par.initialize ( PERIODOS_MEDIA*PeriodSeconds() );
-   m_parH.initialize( PERIODOS_MEDIA                 );
+   m_par.initialize ( PERIODOS_MEDIA, PERIOD_CURRENT );
+   m_parH.initialize( PERIODOS_MEDIA, PERIOD_CURRENT );
    
    m_prochist = false; // indica se deve reprocessar o historico.
    setAsSeries(true);
@@ -196,44 +196,44 @@ int OnCalculate(const int        rates_total,
     //===============================================================================================
     // Processando o hitorico...
     //===============================================================================================
-    if(!m_prochist){ // para nao reprocessar a ultima barra sempre que mudar de barra.
-        setAsSeries(false);
-        doOnCalculateHistorico(rates_total, prev_calculated,time);
-        setAsSeries(true);
-    }
+    //if(!m_prochist){ // para nao reprocessar a ultima barra sempre que mudar de barra.
+    //    setAsSeries(false);
+    //    doOnCalculateHistorico(rates_total, prev_calculated,time);
+    //    setAsSeries(true);
+    //}
 
     //===============================================================================================
     // Processamento o tick da barra atual...
     //===============================================================================================
-//    if( rates_total != prev_calculated && !m_prochist){
-//        setAsSeries(false);
-//        // colocando o ultimo spread em todo o historico...
-//        MqlRates  rates_array[1];
-//        for( int i=prev_calculated; i<rates_total; i++ ){
-//
-//            if(  CopyRates(
-//                            PAIR2         ,  // nome do ativo
-//                            PERIOD_CURRENT,  // período
-//                            time[i]       ,  // data e hora de início
-//                            1             ,  // quantidade de dados para copiar
-//                            rates_array      // array destino para copiar
-//                 ) > 0
-//            ){
-//                Print("rates_tot:",rates_total," prev_calc:",prev_calculated, " i:", i, " dt:", time[i] );
-//                m_buf_spread[i]= m_parH.calcSpread(close[i],rates_array[0].close,rates_array[0].time);
-//            }else{
-//                 if( i>0 ){
-//                     m_buf_spread[i]= m_buf_spread[i-1];
-//                     Print("i:",i," Rate nao encontrado ao processar historico de ",PAIR2," para data:",time[i],". Usando rate anterior:",m_buf_spread[i-1]);
-//                 }
-//            }
-//
-//            if( i>PERIODOS_MEDIA ){
-//                setBuffersFromPar(i,m_parH);
-//            }
-//         }
-//         m_prochist=true;
-//    }
+    if( rates_total != prev_calculated && !m_prochist){
+        setAsSeries(false);
+        // colocando o ultimo spread em todo o historico...
+        MqlRates  rates_array[1];
+        for( uint i=prev_calculated; i<(uint)rates_total; i++ ){
+
+            if(  CopyRates(
+                            PAIR2         ,  // nome do ativo
+                            PERIOD_CURRENT,  // período
+                            time[i]       ,  // data e hora de início
+                            1             ,  // quantidade de dados para copiar
+                            rates_array      // array destino para copiar
+                 ) > 0
+            ){
+                Print("rates_tot:",rates_total," prev_calc:",prev_calculated, " i:", i, " dt:", time[i] );
+                m_buf_spread[i]= m_parH.calcSpread(close[i],rates_array[0].close,rates_array[0].time);
+            }else{
+                 if( i>0 ){
+                     m_buf_spread[i]= m_buf_spread[i-1];
+                     Print("i:",i," Rate nao encontrado ao processar historico de ",PAIR2," para data:",time[i],". Usando rate anterior:",m_buf_spread[i-1]);
+                 }
+            }
+
+            if( i>PERIODOS_MEDIA ){
+                setBuffersFromPar(i,m_parH);
+            }
+         }
+         m_prochist=true;
+    }
     
     // obtendo ultimos dados de ticks...
     if( !SymbolInfoTick  ( _Symbol,m_tick ) ){Print("Erro obtendo preco ", _Symbol,"..."); return prev_calculated;}// um tick por chamada a oncalculate [bova11]
@@ -280,11 +280,6 @@ void setBuffersFromPar(int i, C00021Pairs& par){
         m_buf_std_neg3[i] = m_mmean-m_mdp*MU_STD3;
 }
 
-void inicializarPairTrading(){
-    m_par.initialize ( PERIODOS_MEDIA*PeriodSeconds() );
-    m_parH.initialize( PERIODOS_MEDIA                 );
-}
-
 int getIndiceTime(const datetime& p_times[], const datetime p_time){
   int len = ArraySize(p_times);
   for(int i=1; i<len; i++){
@@ -299,11 +294,12 @@ void doOnCalculateHistorico(const int        p_rates_total    ,
                             const int        p_prev_calculated,
                             const datetime&  p_times[]        ){
    MqlTick ticks1[], ticks2[];
+   m_par.initialize ( PERIODOS_MEDIA, PERIOD_CURRENT );
+   m_parH.initialize( PERIODOS_MEDIA, PERIOD_CURRENT );
    zerarBufAll(p_prev_calculated);
-   inicializarPairTrading();
+   //inicializarPairTrading();
 
-   int ind_ini_historico = p_rates_total - PERIODOS_MEDIA*2;
-   if(ind_ini_historico<0) ind_ini_historico = 0;
+   uint ind_ini_historico = p_rates_total - PERIODOS_MEDIA*2;
 
    Print(__FUNCTION__, " p_rates_total:",p_rates_total," PERIODOS_MEDIA:", PERIODOS_MEDIA, " ind_ini_historico:",ind_ini_historico);
    Print(__FUNCTION__, " p_times[ind_ini_historico]     :",p_times[ind_ini_historico]     );

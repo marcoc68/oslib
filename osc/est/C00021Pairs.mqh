@@ -109,7 +109,11 @@ public:
         return m_spread;
     }
 
-    double calcCoefCorr(){ return m_vet_ativo1.calcCoefCorr(m_vet_ativo2); }
+    double calcCoefCorr(){ 
+//        Print(__FUNCTION__, "VET1:", m_vet_ativo1.toVector());
+//        Print(__FUNCTION__, "VET2:", m_vet_ativo2.toVector());
+        return m_vet_ativo1.calcCoefCorr(m_vet_ativo2); 
+    }
 
     bool parEhCointegrado(){ return m_vet_ativo1.ehCointegradoCom(m_vet_ativo2); }
 
