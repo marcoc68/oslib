@@ -18,6 +18,7 @@
 #include <oslib/osc/osc-media2.mqh>
 #include <oslib/osc-trade-util.mqh>
 #include <Trade\AccountInfo.mqh>
+#include <oslib/osc/Log.mqh>
 
 //--- estado do par (direcao da operacao sobre o spread)
 #define PAR_FLAT          0  // sem posicao
@@ -180,10 +181,10 @@ public:
     }
 
     int onInit(){
-        Print(":-| ", __FUNCTION__, " ************************************************");
-        Print(":-| ", __FUNCTION__, " Iniciando : ", TimeCurrent() );
-        Print(":-| ", __FUNCTION__, " BUILDER   : ", __MQLBUILD__  );
-        Print(":-| ", __FUNCTION__, " ************************************************");
+        Log::info(" ************************************************", __FUNCTION__);
+        Log::info(" Iniciando : " + TimeToString(TimeCurrent())      , __FUNCTION__);
+        Log::info(" BUILDER   : " + (string)__MQLBUILD__             , __FUNCTION__);
+        Log::info(" ************************************************", __FUNCTION__);
 
         if( !inicializarSimbolos()  ) return INIT_PARAMETERS_INCORRECT;
         if( !inicializarParametros()) return INIT_PARAMETERS_INCORRECT;
@@ -218,7 +219,7 @@ public:
     void criarTimer(int milisegundos_timer=0){
         if( milisegundos_timer > 0 ){
             EventSetMillisecondTimer( milisegundos_timer );
-            Print(":-| ", __FUNCTION__, " Criado Timer de ", milisegundos_timer, " milisegundos." );
+            Log::info("Criado Timer de " + IntegerToString(milisegundos_timer) + " milisegundos.", __FUNCTION__);
         }
     }
 
@@ -245,7 +246,7 @@ public:
         if( m_nm_symb2 == BUSCAR_PAR ) m_nm_symb2 = buscarParAdequado( m_nm_symb1 );
 
         if( m_nm_symb1 == m_nm_symb2 ){
-            Print(":-( ", __FUNCTION__, " SYMBOL_1 e SYMBOL_2 devem ser ativos diferentes." );
+            Log::error("SYMBOL_1 e SYMBOL_2 devem ser ativos diferentes.", __FUNCTION__);
             return false;
         }
 
@@ -257,12 +258,12 @@ public:
         m_symb1.Refresh(); m_symb1.RefreshRates();
         m_symb2.Refresh(); m_symb2.RefreshRates();
 
-        Print(":-| ", __FUNCTION__, " ativo1:", m_nm_symb1,
-                      " digits:"   , m_symb1.Digits(),
-                      " lots min/step/max:", m_symb1.LotsMin(), "/", m_symb1.LotsStep(), "/", m_symb1.LotsMax() );
-        Print(":-| ", __FUNCTION__, " ativo2:", m_symb2.Name(),
-                      " digits:"   , m_symb2.Digits(),
-                      " lots min/step/max:", m_symb2.LotsMin(), "/", m_symb2.LotsStep(), "/", m_symb2.LotsMax() );
+        Log::info(" ativo1:" + m_nm_symb1 +
+                      " digits:"   + IntegerToString(m_symb1.Digits()) +
+                      " lots min/step/max:" + DoubleToString(m_symb1.LotsMin()) + "/" + DoubleToString(m_symb1.LotsStep()) + "/" + DoubleToString(m_symb1.LotsMax()), __FUNCTION__);
+        Log::info(" ativo2:" + m_symb2.Name() +
+                      " digits:"   + IntegerToString(m_symb2.Digits()) +
+                      " lots min/step/max:" + DoubleToString(m_symb2.LotsMin()) + "/" + DoubleToString(m_symb2.LotsStep()) + "/" + DoubleToString(m_symb2.LotsMax()), __FUNCTION__);
         return true;
     }
 
@@ -277,39 +278,38 @@ public:
     bool inicializarParametros(){
 
         if( m_param.ea_qtd_periodos < 2 ){
-            Print(":-( ", __FUNCTION__, " QTD_PERIODOS deve ser no minimo 2. informado:", m_param.ea_qtd_periodos );
+            Log::error("QTD_PERIODOS deve ser no minimo 2. informado:" + IntegerToString(m_param.ea_qtd_periodos), __FUNCTION__);
             return false;
         }
 
         if( m_param.ea_desvios_entrada <= 0 ){
-            Print(":-( ", __FUNCTION__, " DESVIOS_ENTRADA deve ser maior que zero. informado:", m_param.ea_desvios_entrada );
+            Log::error("DESVIOS_ENTRADA deve ser maior que zero. informado:" + DoubleToString(m_param.ea_desvios_entrada,2), __FUNCTION__);
             return false;
         }
 
         if( m_param.ea_desvios_saida < 0 ){
-            Print(":-( ", __FUNCTION__, " DESVIOS_SAIDA nao pode ser negativo. informado:", m_param.ea_desvios_saida );
+            Log::error("DESVIOS_SAIDA nao pode ser negativo. informado:" + DoubleToString(m_param.ea_desvios_saida,2), __FUNCTION__);
             return false;
         }
 
         if( m_param.ea_desvios_saida >= m_param.ea_desvios_entrada ){
-            Print(":-( ", __FUNCTION__, " DESVIOS_SAIDA (", m_param.ea_desvios_saida, ") deve ser menor que ",
-                          "DESVIOS_ENTRADA (", m_param.ea_desvios_entrada, "), senao a posicao fecharia na propria abertura." );
+            Log::error("DESVIOS_SAIDA (" + DoubleToString(m_param.ea_desvios_saida,2) + ") deve ser menor que "
+                          "DESVIOS_ENTRADA (" + DoubleToString(m_param.ea_desvios_entrada,2) + "), senao a posicao fecharia na propria abertura.", __FUNCTION__);
             return false;
         }
 
         if( m_param.ea_volume_1 <= 0 || m_param.ea_volume_2 <= 0 ){
-            Print(":-( ", __FUNCTION__, " VOLUME_1 e VOLUME_2 devem ser maiores que zero. informados:", m_param.ea_volume_1, " e ", m_param.ea_volume_2 );
+            Log::error("VOLUME_1 e VOLUME_2 devem ser maiores que zero. informados:" + DoubleToString(m_param.ea_volume_1,2) + " e " + DoubleToString(m_param.ea_volume_2,2), __FUNCTION__ );
             return false;
         }
 
         m_volume1 = osc_trade_util::normalizarVolume( m_symb1, m_param.ea_volume_1 );
         m_volume2 = osc_trade_util::normalizarVolume( m_symb2, m_param.ea_volume_2 );
 
-        Print(":-| ", __FUNCTION__, " volume ", m_nm_symb1, ":", m_volume1,
-                                    " volume ", m_nm_symb2, ":", m_volume2 );
+        Log::info("Volume "+ m_nm_symb1 + ":" + DoubleToString(m_volume1,2) + " volume " + m_nm_symb2 + ":" + DoubleToString(m_volume2,2), __FUNCTION__ );
 
         if( m_volume1 != m_param.ea_volume_1 || m_volume2 != m_param.ea_volume_2 ){
-            Print(":-| ", __FUNCTION__, " VOLUMES de ", m_nm_symb1,":" ,m_param.ea_volume_1, " e de", m_nm_symb2, ":", m_param.ea_volume_2, " foram ajustados aos limites dos ativos." );
+            Log::info("VOLUMES de " + m_nm_symb1 + ":" + DoubleToString(m_param.ea_volume_1,2) + " e de" + m_nm_symb2 + ":" + DoubleToString(m_param.ea_volume_2,2) + " foram ajustados aos limites dos ativos.", __FUNCTION__ );
         }
         return true;
     }
@@ -320,21 +320,21 @@ public:
     void logarModoOperacao(){
 
         if( m_param.ea_operacao_automatica ){
-            Print(":-| ", __FUNCTION__, " OPERACAO AUTOMATICA LIGADA: o EA abre e fecha as posicoes." );
+            Log::info("OPERACAO AUTOMATICA LIGADA: o EA abre e fecha as posicoes.",__FUNCTION__ );
         }else{
-            Print(":-| ", __FUNCTION__, " OPERACAO AUTOMATICA DESLIGADA: o EA nao abre nem fecha posicao ",
-                          "sozinho. Apenas loga [SIMULADO] o que faria. As teclas continuam valendo." );
+            Log::info("OPERACAO AUTOMATICA DESLIGADA: o EA nao abre nem fecha posicao " +
+                          "sozinho. Apenas loga [SIMULADO] o que faria. As teclas continuam valendo.", __FUNCTION__ );
         }
 
         if( !m_param.ea_teclas_habilitadas ){
-            Print(":-| ", __FUNCTION__, " teclas de atalho desabilitadas." );
+            Log::info("Teclas de atalho desabilitadas.", __FUNCTION__ );
             return;
         }
 
-        Print(":-| ", __FUNCTION__, " tecla para ABRIR : ", strTeclaAbrir () );
-        Print(":-| ", __FUNCTION__, " tecla para FECHAR: ", strTeclaFechar() );
-        Print(":-| ", __FUNCTION__, " as teclas so chegam ao EA com o grafico em foco. Se o ALT for ",
-                      "capturado pelo menu do terminal, troque a combinacao nos parametros." );
+        Log::info("tecla para ABRIR : " + strTeclaAbrir (), __FUNCTION__ );
+        Log::info("tecla para FECHAR: " + strTeclaFechar(), __FUNCTION__ );
+        Log::info("As teclas so chegam ao EA com o grafico em foco. Se o ALT for " +
+                      "capturado pelo menu do terminal, troque a combinacao nos parametros.", __FUNCTION__ );
     }
 
     string strTeclaAbrir (){
@@ -362,48 +362,41 @@ public:
         double val1_atu = osc_trade_util::valorPorPercentual( m_nm_symb1, m_volume1, 0.01 );
         double val2_atu = osc_trade_util::valorPorPercentual( m_nm_symb2, m_volume2, 0.01 );
 
-        Print(":-| ", __FUNCTION__, " --- equilibrio financeiro das pernas (1% de variacao) ---" );
-        Print(":-| ", __FUNCTION__, " ", m_nm_symb1, " vol:", m_volume1,
-                      " preco:", osc_trade_util::precoReferencia(m_nm_symb1),
-                      " valor de 1%:", DoubleToString(val1_atu,2), " ", AccountInfoString(ACCOUNT_CURRENCY) );
-        Print(":-| ", __FUNCTION__, " ", m_nm_symb2, " vol:", m_volume2,
-                      " preco:", osc_trade_util::precoReferencia(m_nm_symb2),
-                      " valor de 1%:", DoubleToString(val2_atu,2), " ", AccountInfoString(ACCOUNT_CURRENCY) );
+        Log::info("--- equilibrio financeiro das pernas (1% de variacao) ---", __FUNCTION__ );
+        Log::info(" " + m_nm_symb1 + " vol:" + DoubleToString(m_volume1,3) +
+                      " preco:" + DoubleToString(osc_trade_util::precoReferencia(m_nm_symb1),2) +
+                      " valor de 1%:" + DoubleToString(val1_atu,2) + " " + AccountInfoString(ACCOUNT_CURRENCY), __FUNCTION__ );
+        Log::info(" " + m_nm_symb2 + " vol:" + DoubleToString(m_volume2,3) +
+                      " preco:" + DoubleToString(osc_trade_util::precoReferencia(m_nm_symb2),2) +
+                      " valor de 1%:" + DoubleToString(val2_atu,2) + " " + AccountInfoString(ACCOUNT_CURRENCY), __FUNCTION__ );
 
         if( val1_atu > 0 && val2_atu > 0 ){
             double desequil = MathAbs(val1_atu-val2_atu)/MathMax(val1_atu,val2_atu);
-            Print(":-| ", __FUNCTION__, " desequilibrio do volume configurado: ",
-                          DoubleToString(desequil*100,2), "%" );
+            Log::info("desequilibrio do volume configurado: " + DoubleToString(desequil*100,2) + "%", __FUNCTION__ );
         }
 
         double erro=0;
         if( !osc_trade_util::calcVolumesEquilibrio( m_nm_symb1, m_nm_symb2, m_volume_sugerido1, m_volume_sugerido2, erro,
                                                     m_param.ea_tolerancia_equil ) ){
-            Print(":-( ", __FUNCTION__, " nao foi possivel calcular o volume de equilibrio. ",
-                          "Verifique cotacao e tick value dos ativos." );
+            Log::info("Nao foi possivel calcular o volume de equilibrio. Verifique cotacao e tick value dos ativos.", __FUNCTION__ );
             return;
         }
 
         double val1_sug = osc_trade_util::valorPorPercentual( m_nm_symb1, m_volume_sugerido1, 0.01 );
         double val2_sug = osc_trade_util::valorPorPercentual( m_nm_symb2, m_volume_sugerido2, 0.01 );
 
-        Print(":-) ", __FUNCTION__, " SUGESTAO de volume minimo para equilibrio: ",
-                      m_nm_symb1, ":", m_volume_sugerido1, " (1% = ", DoubleToString(val1_sug,2), ") ",
-                      m_nm_symb2, ":", m_volume_sugerido2, " (1% = ", DoubleToString(val2_sug,2), ") ",
-                      " desequilibrio residual:", DoubleToString(erro*100,2), "%" );
+        Log::info("SUGESTAO de volume minimo para equilibrio: " + m_nm_symb1 + ":" + DoubleToString(m_volume_sugerido1,2) + " (1% = " + DoubleToString(val1_sug,2) + ") " + m_nm_symb2 + ":" + DoubleToString(m_volume_sugerido2,2) + " (1% = " + DoubleToString(val2_sug,2) + ") " + "desequilibrio residual:" + DoubleToString(erro*100,2) + "%", __FUNCTION__ );
 
         if( erro > m_param.ea_tolerancia_equil ){
-            Print(":-| ", __FUNCTION__, " o melhor par encontrado ainda ficou acima da tolerancia de ",
-                          DoubleToString(m_param.ea_tolerancia_equil*100,2), "%. Os lotes minimos dos dois ativos ",
-                          "nao permitem um casamento melhor nesta faixa de volume." );
+            Log::info("o melhor par encontrado ainda ficou acima da tolerancia de " + DoubleToString(m_param.ea_tolerancia_equil*100,2) + "%. Os lotes minimos dos dois ativos " + "nao permitem um casamento melhor nesta faixa de volume.", __FUNCTION__ );
         }
 
         if( m_param.ea_aplicar_sugestao_de_volume  && erro <= m_param.ea_tolerancia_equil ){
             m_volume1 = m_volume_sugerido1;
             m_volume2 = m_volume_sugerido2;
-            Print(":-) ", __FUNCTION__, " aplicada sugestao de volume de lotes: VOLUME1=", m_volume1, " e VOLUME2=", m_volume2, "." );
+            Log::info("aplicada sugestao de volume de lotes: VOLUME1=" + DoubleToString(m_volume1,2) + " e VOLUME2=" + DoubleToString(m_volume2,2), __FUNCTION__ );
         }else{
-            Print(":-| ", __FUNCTION__, " a sugestao nao altera o EA: ele continua operando com VOLUME1=", m_param.ea_volume_1, " e VOLUME2=", m_param.ea_volume_2, "." );
+            Log::info("a sugestao nao altera o EA: ele continua operando com VOLUME1=" + DoubleToString(m_param.ea_volume_1,2) + " e VOLUME2=" + DoubleToString(m_param.ea_volume_2,2), __FUNCTION__ );
         }
     }
 
@@ -418,8 +411,7 @@ public:
 
         int qtd = CopyRates( m_nm_symb1, m_param.ea_timeframe, 0, m_param.ea_qtd_periodos, rates1 );
         if( qtd <= 0 ){
-            Print(":-| ", __FUNCTION__, " sem historico de ", m_nm_symb1,
-                          " ainda. A janela serah preenchida barra a barra. erro=", GetLastError() );
+            Log::warn("Sem historico de " + m_nm_symb1 + " ainda. A janela serah preenchida barra a barra. erro="  + (string)GetLastError(), __FUNCTION__ );
             return;
         }
 
@@ -434,9 +426,9 @@ public:
 
         m_dt_ult_barra = rates1[qtd-1].time;
 
-        Print(":-| ", __FUNCTION__, " ", m_qtd_amostras, "/", m_param.ea_qtd_periodos,
-                      " amostras carregadas. ultima barra:", m_dt_ult_barra,
-                      " media:", m_spread_med, " desvio:", m_spread_std );
+        Log::info(IntegerToString(m_qtd_amostras) + "/" + IntegerToString(m_param.ea_qtd_periodos) +
+                      " amostras carregadas. ultima barra:" + TimeToString(m_dt_ult_barra) +
+                      " media:" + DoubleToString(m_spread_med,2) + " desvio:" + DoubleToString(m_spread_std,2), __FUNCTION__ );
     }
 
     // fechamento do ativo 2 na barra de data dt. Se o ativo 2 nao tiver barra nessa data
@@ -617,11 +609,19 @@ public:
                );
     }
 
+    bool margem_ok(){
+
+       return ( m_conta.MarginLevel() >= m_param.ea_margin_level_minimo // margem suficiente para abrir posicao
+                ||
+                m_conta.FreeMargin() == m_conta.Equity() ) // margem livre igual ao capital liquido: nao ha posicao aberta, entao podemos abrir
+                ;
+    }
+
     // porta de entrada de toda abertura. Quando a operacao automatica estah desligada,
     // as entradas do EA (manual=false) viram apenas log. As teclas (manual=true) passam.
     bool solicitarAbertura(const int direcao, const string motivo, const bool manual){
 
-        if( m_conta.MarginLevel() < m_param.ea_margin_level_minimo ){
+        if( !margem_ok() ){
             logarSimulado( "ABRIR:"+IntegerToString(direcao),
                            "NAO ABRIU " + descreverDirecao(direcao) + ". motivo: margem abaixo do minimo (" +
                            DoubleToString(m_conta.MarginLevel(),2) + "% < " + DoubleToString(m_param.ea_margin_level_minimo,2) + "%)" );
@@ -634,8 +634,7 @@ public:
             return false;
         }
 
-        Print(":-| ", __FUNCTION__, (manual?" [TECLA] ":" "), "abrindo ", descreverDirecao(direcao),
-                      ". motivo: ", motivo );
+        Log::info((manual?" [TECLA] ":" ") + "abrindo " + descreverDirecao(direcao) + ". motivo: " + motivo, __FUNCTION__ );
         return abrirPar( direcao );
     }
 
@@ -675,13 +674,12 @@ public:
         }
 
         if( !enviarMercado( m_nm_symb1, tipo1, m_volume1 ) ){
-            Print(":-( ", __FUNCTION__, " falha na perna 1 (", m_nm_symb1, "). operacao abortada." );
+            Log::error("Falha na perna 1 (" + m_nm_symb1 + "). operacao abortada.", __FUNCTION__ );
             return false;
         }
 
         if( !enviarMercado( m_nm_symb2, tipo2, m_volume2 ) ){
-            Print(":-( ", __FUNCTION__, " falha na perna 2 (", m_nm_symb2,
-                          "). desfazendo a perna 1 (", m_nm_symb1, ")..." );
+            Log::error("Falha na perna 2 (" + m_nm_symb2 + "). desfazendo a perna 1 (" + m_nm_symb1 + ")...", __FUNCTION__ );
             fecharSimbolo( m_nm_symb1 );
             return false;
         }
@@ -689,8 +687,8 @@ public:
         m_estado = direcao;
         registrarAbertura( direcao, false );
 
-        Print(":-) ", __FUNCTION__, " par aberto. estado=", estadoStr(), " spread=", m_spread_atu,
-                      " media=", m_spread_med, " desvio=", m_spread_std );
+        Log::info("Par aberto. estado=" + estadoStr() + " spread=" + DoubleToString(m_spread_atu,2) +
+                      " media=" + DoubleToString(m_spread_med,2) + " desvio=" + DoubleToString(m_spread_std,2), __FUNCTION__ );
         return true;
     }
 
@@ -705,12 +703,12 @@ public:
         m_dt_abert     = TimeCurrent();
         m_ult_simulado = "";
 
-        Print(":-| ", __FUNCTION__, (herdada?" (posicao jah estava aberta - referencia adotada do mercado atual) ":" "),
-                      "referencia da abertura. spread:", m_spread_abert,
-                      " media:", m_med_abert, " desvio:", m_std_abert,
+        Log::info( (herdada?" (posicao jah estava aberta - referencia adotada do mercado atual) ":" ") +
+                      "referencia da abertura. spread:" + DoubleToString(m_spread_abert,2) +
+                      " media:" + DoubleToString(m_med_abert,2) + " desvio:" + DoubleToString(m_std_abert,2) +
                       // o stop eh acionado quando a media se desloca ateh o spread de abertura.
                       (m_param.ea_stop_media_abertura ? "  stop se spread medio atingir:"+DoubleToString(m_spread_abert,8)
-                                              : "  (stop da media desligado)") );
+                                              : "  (stop da media desligado)"), __FUNCTION__ );
     }
 
     void limparAbertura(){
@@ -742,7 +740,7 @@ public:
     void logarSimulado(const string chave, const string acao){
         if( chave == m_ult_simulado ) return;
         m_ult_simulado = chave;
-        Print(":-| [SIMULADO] ", acao );
+        Log::info("[SIMULADO] " + acao, __FUNCTION__ );
     }
 
     // nenhuma condicao de acao ativa neste ciclo: a proxima que aparecer volta a ser logada.
@@ -825,8 +823,8 @@ public:
     // fecha as duas pernas do par.
     void fecharPar(const string motivo){
 
-        Print(":-| ", __FUNCTION__, "(", motivo, ") fechando ", m_nm_symb1, " e ", m_nm_symb2,
-                      ". resultado do par:", m_lucro_par );
+        Log::info("(" + motivo + ") fechando " + m_nm_symb1 + " e " + m_nm_symb2 +
+                      ". resultado do par: " + DoubleToString(m_lucro_par,2), __FUNCTION__ );
 
         bool ok1 = fecharSimbolo( m_nm_symb1 );
         bool ok2 = fecharSimbolo( m_nm_symb2 );
@@ -834,13 +832,15 @@ public:
         if( ok1 && ok2 ){
             m_estado = PAR_FLAT;
             limparAbertura();
-            Print(":-) ", __FUNCTION__, "(", motivo, ") par fechado." );
+            Log::info("(" + motivo + ") par fechado.", __FUNCTION__ );
         }else{
-            Print(":-( ", __FUNCTION__, "(", motivo, ") fechamento incompleto. ",
-                          m_nm_symb1, ":", ok1, " ", m_nm_symb2, ":", ok2,
+            Log::warn("("+ motivo + ") fechamento incompleto. ",
+                          m_nm_symb1 + ":" + toString(ok1) + " " + m_nm_symb2 + ":" + toString(ok2) +
                           ". nova tentativa no proximo ciclo." );
         }
     }
+    
+    string toString(bool str){return str?"true":"false";}
 
     //+------------------------------------------------------------------+
     //| Posicoes                                                         |
@@ -894,7 +894,7 @@ public:
             return;
         }
 
-        Print(":-( ", __FUNCTION__, " ", motivo, ". desmontando..." );
+        Log::warn(motivo + ". desmontando...", __FUNCTION__);
         fecharSimbolo( m_nm_symb1 );
         fecharSimbolo( m_nm_symb2 );
         m_estado = PAR_FLAT;
@@ -963,16 +963,17 @@ public:
     // fechamento manual das duas pernas.
     void fecharPorTecla(){
 
-        Print(":-| ", __FUNCTION__, " tecla ", strTeclaFechar(), " pressionada." );
+        Log::info("tecla " + strTeclaFechar() + " pressionada.", __FUNCTION__ );
 
         atualizarPrecos();
         reconhecerPosicoes();
 
         if( m_estado == PAR_FLAT ){
-            Print(":-| ", __FUNCTION__, " nao ha posicao aberta. nada a fazer." );
+            Log::info("nao ha posicao aberta. nada a fazer.", __FUNCTION__ );
             return;
         }
 
+        Log::info("fechamento manual por tecla. resultado do par: " + DoubleToString(m_lucro_par,2), __FUNCTION__ );
         solicitarFechamento( "FECHAR_TECLA",
                              "fechamento manual por tecla. resultado do par:" +
                              DoubleToString(m_lucro_par,2), true );

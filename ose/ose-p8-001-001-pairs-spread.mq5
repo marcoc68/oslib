@@ -16,6 +16,8 @@
 
 #include <oslib/osc/exp/C0701StrategyPairsTrading.mqh>
 #include <Trade\AccountInfo.mqh>
+#include <oslib/osc/Log.mqh>
+
 
 //---------------------------------------------------------------------------------------------
 input group "=== Par de ativos ===";
@@ -31,8 +33,8 @@ input string         EA_SYMBOLS_CANDIDATES2  = "AUDNZD,AUDCAD,AUDCHF,AUDJPY,CHFJ
 input group "=== Spread do PAR ===";
 input int             EA_QTD_PERIODOS    = 120        ; //QTD_PERIODOS qtd de barras usadas na media e no desvio do spread
 input ENUM_TIMEFRAMES EA_TIMEFRAME       = PERIOD_M3  ; //TIMEFRAME timeframe das barras da janela do spread
-input double          EA_DESVIOS_ENTRADA = 3.0        ; //DESVIOS_ENTRADA afastamento em desvios padrao para disparar a operacao
-input double          EA_DESVIOS_SAIDA   = 0.0        ; //DESVIOS_SAIDA distancia da media, em desvios, onde a posicao eh fechada. 0=fecha na media
+input double          EA_DESVIOS_ENTRADA = 2.5        ; //DESVIOS_ENTRADA afastamento em desvios padrao para disparar a operacao
+input double          EA_DESVIOS_SAIDA   = 0.5        ; //DESVIOS_SAIDA distancia da media, em desvios, onde a posicao eh fechada. 0=fecha na media
 
 input group "=== Volume ===";
 input double         EA_VOLUME_1        = 0.01        ; //VOLUME lote aplicado na primeira perna
@@ -95,7 +97,7 @@ int onInit(){
     for(uint i = 0; i < m_qtd_pares; i++){
         retorno = m_vet_pares[i].strategy.onInit();
         if(retorno != INIT_SUCCEEDED){
-            Print(":-| ", __FUNCTION__, " erro ao inicializar o par ", m_vet_pares[i].symbol1, "-", m_vet_pares[i].symbol2, " retorno=", retorno);
+            Log::error( "Erro ao inicializar o par " + m_vet_pares[i].symbol1 + "_" + m_vet_pares[i].symbol2 + " retorno=" + IntegerToString(retorno), __FUNCTION__ );
             return INIT_FAILED;
         }
     }
@@ -106,8 +108,7 @@ int onInit(){
 void criarTimer(int milisegundos_timer=0){
     if( milisegundos_timer > 0 ){
         EventSetMillisecondTimer( milisegundos_timer );
-        Print(":-| ", __FUNCTION__, " Criado Timer de ", milisegundos_timer, " milisegundos." );
-        Print(":-) ", __FUNCTION__, " inicializado !! " );
+        Log::info( "Timer criado com sucesso. Tempo: " + IntegerToString(milisegundos_timer) + " milisegundos.", __FUNCTION__ );
     }
 }
 
@@ -136,7 +137,6 @@ void montarVetorDePares(){
             index++;
         }
     }
-    ArrayPrint(m_vet_pares);
     return;
 }
 
@@ -163,7 +163,7 @@ void OnDeinit(const int reason){
     }
     EventKillTimer();
     Comment("");
-    Print(":-| ", __FUNCTION__, " finalizado. reason=", reason );
+    Log::info( "EA finalizado. reason=" + IntegerToString(reason), __FUNCTION__ );
 }
 
 
@@ -195,13 +195,13 @@ void OnChartEvent(const int id, const long &lparam, const double &dparam, const 
     // detectado: ajuda a ajustar a combinacao quando o terminal captura o ALT antes do
     // grafico, ou quando o keystate do ALT nao responde como esperado no ambiente.
     if( !osc_trade_util::modificadoresPressionados( EA_TECLA_CTRL, EA_TECLA_ALT, EA_TECLA_SHIFT ) ){
-        Print(":-| ", __FUNCTION__, " tecla ", tecla, " ignorada: modificadores nao conferem.",
-                      " esperado  ctrl:", EA_TECLA_CTRL,
-                      " alt:"           , EA_TECLA_ALT,
-                      " shift:"         , EA_TECLA_SHIFT,
-                      " | detectado ctrl:", osc_trade_util::teclaCtrl (),
-                      " alt:"             , osc_trade_util::teclaAlt  (),
-                      " shift:"           , osc_trade_util::teclaShift() );
+        Log::error( "Tecla " + IntegerToString(tecla) + " ignorada: modificadores nao conferem." +
+                      " esperado  ctrl:" + IntegerToString(EA_TECLA_CTRL) +
+                      " alt:"            + IntegerToString(EA_TECLA_ALT) +
+                      " shift:"         + IntegerToString(EA_TECLA_SHIFT) +
+                      " | detectado ctrl:" + IntegerToString(osc_trade_util::teclaCtrl ()) +
+                      " alt:"             + IntegerToString(osc_trade_util::teclaAlt  ()) +
+                      " shift:"           + IntegerToString(osc_trade_util::teclaShift() ), __FUNCTION__ );
         return;
     }
 
@@ -292,7 +292,10 @@ string linhaTela(Par &par){
 
 string linhaTelaComum(){
     return m_name +"\n" +
-           "Account: " + m_conta.Company() + "  MarginLevel:" + DoubleToString(m_conta.MarginLevel(), 2) + "%" + " Equity: " + DoubleToString(m_conta.Equity(),2) + "\n" +
+           "Account: " + m_conta.Company() + " Currency: " + m_conta.Currency() + " Server: " + m_conta.Server() +
+           "  MarginLevel: " + DoubleToString(m_conta.MarginLevel(), 2) + "%" +
+           "  Equity: " + DoubleToString(m_conta.Equity(),2) +
+           " FreeMargin: " + DoubleToString(m_conta.FreeMargin(),2) + "\n" +
            "QtdPares: " + IntegerToString(m_qtd_pares) + "  Janela: " + IntegerToString(m_param.ea_qtd_periodos) + " barras de " + EnumToString(m_param.ea_timeframe);
 }
 //+------------------------------------------------------------------+
