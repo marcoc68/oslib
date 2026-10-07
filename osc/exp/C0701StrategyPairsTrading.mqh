@@ -25,6 +25,9 @@
 #define TERMINAL         "TERMINAL"  // nome especial para indicar o simbolo do terminal.
 #define BUSCAR_PAR       "BUSCAR_PAR"  // nome especial para indicar que o EA deve buscar um par adequado.
 
+#define SIMBOLO_COMPRADO  1
+#define SIMBOLO_VENDIDO  -1
+#define SIMBOLO_FLAT      0
 
 struct ParametrosC0701StrategyPairsTrading{
 
@@ -212,14 +215,12 @@ public:
         if( milisegundos_timer > 0 ){
             EventSetMillisecondTimer( milisegundos_timer );
             Print(":-| ", __FUNCTION__, " Criado Timer de ", milisegundos_timer, " milisegundos." );
-            Print(":-) ", __FUNCTION__, " inicializado !! " );
         }
     }
 
     void onDeinit(const int reason) {
         EventKillTimer();
         Comment("");
-        Print(":-| ", __FUNCTION__, " finalizado. reason=", reason );
     }
     
     void onTick(){ processar(); }
@@ -658,7 +659,7 @@ public:
             // correlacao negativa:
             // spread abaixo da media: compra ambos os ativos
             // spread acima da media : vende ambos os ativos
-            tipo1 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_BUY : ORDER_TYPE_SELL ;
+            tipo1 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
             tipo2 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
         }
 
@@ -711,8 +712,13 @@ public:
     }
 
     string descreverDirecao(const int direcao){
-        if( direcao == PAR_LONG_SPREAD  ) return "LONG SPREAD (COMPRA "+m_nm_symb1+" / VENDE "+m_nm_symb2+")";
-        if( direcao == PAR_SHORT_SPREAD ) return "SHORT SPREAD (VENDE "+m_nm_symb1+" / COMPRA "+m_nm_symb2+")";
+        if( m_coef_correlacao > 0 ){
+            if( direcao == PAR_LONG_SPREAD  ) return "LONG SPREAD (C "+m_nm_symb1+" / V "+m_nm_symb2+")";
+            if( direcao == PAR_SHORT_SPREAD ) return "SHORT SPREAD (V "+m_nm_symb1+" / C "+m_nm_symb2+")";
+        }else{
+            if( direcao == PAR_LONG_SPREAD  ) return "LONG SPREAD (C "+m_nm_symb1+" / C "+m_nm_symb2+")";
+            if( direcao == PAR_SHORT_SPREAD ) return "SHORT SPREAD (V "+m_nm_symb1+" / V "+m_nm_symb2+")";
+        }
         return "FLAT";
     }
 
@@ -835,12 +841,12 @@ public:
 
         m_pos_invalida = false;
 
-        int dir1 = direcaoPosicao( m_nm_symb1 );
-        int dir2 = direcaoPosicao( m_nm_symb2 );
+        int dir1 = direcaoSimbolo( m_nm_symb1 );
+        int dir2 = direcaoSimbolo( m_nm_symb2 );
 
         m_lucro_par = lucroSimbolo( m_nm_symb1 ) + lucroSimbolo( m_nm_symb2 );
 
-        if( dir1 == 0 && dir2 == 0 ){
+        if( dir1 == SIMBOLO_FLAT && dir2 == SIMBOLO_FLAT ){
             if( m_abertura_reg ) limparAbertura();
             m_estado = PAR_FLAT;
             return;
@@ -848,17 +854,17 @@ public:
 
         // perna orfa: uma das pontas ficou aberta sozinha. Nao eh operacao de spread,
         // eh exposicao direcional. Desmonta.
-        if( dir1 == 0 || dir2 == 0 ){
+        if( dir1 == SIMBOLO_FLAT || dir2 == SIMBOLO_FLAT ){
             desmontarPosicaoInvalida( "perna orfa detectada. " + m_nm_symb1 + ":" + IntegerToString(dir1) +
                                       " " + m_nm_symb2 + ":" + IntegerToString(dir2) );
             return;
         }
 
         // as duas pernas no mesmo sentido tambem nao formam um spread.
-        if( dir1 == dir2 ){
-            desmontarPosicaoInvalida( "as duas pernas estao no mesmo sentido (" + IntegerToString(dir1) + ")" );
-            return;
-        }
+//        if( dir1 == dir2 ){
+//            desmontarPosicaoInvalida( "as duas pernas estao no mesmo sentido (" + IntegerToString(dir1) + ")" );
+//            return;
+//        }
 
         m_estado = dir1; // comprado no ativo1 = comprado no spread
 
@@ -885,7 +891,7 @@ public:
     }
 
     // +1 comprado, -1 vendido, 0 sem posicao do EA no ativo informado.
-    int direcaoPosicao(const string symb){
+    int direcaoSimbolo(const string symb){
         return osc_trade_util::direcaoPosicao( symb, m_magic );
     }
 
@@ -907,13 +913,11 @@ public:
     //+------------------------------------------------------------------+
     //| Função para gerar um Magic Number determinístico para o par       |
     //+------------------------------------------------------------------+
-    ulong gerarMagicDeterministico(string symbol1, string symbol2)
-    {
+    ulong gerarMagicDeterministico(string symbol1, string symbol2){
         // 1. Ordena os símbolos alfabeticamente para evitar inversões
         string s1 = symbol1;
         string s2 = symbol2;
-        if(s1 > s2)
-        {
+        if(s1 > s2) {
             s1 = symbol2;
             s2 = symbol1;
         }
@@ -924,51 +928,26 @@ public:
         // 2. Aplica o algoritmo de Hash (DJB2) para transformar a string em um número ulong
         ulong hash = 5381;
         int len = StringLen(chave);
-        for(int i = 0; i < len; i++)
-        {
+        for(int i = 0; i < len; i++) {
             ushort ch = StringGetCharacter(chave, i);
             hash = ((hash << 5) + hash) + (ulong)ch; // hash * 33 + c
         }
 
         // 3. Mapeia o hash para uma faixa segura de Magic Number (ex: entre 100.000 e 2.000.000.000)
         ulong magicFinal = 100000 + (hash % 1999900000);
-
         return magicFinal;
     }
 
-    ulong criar_magic(string symbols_concatenados){
-
-      string symbols_cortado = "";
-      int tamanho = StringLen(symbols_concatenados);
-      for(int i = 0; i < tamanho; i++){
-        symbols_cortado += StringSubstr(symbols_concatenados,i,1);
-        i++;
-      }
-      return toAsciiText(symbols_cortado);
-    }
-
-    // Função para converter os caracteres de uma string em seus códigos numéricos concatenados
-    ulong toAsciiText(string texto){
-        string texto_numerico = "";
-        int tamanho = StringLen(texto);
-
-        for(int i = 0; i < tamanho; i++){
-            // Obtém o código numérico (ushort) do caractere na posição 'i'
-            ushort char_code = StringGetCharacter(texto, i);
-
-            // Concatena o código convertido para string no resultado
-            texto_numerico += IntegerToString(char_code);
-        }
-
-        return StringToInteger(texto_numerico);
-    }
-
     string estadoStr(){
-        if( m_estado == PAR_LONG_SPREAD  ) return "LONG SPREAD  (C " +m_nm_symb1+" / V "+m_nm_symb2+")";
-        if( m_estado == PAR_SHORT_SPREAD ) return "SHORT SPREAD (V " +m_nm_symb1+" / C "+m_nm_symb2+")";
+        if( m_coef_correlacao > 0 ){
+            if( m_estado == PAR_LONG_SPREAD  ) return "LONG SPREAD  (C " +m_nm_symb1+" / V "+m_nm_symb2+")";
+            if( m_estado == PAR_SHORT_SPREAD ) return "SHORT SPREAD (V " +m_nm_symb1+" / C "+m_nm_symb2+")";
+        }else{
+            if( m_estado == PAR_LONG_SPREAD  ) return "LONG SPREAD  (C " +m_nm_symb1+" / C "+m_nm_symb2+")";
+            if( m_estado == PAR_SHORT_SPREAD ) return "SHORT SPREAD (V " +m_nm_symb1+" / V "+m_nm_symb2+")";
+        }
         return "FLAT";
     }
-
 
     // fechamento manual das duas pernas.
     void fecharPorTecla(){

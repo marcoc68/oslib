@@ -33,10 +33,10 @@ input string         EA_SYMBOLS_CANDIDATES2  = "AUDNZD,AUDCAD,AUDCHF,AUDJPY,CHFJ
 //input string         EA_SYMBOLS_CANDIDATES1   = "AUDCAD,AUDCHF,AUDJPY,AUDNZD,AUDSGD,AUDUSD,CADCHF,CADJPY,CHFJPY,CHFSGD,EURAUD,EURCAD,EURCHF,EURDKK,EURGBP,EURHKD,EURJPY,EURNOK,EURNZD,EURPLN,EURSEK,EURSGD,EURTRY,EURUSD,EURZAR,GBPAUD,GBPCAD,GBPCHF,GBPDKK,GBPJPY"; //SYMBOLS_CANDIDATES1 lista de ativos candidatos a formar par com SYMBOL_1. separados por ','
 //input string         EA_SYMBOLS_CANDIDATES2   = "GBPNOK,GBPNZD,GBPSEK,GBPSGD,GBPTRY,GBPUSD,NOKJPY,NOKSEK";//,NZDCAD";//,NZDCHF,NZDJPY,NZDUSD,SEKJPY,SGDJPY,USDCAD,USDCHF,USDCNH,USDCZK,USDDKK,USDHKD,USDHUF,USDJPY,USDMXN,USDNOK,USDPLN,USDSEK,USDSGD,USDTHB,USDTRY,USDZAR"; //SYMBOLS_CANDIDATES2 lista de ativos candidatos a formar par com SYMBOL_1. separados por ','
 input group "=== Spread do PAR ===";
-input int             EA_QTD_PERIODOS    = 120         ; //QTD_PERIODOS qtd de barras usadas na media e no desvio do spread
+input int             EA_QTD_PERIODOS    = 120        ; //QTD_PERIODOS qtd de barras usadas na media e no desvio do spread
 input ENUM_TIMEFRAMES EA_TIMEFRAME       = PERIOD_M3  ; //TIMEFRAME timeframe das barras da janela do spread
 input double          EA_DESVIOS_ENTRADA = 3.0        ; //DESVIOS_ENTRADA afastamento em desvios padrao para disparar a operacao
-input double          EA_DESVIOS_SAIDA   = 1.0        ; //DESVIOS_SAIDA distancia da media, em desvios, onde a posicao eh fechada. 0=fecha na media
+input double          EA_DESVIOS_SAIDA   = 0.0        ; //DESVIOS_SAIDA distancia da media, em desvios, onde a posicao eh fechada. 0=fecha na media
 
 input group "=== Volume ===";
 input double         EA_VOLUME_1        = 0.01        ; //VOLUME lote aplicado na primeira perna
@@ -62,7 +62,7 @@ input group "=== Diversos ===";
 input ulong          EA_MAGIC           = 260908001000; //MAGIC numero magico do EA. yy-mm-vv-vvv-vvv-vv
 input ulong          EA_DESVIO_PONTOS   = 20          ; //DESVIO_PONTOS desvio maximo aceito do preco nas ordens a mercado
 input bool           EA_SHOW_TELA       = true        ; //SHOW_TELA mostra o estado do EA no grafico
-input int            EA_QTD_MILISEG_TIMER = 1000      ; //QTD_MILISEG_TIMER tempo de acionamento do timer
+input int            EA_QTD_MILISEG_TIMER = 250       ; //QTD_MILISEG_TIMER tempo de acionamento do timer
 //---------------------------------------------------------------------------------------------
 
 string        m_name = "OSE-P8-001-001-PAIRS-SPREAD";
@@ -264,7 +264,7 @@ void showTela(){
         if(  m_vet_pares[i].strategy.getEstado() == PAR_FLAT &&
              m_vet_pares[i].strategy.coef_correlacao_ok() &&
              m_vet_pares[i].strategy.parCointegrado() &&
-             m_vet_pares[i].strategy.spread_instantaneo_ok()
+             m_vet_pares[i].strategy.spread_operacional_ok()
           ){
             str_show_tela += linhaTela(m_vet_pares[i]) + "\n";
             if(++qtd > 30) break;
