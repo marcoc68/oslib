@@ -48,7 +48,7 @@ input bool           EA_STOP_MEDIA_ABERTURA = false   ; //STOP_MEDIA_ABERTURA fe
 
 input group "=== Operacao ===";
 input int            EA_SPREAD_PIPS_MAX_PARA_ABRIR_POSICAO = 5    ; // Spread em pips maior que este valor. Não abre posição.
-input double         EA_MARGIN_LEVEL_MINIMO = 150     ; //MARGIN_LEVEL_MINIMO nivel de margem minimo para abrir posicao.
+input double         EA_MARGIN_LEVEL_MINIMO = 250     ; //MARGIN_LEVEL_MINIMO nivel de margem minimo para abrir posicao.
 input bool           EA_OPERACAO_AUTOMATICA = true    ; //OPERACAO_AUTOMATICA false=nao abre nem fecha sozinho, apenas loga o que faria
 input bool           EA_TECLAS_HABILITADAS  = true    ; //TECLAS_HABILITADAS abre/fecha o par por combinacao de teclas (grafico precisa ter o foco)
 input bool           EA_TECLA_CTRL      = true        ; //TECLA_CTRL exige CTRL na combinacao de teclas
@@ -84,15 +84,24 @@ uint                                m_qtd_pares = 0;
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit(){
+    Log::infoExp("************************************************"          , __FUNCTION__);
+    Log::infoExp("Iniciando "+m_name+" : " + TimeToString(TimeCurrent())     , __FUNCTION__);
+    Log::infoExp("BUILDER   : " + (string)__MQLBUILD__                       , __FUNCTION__);
+    Log::infoExp("ESTA EH VERSAO COMPILADA EM: " + TimeToString(__DATETIME__), __FUNCTION__);
+
     inicializarParametrosC0701StrategyPairsTrading();
     montarVetorDePares();
     int result = onInit();
     criarTimer(EA_QTD_MILISEG_TIMER);
+
+    Log::infoExp("Inicializacao concluida."                              , __FUNCTION__);
+    Log::infoExp(" ************************************************"     , __FUNCTION__);
     return result;
 }
 
 // inicializa os objetos de estrategia de cada par de ativos. Retorna INIT_SUCCEEDED se todos os pares foram inicializados com sucesso, ou INIT_FAILED se algum par falhou na inicializacao.
 int onInit(){
+    Log::infoExp("Executando onInit para cada par..." , __FUNCTION__);
     int retorno = 0;
     for(uint i = 0; i < m_qtd_pares; i++){
         retorno = m_vet_pares[i].strategy.onInit();
@@ -113,6 +122,7 @@ void criarTimer(int milisegundos_timer=0){
 }
 
 void montarVetorDePares(){
+    Log::infoExp("Montando vetor de pares...", __FUNCTION__);
 
     // 1. Separar a lista de ativos por vírgula dentro de um array de simbolos
     string symbols[];
@@ -217,6 +227,7 @@ void fecharPorTecla(){
 }
 
 void inicializarParametrosC0701StrategyPairsTrading(){
+    Log::infoExp("Inicializando parametros..."     , __FUNCTION__);
     // inicializando os parametros que serao passados para os objetos de estrategia...
     m_param.ea_symbol_1                           = EA_SYMBOL_1                          ;
     m_param.ea_symbol_2                           = EA_SYMBOL_2                          ;

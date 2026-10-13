@@ -416,31 +416,31 @@ class CStat{
     //+------------------------------------------------------------------+
     static bool testarCointegracaoADF( const  vector &preco1,
                                        const  vector &preco2,
+                                       vector &spreadOut,
                                        double &betaOut,
                                        double &tStatOut,
                                        bool   &isCointegratedOut) {
-        vector spread;
         double intercepto = 0;
 
         // 1. Obtém o beta de hedge e a série do spread via Engle-Granger
-        if(!calcBetaAndSpread(preco1, preco2, betaOut, intercepto, spread)){
-            Print("Erro ao calcular o spread de cointegração.");
+        if(!calcBetaAndSpread(preco1, preco2, betaOut, intercepto, spreadOut)){
+            Print("Erro ao calcular o spread de cointegração. Tamanho do vetor de precos1: ", preco1.Size(), " e vetor de precos2: ", preco2.Size());
             return false;
         }
 
-        if(spread.Size() < 10) {
-            Print("Amostra insuficiente para o teste estatístico (mínimo de 10 barras).");
+        if(spreadOut.Size() < 10) {
+            Print("Amostra insuficiente para o teste estatístico (mínimo de 10 barras). Tamanho do vetor de spread: ", spreadOut.Size());
             return false;
         }
 
         // 2. Prepara as séries para o modelo Dickey-Fuller: Delta(Spread) ~ Gamma * Spread_Lag
-        ulong n_reg = spread.Size() - 1;
+        ulong n_reg = spreadOut.Size() - 1;
         vector deltaSpread(n_reg);
         vector spreadLag(n_reg);
 
         for(ulong i = 0; i < n_reg; i++) {
-            deltaSpread[i] = spread[i + 1] - spread[i]; // Variável dependente: diferença de variação
-            spreadLag[i]   = spread[i];                 // Variável independente: valor defasado em t-1
+            deltaSpread[i] = spreadOut[i + 1] - spreadOut[i]; // Variável dependente: diferença de variação
+            spreadLag[i]   = spreadOut[i];                    // Variável independente: valor defasado em t-1
         }
 
         // 3. Monta a matriz OLS sem constante (os resíduos já possuem média zero por construção)
@@ -451,7 +451,10 @@ class CStat{
 
         // Estima o coeficiente Gamma da autoregressão
         vector gammaVec = xMatrix.LstSq(deltaSpread);
-        if(gammaVec.Size() < 1) return false;
+        if(gammaVec.Size() < 1){
+            Print(__FUNCTION__, " Erro ao calcular o vetor gamma. Tamanho do vetor de spread: ", spreadOut.Size());
+            return false;
+        }
 
         double gamma = gammaVec[0];
 
@@ -465,13 +468,19 @@ class CStat{
 
         // Soma de quadrados do regressor
         double somaSpreadLagSq = spreadLag.Dot(spreadLag);
-        if(somaSpreadLagSq == 0.0) return false;
+        if(somaSpreadLagSq == 0.0){
+            Print(__FUNCTION__, " Erro ao calcular a soma de quadrados do regressor. Tamanho do vetor de spread: ", spreadOut.Size());
+            return false;
+        }
 
         // Erro Padrão do coeficiente Gamma
         double varianciaResidual = somaResiduosSq / (double)(n_reg - 1);
         double stderrGamma = MathSqrt(varianciaResidual / somaSpreadLagSq);
 
-        if(stderrGamma == 0.0) return false;
+        if(stderrGamma == 0.0){
+            Print(__FUNCTION__, " Erro ao calcular desvio padrão do coeficiente Gamma. Tamanho do vetor de spread: ", spreadOut.Size());
+             return false;
+        }
 
         // 5. Cálculo da estatística t de Student para o teste ADF
         tStatOut = gamma / stderrGamma;
@@ -489,11 +498,22 @@ class CStat{
     static bool parEhCointegrado(const vector &preco1, const vector &preco2) {
         double beta, tStat;
         bool isCointegrated;
-        if( testarCointegracaoADF( preco1, preco2, beta, tStat, isCointegrated) ) {
+        vector spread;
+        if( testarCointegracaoADF( preco1, preco2, spread, beta, tStat, isCointegrated) ) {
             return isCointegrated;
         } else {
             Print(__FUNCTION__ + ": Erro ao testar cointegracao.");
             return false;
         }
+    }
+
+    static bool testarCointegracao(const vector &preco1, const vector &preco2, vector &spreadOut, double &betaOut, double &tStatOut, bool &isCointegratedOut) {
+
+        if( testarCointegracaoADF( preco1, preco2, spreadOut, betaOut, tStatOut, isCointegratedOut) ) {
+            return true;
+        }
+
+        Print(__FUNCTION__ + ": Erro ao testar cointegracao.");
+        return false;
     }
 };

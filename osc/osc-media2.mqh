@@ -186,7 +186,7 @@ public:
         vector vet2 = vetor_de_media.toVector();
         return ehCointegradoCom(vet2);
     }
-    
+
     vector toVector(){ return m_vet.toVector();}
     
     //------------------------

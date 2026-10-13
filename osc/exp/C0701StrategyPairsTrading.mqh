@@ -219,7 +219,6 @@ public:
     void criarTimer(int milisegundos_timer=0){
         if( milisegundos_timer > 0 ){
             EventSetMillisecondTimer( milisegundos_timer );
-            Log::info("Criado Timer de " + IntegerToString(milisegundos_timer) + " milisegundos.", __FUNCTION__);
         }
     }
 

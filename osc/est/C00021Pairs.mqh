@@ -14,11 +14,13 @@
 #property copyright "2020, Oficina de Software."
 #property link      "http://www.os.net"
 
-#include <oslib\osc\est\osc-estatistic3.mqh>
-#include <oslib\osc\osc-media2.mqh>
+#include <oslib/osc/est/CStat.mqh>
+#include <oslib/osc/osc-media2.mqh>
 
 class C00021Pairs{
 private:
+    bool             m_parEhCointegrado;
+    double           m_beta, m_tStat;
     double           m_spread    ;
     double           m_spread_std;
     double           m_spread_med;
@@ -28,18 +30,21 @@ private:
     osc_media        m_vet_ativo2; // vetor de precos do ativo 2
     osc_media        m_vet_spread; // vetor de spreads deve ter o tamanho da quantidade de segundos
                                    // usados no calculo da media do spread. Eh uma janela.
+
 protected:
 public:
      // default sao 60 ocorrencias com uma a cada minuto.
-     C00021Pairs(uint qtd_ocorrencias=60, uint qtd_seg_entre_ocorrencias=60){
+    C00021Pairs(uint qtd_ocorrencias=60, uint qtd_seg_entre_ocorrencias=60){
          initialize(qtd_ocorrencias, qtd_seg_entre_ocorrencias);
      }
     ~C00021Pairs(){}
 
-    double getSpread   (){ return m_spread    ; } // spread instantaneo   
-    double getSpreadStd(){ return m_spread_std; } // desvio padrao do spread
-    double getSpreadMed(){ return m_spread_med; } // media do spread
+    double getBeta     () const { return m_beta      ; } // beta do vetor de spread
+    double getSpread   () const { return m_spread    ; } // spread instantaneo
+    double getSpreadStd() const { return m_spread_std; } // desvio padrao do spread
+    double getSpreadMed() const { return m_spread_med; } // media do spread
     uint   getQtdSegMedia() { return m_qtd_seg_entre_ocorrencias; }
+    bool   cointegrados() const { return m_parEhCointegrado; }
 
     // inicializacao antes de comecar a acumular.
     // deve informar a quantidade de segundos usados do calculo da media dos spreads.
@@ -54,7 +59,10 @@ public:
         m_qtd_ocorrencias           = qtd_ocorrencias;
         m_spread                    = 0;
         m_spread_std                = 0;                
-        m_spread_med                = 0;                
+        m_spread_med                = 0;
+        m_parEhCointegrado          = 0;
+        m_beta                      = 0;
+        m_tStat                     = 0;
     }
     
     void initialize(uint qtd_ocorrencias=60, ENUM_TIMEFRAMES TIMEFRAME=PERIOD_CURRENT){ 
@@ -65,6 +73,7 @@ public:
     // in  t2    : tick do segundo  ativo
     // out spread: spread calculado como o retorno do ativo t1 sobre t2: log(t1)-log(t2)
     double calcSpread(MqlTick &t1, MqlTick &t2){ return calcSpread(getLast(t1), getLast(t2), t1.time); }
+    double calcSpreadCompleto(MqlTick &t1, MqlTick &t2){ return calcSpreadCompleto(getLast(t1), getLast(t2), t1.time); }
 
     // in  p1    : preco do primeiro ativo
     // in  p2    : preco do segundo  ativo
@@ -109,13 +118,52 @@ public:
         return m_spread;
     }
 
+    // in  p1    : preco do primeiro ativo
+    // in  p2    : preco do segundo  ativo
+    // in  t     : data dos precos
+    // out spread: spread calculado como o retorno preco p1 sobre p2: log(p1)-log(p2)
+    double calcSpreadCompleto(const double p1, const double p2, const datetime t){
+        if(p1==0 || p2==0){
+            Print("ERRO: Preco invalido! p1=",p1," p2=", p2);
+            return m_spread;
+        }
+
+        double logp1 = log(p1);
+        double logp2 = log(p2);
+
+        // atualizando os vetores de precos...
+        m_vet_ativo1.add(logp1,t);
+        m_vet_ativo2.add(logp2,t);
+
+        // calculando o spread...
+        if (!testarCointegracao() ){ return calcSpread(p1,p2,t); }
+
+        // atualizando o vetor de spread e demais variaveis que dependem do spread...
+        m_vet_spread.add(m_spread,t);
+        m_vet_spread.calcVar();
+        m_spread_med = m_vet_spread.getMed();
+        m_spread_std = sqrt( m_vet_spread.getVar() );
+
+        return m_spread;
+    }
+
     double calcCoefCorr(){ 
-//        Print(__FUNCTION__, "VET1:", m_vet_ativo1.toVector());
-//        Print(__FUNCTION__, "VET2:", m_vet_ativo2.toVector());
-        return m_vet_ativo1.calcCoefCorr(m_vet_ativo2); 
+        return m_vet_ativo1.calcCoefCorr(m_vet_ativo2);
     }
 
     bool parEhCointegrado(){ return m_vet_ativo1.ehCointegradoCom(m_vet_ativo2); }
+
+    bool testarCointegracao() {
+
+        vector preco1 = m_vet_ativo1.toVector();
+        vector preco2 = m_vet_ativo2.toVector();
+        vector spread = m_vet_spread.toVector();
+
+        if( CStat::testarCointegracaoADF( preco1, preco2, spread, m_beta, m_tStat, m_parEhCointegrado) ) { return true; }
+
+        Print(__FUNCTION__ + ": Erro ao testar cointegracao.");
+        return false;
+    }
 
     double getSpreadStd(double shift){ return getSpreadMed()+getSpreadStd()*shift; }
     
