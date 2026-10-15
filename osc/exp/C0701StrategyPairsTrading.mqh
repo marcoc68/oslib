@@ -771,7 +771,18 @@ public:
             return false;
         }
 
-        if( !enviarMercado( m_nm_symb2, tipo2, m_volume2 ) ){
+        // tenta enviar a perna 2 100x, uma vez por segundo
+        bool sucesso = false;
+        for( int i=0; i<100; i++ ) {
+            if( !enviarMercado( m_nm_symb2, tipo2, m_volume2 ) ){
+                Log::error("Falha na perna 2. Tentando novamente em 0.5s...", __myfunction__ );
+                Sleep(500);
+            }else {
+                sucesso = true;
+                break;
+            }
+        }
+        if( !sucesso ){
             Log::error("Falha na perna 2 (" + m_nm_symb2 + "). desfazendo a perna 1 (" + m_nm_symb1 + ")...", __myfunction__ );
             fecharSimbolo( m_nm_symb1 );
             return false;
