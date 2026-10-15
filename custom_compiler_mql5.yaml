@@ -1,0 +1,25 @@
+compilers:
+  - description: MQL5 MetaEditor64
+    match-compiler-exe: "(.*/)?MetaEditor64(.exe)?"
+    match-sources: ".*\\.mq5:"
+    match-args: "/compile:"
+    match-language: CPP
+    include-dirs:
+      - ${compiler-exe-dir}/MQL5/include/
+    defines-text: "
+#define COPY_TICKS_INFO   0
+#define COPY_TICKS_TRADE  1
+#define COPY_TICKS_ALL    2
+
+
+#define __FUNCTION__ ""
+#define __MQLBUILD__ ""
+
+#define input
+#define group
+#define datetime long
+#define ulong    long
+#define uint     int
+#define ushort   short
+#define string   void
+"

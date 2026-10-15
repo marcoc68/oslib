@@ -17,7 +17,7 @@
 #include <oslib/osc/est/C00021Pairs.mqh>
 #include <oslib/osc/osc-media2.mqh>
 #include <oslib/osc-trade-util.mqh>
-#include <Trade\AccountInfo.mqh>
+#include <Trade/AccountInfo.mqh>
 #include <oslib/osc/Log.mqh>
 
 //--- estado do par (direcao da operacao sobre o spread)
@@ -44,6 +44,7 @@ struct ParametrosC0701StrategyPairsTrading{
     ENUM_TIMEFRAMES ea_timeframe          ; // = PERIOD_M3  ; //TIMEFRAME timeframe das barras da janela do spread
     double          ea_desvios_entrada    ; // = 3.0        ; //DESVIOS_ENTRADA afastamento em desvios padrao para disparar a operacao
     double          ea_desvios_saida      ; // = 0.0        ; //DESVIOS_SAIDA distancia da media, em desvios, onde a posicao eh fechada. 0=fecha na media
+    double          ea_spread_std_min     ; // = 1.0        ; //SPREAD_STD_MIN desvio padrao minimo do spread para entrar na posicao
 
     //input group "=== Volume ===";
     double         ea_volume_1                   ; //= 0.01 ; //VOLUME lote aplicado na primeira perna
@@ -136,6 +137,7 @@ public:
     double getVolume2(){ return m_volume2; }
     double getSpreadOperacional1(){ return m_spread_em_pips1; }
     double getSpreadOperacional2(){ return m_spread_em_pips2; }
+    double getSpreadStdZsc(){ return m_pairs.getSpreadStdZsc(); } // z-score da desvio padrao medio do spread
 
     double getLucroPar(){ return m_lucro_par; }
     bool parCointegrado(){ return m_par_eh_cointegrado; }
@@ -181,11 +183,6 @@ public:
     }
 
     int onInit(){
-        Log::info(" ************************************************", __FUNCTION__);
-        Log::info(" Iniciando : " + TimeToString(TimeCurrent())      , __FUNCTION__);
-        Log::info(" BUILDER   : " + (string)__MQLBUILD__             , __FUNCTION__);
-        Log::info(" ************************************************", __FUNCTION__);
-
         if( !inicializarSimbolos()  ) return INIT_PARAMETERS_INCORRECT;
         if( !inicializarParametros()) return INIT_PARAMETERS_INCORRECT;
 
@@ -213,6 +210,7 @@ public:
 
         m_inicializado = true;
         processar();
+        Log::info("****** " +  m_param.ea_symbol_1 + "_" + m_param.ea_symbol_2 + " VOL: " + DoubleToString(m_volume1,3) + "/" + DoubleToString(m_volume2,3), __FUNCTION__);
         return(INIT_SUCCEEDED);
     }
 
@@ -257,12 +255,12 @@ public:
         m_symb1.Refresh(); m_symb1.RefreshRates();
         m_symb2.Refresh(); m_symb2.RefreshRates();
 
-        Log::info(" ativo1:" + m_nm_symb1 +
-                      " digits:"   + IntegerToString(m_symb1.Digits()) +
-                      " lots min/step/max:" + DoubleToString(m_symb1.LotsMin()) + "/" + DoubleToString(m_symb1.LotsStep()) + "/" + DoubleToString(m_symb1.LotsMax()), __FUNCTION__);
-        Log::info(" ativo2:" + m_symb2.Name() +
-                      " digits:"   + IntegerToString(m_symb2.Digits()) +
-                      " lots min/step/max:" + DoubleToString(m_symb2.LotsMin()) + "/" + DoubleToString(m_symb2.LotsStep()) + "/" + DoubleToString(m_symb2.LotsMax()), __FUNCTION__);
+        // Log::info(" ativo1:" + m_nm_symb1 +
+        //               " digits:"   + IntegerToString(m_symb1.Digits()) +
+        //               " lots min/step/max:" + DoubleToString(m_symb1.LotsMin()) + "/" + DoubleToString(m_symb1.LotsStep()) + "/" + DoubleToString(m_symb1.LotsMax()), __FUNCTION__);
+        // Log::info(" ativo2:" + m_symb2.Name() +
+        //               " digits:"   + IntegerToString(m_symb2.Digits()) +
+        //               " lots min/step/max:" + DoubleToString(m_symb2.LotsMin()) + "/" + DoubleToString(m_symb2.LotsStep()) + "/" + DoubleToString(m_symb2.LotsMax()), __FUNCTION__);
         return true;
     }
 
@@ -305,8 +303,6 @@ public:
         m_volume1 = osc_trade_util::normalizarVolume( m_symb1, m_param.ea_volume_1 );
         m_volume2 = osc_trade_util::normalizarVolume( m_symb2, m_param.ea_volume_2 );
 
-        Log::info("Volume "+ m_nm_symb1 + ":" + DoubleToString(m_volume1,2) + " volume " + m_nm_symb2 + ":" + DoubleToString(m_volume2,2), __FUNCTION__ );
-
         if( m_volume1 != m_param.ea_volume_1 || m_volume2 != m_param.ea_volume_2 ){
             Log::info("VOLUMES de " + m_nm_symb1 + ":" + DoubleToString(m_param.ea_volume_1,2) + " e de" + m_nm_symb2 + ":" + DoubleToString(m_param.ea_volume_2,2) + " foram ajustados aos limites dos ativos.", __FUNCTION__ );
         }
@@ -318,22 +314,15 @@ public:
     //+------------------------------------------------------------------+
     void logarModoOperacao(){
 
-        if( m_param.ea_operacao_automatica ){
-            Log::info("OPERACAO AUTOMATICA LIGADA: o EA abre e fecha as posicoes.",__FUNCTION__ );
-        }else{
+        if( !m_param.ea_operacao_automatica ){
             Log::info("OPERACAO AUTOMATICA DESLIGADA: o EA nao abre nem fecha posicao " +
                           "sozinho. Apenas loga [SIMULADO] o que faria. As teclas continuam valendo.", __FUNCTION__ );
         }
 
         if( !m_param.ea_teclas_habilitadas ){
             Log::info("Teclas de atalho desabilitadas.", __FUNCTION__ );
-            return;
         }
 
-        Log::info("tecla para ABRIR : " + strTeclaAbrir (), __FUNCTION__ );
-        Log::info("tecla para FECHAR: " + strTeclaFechar(), __FUNCTION__ );
-        Log::info("As teclas so chegam ao EA com o grafico em foco. Se o ALT for " +
-                      "capturado pelo menu do terminal, troque a combinacao nos parametros.", __FUNCTION__ );
     }
 
     string strTeclaAbrir (){
@@ -361,41 +350,41 @@ public:
         double val1_atu = osc_trade_util::valorPorPercentual( m_nm_symb1, m_volume1, 0.01 );
         double val2_atu = osc_trade_util::valorPorPercentual( m_nm_symb2, m_volume2, 0.01 );
 
-        Log::info("--- equilibrio financeiro das pernas (1% de variacao) ---", __FUNCTION__ );
-        Log::info(" " + m_nm_symb1 + " vol:" + DoubleToString(m_volume1,3) +
-                      " preco:" + DoubleToString(osc_trade_util::precoReferencia(m_nm_symb1),2) +
-                      " valor de 1%:" + DoubleToString(val1_atu,2) + " " + AccountInfoString(ACCOUNT_CURRENCY), __FUNCTION__ );
-        Log::info(" " + m_nm_symb2 + " vol:" + DoubleToString(m_volume2,3) +
-                      " preco:" + DoubleToString(osc_trade_util::precoReferencia(m_nm_symb2),2) +
-                      " valor de 1%:" + DoubleToString(val2_atu,2) + " " + AccountInfoString(ACCOUNT_CURRENCY), __FUNCTION__ );
+        // Log::info("--- equilibrio financeiro das pernas (1% de variacao) ---", __FUNCTION__ );
+        // Log::info(" " + m_nm_symb1 + " vol:" + DoubleToString(m_volume1,3) +
+        //               " preco:" + DoubleToString(osc_trade_util::precoReferencia(m_nm_symb1),2) +
+        //               " valor de 1%:" + DoubleToString(val1_atu,2) + " " + AccountInfoString(ACCOUNT_CURRENCY), __FUNCTION__ );
+        // Log::info(" " + m_nm_symb2 + " vol:" + DoubleToString(m_volume2,3) +
+        //               " preco:" + DoubleToString(osc_trade_util::precoReferencia(m_nm_symb2),2) +
+        //               " valor de 1%:" + DoubleToString(val2_atu,2) + " " + AccountInfoString(ACCOUNT_CURRENCY), __FUNCTION__ );
 
         if( val1_atu > 0 && val2_atu > 0 ){
             double desequil = MathAbs(val1_atu-val2_atu)/MathMax(val1_atu,val2_atu);
-            Log::info("desequilibrio do volume configurado: " + DoubleToString(desequil*100,2) + "%", __FUNCTION__ );
+            // Log::info("desequilibrio do volume configurado: " + DoubleToString(desequil*100,2) + "%", __FUNCTION__ );
         }
 
         double erro=0;
         if( !osc_trade_util::calcVolumesEquilibrio( m_nm_symb1, m_nm_symb2, m_volume_sugerido1, m_volume_sugerido2, erro,
                                                     m_param.ea_tolerancia_equil ) ){
-            Log::info("Nao foi possivel calcular o volume de equilibrio. Verifique cotacao e tick value dos ativos.", __FUNCTION__ );
+            Log::warn("Nao foi possivel calcular o volume de equilibrio. Verifique cotacao e tick value dos ativos.", __FUNCTION__ );
             return;
         }
 
         double val1_sug = osc_trade_util::valorPorPercentual( m_nm_symb1, m_volume_sugerido1, 0.01 );
         double val2_sug = osc_trade_util::valorPorPercentual( m_nm_symb2, m_volume_sugerido2, 0.01 );
 
-        Log::info("SUGESTAO de volume minimo para equilibrio: " + m_nm_symb1 + ":" + DoubleToString(m_volume_sugerido1,2) + " (1% = " + DoubleToString(val1_sug,2) + ") " + m_nm_symb2 + ":" + DoubleToString(m_volume_sugerido2,2) + " (1% = " + DoubleToString(val2_sug,2) + ") " + "desequilibrio residual:" + DoubleToString(erro*100,2) + "%", __FUNCTION__ );
+        // Log::info("SUGESTAO de volume minimo para equilibrio: " + m_nm_symb1 + ":" + DoubleToString(m_volume_sugerido1,2) + " (1% = " + DoubleToString(val1_sug,2) + ") " + m_nm_symb2 + ":" + DoubleToString(m_volume_sugerido2,2) + " (1% = " + DoubleToString(val2_sug,2) + ") " + "desequilibrio residual:" + DoubleToString(erro*100,2) + "%", __FUNCTION__ );
 
         if( erro > m_param.ea_tolerancia_equil ){
-            Log::info("o melhor par encontrado ainda ficou acima da tolerancia de " + DoubleToString(m_param.ea_tolerancia_equil*100,2) + "%. Os lotes minimos dos dois ativos " + "nao permitem um casamento melhor nesta faixa de volume.", __FUNCTION__ );
+            Log::warn("o melhor par encontrado ainda ficou acima da tolerancia de " + DoubleToString(m_param.ea_tolerancia_equil*100,2) + "%. Os lotes minimos dos dois ativos " + "nao permitem um casamento melhor nesta faixa de volume.", __FUNCTION__ );
         }
 
         if( m_param.ea_aplicar_sugestao_de_volume  && erro <= m_param.ea_tolerancia_equil ){
             m_volume1 = m_volume_sugerido1;
             m_volume2 = m_volume_sugerido2;
-            Log::info("aplicada sugestao de volume de lotes: VOLUME1=" + DoubleToString(m_volume1,2) + " e VOLUME2=" + DoubleToString(m_volume2,2), __FUNCTION__ );
-        }else{
-            Log::info("a sugestao nao altera o EA: ele continua operando com VOLUME1=" + DoubleToString(m_param.ea_volume_1,2) + " e VOLUME2=" + DoubleToString(m_param.ea_volume_2,2), __FUNCTION__ );
+        //     Log::info("aplicada sugestao de volume de lotes: VOLUME1=" + DoubleToString(m_volume1,2) + " e VOLUME2=" + DoubleToString(m_volume2,2), __FUNCTION__ );
+        // }else{
+        //     Log::info("a sugestao nao altera o EA: ele continua operando com VOLUME1=" + DoubleToString(m_param.ea_volume_1,2) + " e VOLUME2=" + DoubleToString(m_param.ea_volume_2,2), __FUNCTION__ );
         }
     }
 
@@ -426,8 +415,10 @@ public:
         m_dt_ult_barra = rates1[qtd-1].time;
 
         Log::info(IntegerToString(m_qtd_amostras) + "/" + IntegerToString(m_param.ea_qtd_periodos) +
-                      " amostras carregadas. ultima barra:" + TimeToString(m_dt_ult_barra) +
-                      " media:" + DoubleToString(m_spread_med,2) + " desvio:" + DoubleToString(m_spread_std,2), __FUNCTION__ );
+                      " amostras. ult barra:" + TimeToString(m_dt_ult_barra) +
+                      " spread:"+DoubleToString(m_spread_atu,5) + " spread medio:" + DoubleToString(m_spread_med,5) + " Std do spread:" + DoubleToString(m_spread_std,5) + " zsore do spread:" + DoubleToString(m_zscore,5) +"/" +DoubleToString(m_pairs.getSpreadZsc(),5)+"\n"+
+                      " Std medio do spread:" + DoubleToString(m_pairs.getSpreadStdMed(),5) + " zscore do Std medio do spread:" + DoubleToString(m_pairs.getSpreadStdZsc(),5)
+                      , __FUNCTION__ );
     }
 
     // fechamento do ativo 2 na barra de data dt. Se o ativo 2 nao tiver barra nessa data
@@ -461,6 +452,12 @@ public:
 
         m_spread_med = m_pairs.getSpreadMed();
         m_spread_std = m_pairs.getSpreadStd();
+        m_spread_atu = m_pairs.getSpread();
+
+        // bandas calculadas pela propria classe: media + shift*desvio
+        m_banda_sup  = m_pairs.getSpreadStd(  m_param.ea_desvios_entrada );
+        m_banda_inf  = m_pairs.getSpreadStd( -m_param.ea_desvios_entrada );
+        m_zscore     = (m_spread_std > 0) ? (m_spread_atu-m_spread_med)/m_spread_std : 0;
     }
 
     void calcularCoeficenteCorrelacao(){
@@ -576,7 +573,9 @@ public:
         if( m_spread_atu > m_banda_sup && coef_correlacao_ok() && spread_operacional_ok() ){
             // ativo1 caro em relacao ao ativo2: vende o caro e compra o barato.
             string motivo = "spread " + DoubleToString(m_spread_atu,8) + " acima da banda " +
-                            DoubleToString(m_banda_sup,8) + " (z=" + DoubleToString(m_zscore,2) + ")";
+                            DoubleToString(m_banda_sup,8) + " (z_spread=" + DoubleToString(m_zscore,2) + ")" +
+                            // zscore do desvio padrao do spread
+                            " (z_spread_std=" + DoubleToString(m_pairs.getSpreadStdZsc(),2) + ")"    ;
             solicitarAbertura( PAR_SHORT_SPREAD, motivo, false );
             return;
         }
@@ -584,7 +583,9 @@ public:
         if( m_spread_atu < m_banda_inf && coef_correlacao_ok() && spread_operacional_ok() ){
             // ativo1 barato em relacao ao ativo2: compra o barato e vende o caro.
             string motivo = "spread " + DoubleToString(m_spread_atu,8) + " abaixo da banda " +
-                            DoubleToString(m_banda_inf,8) + " (z=" + DoubleToString(m_zscore,2) + ")";
+                            DoubleToString(m_banda_inf,8) + " (z=" + DoubleToString(m_zscore,2) + ")" +
+                            // zscore do desvio padrao do spread
+                            " (z_spread_std=" + DoubleToString(m_pairs.getSpreadStdZsc(),2) + ")"    ;
             solicitarAbertura( PAR_LONG_SPREAD, motivo, false );
             return;
         }
@@ -594,7 +595,12 @@ public:
 
     bool coef_correlacao_ok(){ return ( m_coef_correlacao >= m_param.ea_coef_correlacao_min ); }
 
-    bool spread_operacional_ok(){ return spread_medio_ok() && spread_instantaneo_ok(); }
+    bool spread_operacional_ok(){ return spread_medio_ok() && spread_instantaneo_ok() && tamanho_desvio_padrao_spread_ok(); }
+
+    // desvio padrao do spread deve ter um tamanho minimo para entrar na posicao.
+    // Tentando evitar entradas com desvio padrao pequeno, pois quando o desvio padrão
+    // aumenta o spread também aumenta e acabamos presos em uma posição desfavoravel.
+    bool tamanho_desvio_padrao_spread_ok(){ return ( m_pairs.getSpreadStdZsc() >= m_param.ea_spread_std_min ); }
 
     bool spread_medio_ok(){
         return ( m_media_spread_symb1.getMed() >= 0 && m_media_spread_symb1.getMed() <= m_param.ea_spread_pips_max_para_abrir_posicao &&
@@ -633,7 +639,7 @@ public:
             return false;
         }
 
-        Log::info((manual?" [TECLA] ":" ") + "abrindo " + descreverDirecao(direcao) + ". motivo: " + motivo, __FUNCTION__ );
+        // Log::info((manual?" [TECLA] ":" ") + "abrindo " + descreverDirecao(direcao) + ". motivo: " + motivo, __FUNCTION__ );
         return abrirPar( direcao );
     }
 
@@ -662,14 +668,26 @@ public:
             // correlacao positiva:
             // spread abaixo da media: compra ativo1 e vende ativo2
             // spread acima da media : vende ativo1 e compra ativo2
-            tipo1 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_BUY  : ORDER_TYPE_SELL;
-            tipo2 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_SELL : ORDER_TYPE_BUY ;
+
+            // esse aqui eh da teoria
+            // tipo1 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_BUY  : ORDER_TYPE_SELL;
+            // tipo2 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_SELL : ORDER_TYPE_BUY ;
+
+            // aqui toh apostando que vai dar ruim, kkk
+            tipo1 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_SELL: ORDER_TYPE_BUY;
+            tipo2 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_BUY : ORDER_TYPE_SELL ;
         }else{
             // correlacao negativa:
             // spread abaixo da media: compra ambos os ativos
             // spread acima da media : vende ambos os ativos
-            tipo1 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
-            tipo2 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
+
+            // esse aqui eh da teoria
+            // tipo1 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
+            // tipo2 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
+
+            // aqui toh apostando que vai dar ruim, kkk
+            tipo1 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_SELL : ORDER_TYPE_BUY;
+            tipo2 = (direcao==PAR_LONG_SPREAD) ? ORDER_TYPE_SELL : ORDER_TYPE_BUY;
         }
 
         if( !enviarMercado( m_nm_symb1, tipo1, m_volume1 ) ){
@@ -876,7 +894,11 @@ public:
 //            return;
 //        }
 
-        m_estado = dir1; // comprado no ativo1 = comprado no spread
+        // esse eh o original, correto
+        //m_estado = dir1; // comprado no ativo1 = comprado no spread
+
+        // fazendo a loucura, kkk
+        m_estado = -dir1; // comprado no ativo1 = comprado no spread
 
         // o EA pode ter sido reiniciado (ou a posicao pode ter sido aberta na mao) com o par
         // jah montado. Nesse caso nao temos a referencia da abertura: adotamos a atual.

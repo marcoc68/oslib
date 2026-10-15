@@ -169,6 +169,7 @@ void OnStart(){
 }
 
 string calcCointegracao(vector &prices1, vector &prices2){
+    vector spread;
     double betaOut, tStatOut;
     bool isCointegratedOut;
     string explicacao = "tStudent deve ser < que -2.86";
@@ -176,6 +177,7 @@ string calcCointegracao(vector &prices1, vector &prices2){
 
     if(CStat::testarCointegracaoADF( prices1,
                                   prices2,
+                                  spread,
                                   betaOut,
                                   tStatOut,
                                   isCointegratedOut)){

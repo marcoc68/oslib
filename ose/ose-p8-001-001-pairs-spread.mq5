@@ -15,7 +15,7 @@
 #property version   "8.002"
 
 #include <oslib/osc/exp/C0701StrategyPairsTrading.mqh>
-#include <Trade\AccountInfo.mqh>
+#include <Trade/AccountInfo.mqh>
 #include <oslib/osc/Log.mqh>
 
 
@@ -24,17 +24,18 @@ input group "=== Par de ativos ===";
 input int            EA_QTD_PARES_A_OPERAR  = 8         ; //QTD_PARES_A_OPERAR quantidade de pares a operar
 input string         EA_SYMBOL_1            = TERMINAL  ; //SYMBOL_1 primeiro ativo do par (p1 do spread)
 input string         EA_SYMBOL_2            = BUSCAR_PAR; //SYMBOL_2 segundo  ativo do par (p2 do spread)
-input double         EA_COEF_CORRELACAO_MIN = 0.95      ; //COEF_CORRELACAO_MIN coeficiente de correlacao minimo entre os dois ativos para operar
+input double         EA_COEF_CORRELACAO_MIN = 0.75      ; //COEF_CORRELACAO_MIN coeficiente de correlacao minimo entre os dois ativos para operar
 input string         EA_SYMBOLS_CANDIDATES1  = "EURUSD,GBPUSD,USDCHF,USDJPY,USDCAD,AUDUSD"; //SYMBOLS_CANDIDATES1 lista de ativos candidatos a formar par com SYMBOL_1. separados por ','
 input string         EA_SYMBOLS_CANDIDATES2  = "AUDNZD,AUDCAD,AUDCHF,AUDJPY,CHFJPY,EURGBP,EURAUD,EURJPY,EURCHF,EURNZD,EURCAD,GBPCHF,GBPJPY,GBPAUD,GBPCAD,GBPNZD,NZDCAD,NZDCHF,NZDJPY,NZDUSD,USDSGD"; //SYMBOLS_CANDIDATES2 lista de ativos candidatos a formar par com SYMBOL_1. separados por ','
 
 //input string         EA_SYMBOLS_CANDIDATES1   = "AUDCAD,AUDCHF,AUDJPY,AUDNZD,AUDSGD,AUDUSD,CADCHF,CADJPY,CHFJPY,CHFSGD,EURAUD,EURCAD,EURCHF,EURDKK,EURGBP,EURHKD,EURJPY,EURNOK,EURNZD,EURPLN,EURSEK,EURSGD,EURTRY,EURUSD,EURZAR,GBPAUD,GBPCAD,GBPCHF,GBPDKK,GBPJPY"; //SYMBOLS_CANDIDATES1 lista de ativos candidatos a formar par com SYMBOL_1. separados por ','
 //input string         EA_SYMBOLS_CANDIDATES2   = "GBPNOK,GBPNZD,GBPSEK,GBPSGD,GBPTRY,GBPUSD,NOKJPY,NOKSEK";//,NZDCAD";//,NZDCHF,NZDJPY,NZDUSD,SEKJPY,SGDJPY,USDCAD,USDCHF,USDCNH,USDCZK,USDDKK,USDHKD,USDHUF,USDJPY,USDMXN,USDNOK,USDPLN,USDSEK,USDSGD,USDTHB,USDTRY,USDZAR"; //SYMBOLS_CANDIDATES2 lista de ativos candidatos a formar par com SYMBOL_1. separados por ','
 input group "=== Spread do PAR ===";
-input int             EA_QTD_PERIODOS    = 120        ; //QTD_PERIODOS qtd de barras usadas na media e no desvio do spread
+input int             EA_QTD_PERIODOS    = 60         ; //QTD_PERIODOS qtd de barras usadas na media e no desvio do spread
 input ENUM_TIMEFRAMES EA_TIMEFRAME       = PERIOD_M3  ; //TIMEFRAME timeframe das barras da janela do spread
-input double          EA_DESVIOS_ENTRADA = 2.5        ; //DESVIOS_ENTRADA afastamento em desvios padrao para disparar a operacao
-input double          EA_DESVIOS_SAIDA   = 0.5        ; //DESVIOS_SAIDA distancia da media, em desvios, onde a posicao eh fechada. 0=fecha na media
+input double          EA_DESVIOS_ENTRADA = 3.0        ; //DESVIOS_ENTRADA afastamento em desvios padrao para disparar a operacao
+input double          EA_DESVIOS_SAIDA   = 0.0        ; //DESVIOS_SAIDA distancia da media, em desvios, onde a posicao eh fechada. 0=fecha na media
+input double          EA_SPREAD_STD_MIN  = 1.0        ; //SPREAD_STD_MIN desvio padrao minimo da media do desvio padrao do spread para entrar na posicao
 
 input group "=== Volume ===";
 input double         EA_VOLUME_1        = 0.01        ; //VOLUME lote aplicado na primeira perna
@@ -48,7 +49,7 @@ input bool           EA_STOP_MEDIA_ABERTURA = false   ; //STOP_MEDIA_ABERTURA fe
 
 input group "=== Operacao ===";
 input int            EA_SPREAD_PIPS_MAX_PARA_ABRIR_POSICAO = 5    ; // Spread em pips maior que este valor. Não abre posição.
-input double         EA_MARGIN_LEVEL_MINIMO = 250     ; //MARGIN_LEVEL_MINIMO nivel de margem minimo para abrir posicao.
+input double         EA_MARGIN_LEVEL_MINIMO = 350     ; //MARGIN_LEVEL_MINIMO nivel de margem minimo para abrir posicao.
 input bool           EA_OPERACAO_AUTOMATICA = true    ; //OPERACAO_AUTOMATICA false=nao abre nem fecha sozinho, apenas loga o que faria
 input bool           EA_TECLAS_HABILITADAS  = true    ; //TECLAS_HABILITADAS abre/fecha o par por combinacao de teclas (grafico precisa ter o foco)
 input bool           EA_TECLA_CTRL      = true        ; //TECLA_CTRL exige CTRL na combinacao de teclas
@@ -237,6 +238,7 @@ void inicializarParametrosC0701StrategyPairsTrading(){
     m_param.ea_timeframe                          = EA_TIMEFRAME                         ;
     m_param.ea_desvios_entrada                    = EA_DESVIOS_ENTRADA                   ;
     m_param.ea_desvios_saida                      = EA_DESVIOS_SAIDA                     ;
+    m_param.ea_spread_std_min                     = EA_SPREAD_STD_MIN                    ;
     m_param.ea_volume_1                           = EA_VOLUME_1                          ;
     m_param.ea_volume_2                           = EA_VOLUME_2                          ;
     m_param.ea_aplicar_sugestao_de_volume         = EA_APLICAR_SUGESTAO_DE_VOLUME        ;
@@ -272,7 +274,7 @@ void showTela(){
     // depois mostra os pares que estao aptos a operar, mas ainda nao abriram posicao.
     for(uint i = 0; i < m_qtd_pares; i++){
         if(  m_vet_pares[i].strategy.getEstado() == PAR_FLAT &&
-             m_vet_pares[i].strategy.coef_correlacao_ok() &&
+             // m_vet_pares[i].strategy.coef_correlacao_ok() &&
              m_vet_pares[i].strategy.parCointegrado() &&
              m_vet_pares[i].strategy.spread_operacional_ok()
           ){
@@ -296,7 +298,9 @@ string linhaTela(Par &par){
 
            " VOL "   + DoubleToString(par.strategy.getVolume1(), 2) + "_" +
                        DoubleToString(par.strategy.getVolume2(), 2) +
-           " Zscor " + DoubleToString(par.strategy.getZscore(), 2) +
+
+           " Zscor " + DoubleToString(par.strategy.getZscore(), 2) + "_" +
+                       DoubleToString(par.strategy.getSpreadStdZsc(), 2) +
 
            " Result " + DoubleToString(par.strategy.getLucroPar(), 2);
 }

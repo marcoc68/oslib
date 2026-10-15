@@ -29,7 +29,8 @@ private:
     osc_media        m_vet_ativo1; // vetor de precos do ativo 1
     osc_media        m_vet_ativo2; // vetor de precos do ativo 2
     osc_media        m_vet_spread; // vetor de spreads deve ter o tamanho da quantidade de segundos
-                                   // usados no calculo da media do spread. Eh uma janela.
+                                   // usados no calculo da media do spread.
+    osc_media        m_vet_spread_std; // vetor de desvios padroes do spread.
 
 protected:
 public:
@@ -43,18 +44,24 @@ public:
     double getSpread   () const { return m_spread    ; } // spread instantaneo
     double getSpreadStd() const { return m_spread_std; } // desvio padrao do spread
     double getSpreadMed() const { return m_spread_med; } // media do spread
-    uint   getQtdSegMedia() { return m_qtd_seg_entre_ocorrencias; }
-    bool   cointegrados() const { return m_parEhCointegrado; }
+    double getSpreadZsc()       { return m_vet_spread.getZsc(); } // zscore do spread
+
+    double getSpreadStdMed() { return m_vet_spread_std.getMed(); } // mnedia do desvio padrao do spread
+    double getSpreadStdZsc() { return m_vet_spread_std.getZsc(); } // zscore do desvio padrao do spread
+
+    uint   getQtdSegMedia() const { return m_qtd_seg_entre_ocorrencias; }
+    bool   cointegrados()   const { return m_parEhCointegrado; }
 
     // inicializacao antes de comecar a acumular.
     // deve informar a quantidade de segundos usados do calculo da media dos spreads.
     // se nao informar, calcularah a media da ultima hora de spreads.
     void initialize(uint qtd_ocorrencias=60, uint qtd_seg_entre_ocorrencias=60){ 
         
-        m_vet_ativo1.initialize(qtd_ocorrencias,qtd_seg_entre_ocorrencias);
-        m_vet_ativo2.initialize(qtd_ocorrencias,qtd_seg_entre_ocorrencias);
-        m_vet_spread.initialize(qtd_ocorrencias,qtd_seg_entre_ocorrencias);
-        
+        m_vet_ativo1    .initialize(qtd_ocorrencias,qtd_seg_entre_ocorrencias);
+        m_vet_ativo2    .initialize(qtd_ocorrencias,qtd_seg_entre_ocorrencias);
+        m_vet_spread    .initialize(qtd_ocorrencias,qtd_seg_entre_ocorrencias);
+        m_vet_spread_std.initialize(qtd_ocorrencias,qtd_seg_entre_ocorrencias);
+
         m_qtd_seg_entre_ocorrencias = qtd_seg_entre_ocorrencias;
         m_qtd_ocorrencias           = qtd_ocorrencias;
         m_spread                    = 0;
@@ -104,10 +111,12 @@ public:
         //                                    // ativos. Isto serah para evitar o problema causado
         //                                    // quando um dos ativos tem muito mais transações que 
         //                                    // o outro.
-        if( m_vet_spread.add(m_spread,t) ){
-            m_vet_spread.calcVar();
+        if( m_vet_spread.add(m_spread,t,true) ){
             m_spread_med = m_vet_spread.getMed();
-            m_spread_std = sqrt( m_vet_spread.getVar() );
+            m_spread_std = m_vet_spread.getStd();
+
+            m_vet_spread_std.add(m_spread_std,t, true); // media do desvio padrao do spread
+            // Log::info("m_vet_spread_std:"+m_vet_spread_std.toString(), __FUNCTION__);
 
             m_vet_ativo1.add(p1,t);
             m_vet_ativo2.add(p2,t);
@@ -139,10 +148,12 @@ public:
         if (!testarCointegracao() ){ return calcSpread(p1,p2,t); }
 
         // atualizando o vetor de spread e demais variaveis que dependem do spread...
-        m_vet_spread.add(m_spread,t);
-        m_vet_spread.calcVar();
+        m_vet_spread.add(m_spread,t, true);
         m_spread_med = m_vet_spread.getMed();
-        m_spread_std = sqrt( m_vet_spread.getVar() );
+        m_spread_std = m_vet_spread.getStd();
+
+        m_vet_spread_std.add(m_spread_std,t, true); // media do desvio padrao do spread
+        // Log::info("m_vet_spread_std:"+m_vet_spread_std.toString(), __FUNCTION__);
 
         return m_spread;
     }

@@ -9,6 +9,7 @@
 #include <oslib/osc/est/CStat.mqh>
 #include <Math/Stat/Math.mqh>
 #include <oslib/osc/data/osc-vetor-circular-double.mqh>
+#include <oslib/osc/Log.mqh>
 
 
 // calculo de media simples baseada em quantidade fixa de elementos. A medida que o vetor de valores enche, despreza o valor mais antigo,
@@ -21,7 +22,9 @@ private:
     uint   m_len   ;
     uint   m_len_calc;
     double m_mean  ; // media: recalcula sempre que executa o metodo add...
-    double m_var   ; // variancia: recalcula a pedido com a chamada ao metodo calVar.
+    double m_var   ; // variancia: recalcula a pedido com a chamada ao metodo calcVar.
+    double m_std   ; // desvio padrao: recalcula a pedido com a chamada ao metodo calcVar.
+    double m_zscore  ; // zscore: recalcula a pedido com a chamada ao metodo calcVar.
     VetorCircularDouble m_vet;
 
     uint     m_tf        ; // time_frame
@@ -50,6 +53,8 @@ public:
         m_tot  = 0  ;
         m_mean = 0  ;
         m_var  = 0  ;
+        m_std  = 0  ;
+        m_zscore = 0;
         m_vet = VetorCircularDouble(len);
 
         //----------------------
@@ -124,19 +129,29 @@ public:
 
     //----------------------------------------------------------------------------------------------------
     // Calcula e retorna a variancia sobre o conjunto atual.
+    // Aqui ficam calculados também o desvio padrão e o zscore.
     //----------------------------------------------------------------------------------------------------
     double calcVar(){
         m_var=0.0;
 
-        if(m_len_calc >= m_len){
-            m_var = m_vet.calcVar();
-            return m_var;
-        }
-
         if( m_len_calc < 2 ) return m_var;
 
-        for(uint i=0; i<m_vet.size(); i++) m_var+=MathPow(m_vet.at(i)-m_mean,2);
-        m_var=m_var/(m_vet.size()-1);
+        // vetor cheio
+        if(m_len_calc >= m_len){
+            m_var = m_vet.calcVar();
+            // Log::info("calcVar vetor cheio= " + DoubleToString(m_var, 20) + " var eh zero:" + (m_var == 0 ? "sim" : "nao"), __FUNCTION__);
+        }else {
+            // vetor ainda nao encheu. entao calculamos a variancia manualmente para nao ser infuenciado pelos slots vazios
+            for(uint i=0; i<m_vet.size(); i++) {
+                m_var+=MathPow(m_vet.at(i)-m_mean,2);
+                // Log::info("vetor parcial m_var= " + DoubleToString(m_var, 20) + " m_mean=" + DoubleToString(m_mean, 20) + " m_vet.at(i)=" + DoubleToString(m_vet.at(i), 10), __FUNCTION__);
+            }
+            m_var=m_var/(m_vet.size()-1);
+            // Log::info("calcVar vetor parcial= " + DoubleToString(m_var, 20) + " var eh zero:" + (m_var == 0 ? "sim" : "nao"), __FUNCTION__);
+        }
+
+        m_std = sqrt(m_var);
+        m_zscore = m_std==0?m_std:( (m_vet.atLast()-m_mean)/m_std );
         return m_var;
     }
     
@@ -190,6 +205,16 @@ public:
     vector toVector(){ return m_vet.toVector();}
     
     //------------------------
-    double getMed(){ return m_mean; } // retorna a ultima media calculada
-    double getVar(){ return m_var ; } // retorna a ultima variancia calculada
+    double getMed(){ return m_mean  ; } // retorna a ultima media calculada
+    double getVar(){ return m_var   ; } // retorna a ultima variancia calculada
+    double getStd(){ return m_std   ; } // retorna o ultimo desvio padrao calculado
+    double getZsc(){ return m_zscore; } // retorna o ultimo zscore calculado
+
+    string toString(){ return "m_len:"+IntegerToString(m_len_calc) + "/"+IntegerToString(m_len) +
+                              " m_mean:"+DoubleToString(m_mean,10) +
+                              " m_var:"+DoubleToString(m_var,20) +
+                              " m_std:"+DoubleToString(m_std,20) +
+                              " m_zscore:"+DoubleToString(m_zscore,20)  +
+                                  " std eh zero:" + (m_std == 0 ? "sim" : "nao") + " " +
+                              m_vet.toString();}
 };

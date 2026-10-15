@@ -56,6 +56,12 @@ public:
         return m_buffer[actualIndex];
     }
 
+    // Acessa o elemento mais antigo (0 = mais antigo)
+    double atFirst() const{ return at(0); }
+
+    // Acessa o elemento mais recente (size()-1)
+    double atLast() const{ return m_size>0?at(m_size-1) : at(0); }
+
     // Retorna um novo 'vector' ordenado do mais antigo para o mais recente
     // (útil caso queira aplicar funções estatísticas nativas do MQL5, como .Mean(), .Sum(), etc.)
     vector toVector() const {
@@ -79,7 +85,7 @@ public:
     string toString() const {
         string result = "VetorCircularDouble[";
         for(uint i = 0; i < m_size; i++){
-            result += DoubleToString(at(i), 4);
+            result += DoubleToString(at(i), 10);
             if(i < m_size - 1) result += ", ";
         }
         result += "]";
