@@ -174,9 +174,8 @@ void OnDeinit(const int reason){
     }
     EventKillTimer();
     Comment("");
-    Log::info( "EA finalizado. reason=" + IntegerToString(reason), __FUNCTION__ );
+    Log::info( "EA finalizado. reason=" + getDeinitReasonText(reason), __FUNCTION__, true );
 }
-
 
 
 //+------------------------------------------------------------------+
@@ -315,4 +314,30 @@ string linhaTelaComum(){
            " FreeMargin: " + DoubleToString(m_conta.FreeMargin(),2) + "\n" +
            "QtdPares: " + IntegerToString(m_qtd_pares) + "  Janela: " + IntegerToString(m_param.ea_qtd_periodos) + " barras de " + EnumToString(m_param.ea_timeframe);
 }
+
+string getDeinitReasonText(int reasonCode){
+    string text="CODIGO_ONDEINIT_INVALIDO";
+    //---
+    switch(reasonCode)
+    {
+        case REASON_ACCOUNT:
+            text="Account was changed";break;
+        case REASON_CHARTCHANGE:
+            text="Symbol or timeframe was changed";break;
+        case REASON_CHARTCLOSE:
+            text="Chart was closed";break;
+        case REASON_PARAMETERS:
+            text="Input-parameter was changed";break;
+        case REASON_RECOMPILE:
+            text="Program "+__FILE__+" was recompiled";break;
+        case REASON_REMOVE:
+            text="Program "+__FILE__+" was removed from chart";break;
+        case REASON_TEMPLATE:
+            text="New template was applied to chart";break;
+        default:text="Another reason";
+    }
+    //---
+    return text;
+}
+
 //+------------------------------------------------------------------+
