@@ -31,6 +31,8 @@
 #define SIMBOLO_VENDIDO  -1
 #define SIMBOLO_FLAT      0
 
+#define FUNCTION __FUNCTION__+"_"+
+
 struct ParametrosC0701StrategyPairsTrading{
 
     //input group "=== Par de ativos ===";
@@ -130,14 +132,18 @@ public:
 
     string getNmSymbol1(){ return m_nm_symb1;}
     string getNmSymbol2(){ return m_nm_symb2;}
+    string strPar(){ return m_nm_symb1 + "_" + m_nm_symb2; }
+
     double getCoefCorrelacao(){ return m_coef_correlacao; }               // coeficiente de correlacao do par
     double getZscore(){ return m_pairs.getSpreadZsc(); }                  // z-score do spread do par
     double getZscoreDoDesvioPadrao(){ return m_pairs.getSpreadStdZsc(); } // z-score da desvio padrao do spread do par
 
-    double getVolume1(){ return m_volume1; }                              // volume do primeiro ativo do par
-    double getVolume2(){ return m_volume2; }                              // volume do segundo ativo do par
-    double getSpreadOperacional1(){ return m_spread_em_pips1; }           // diferença bid-ask do primeiro ativo do par
-    double getSpreadOperacional2(){ return m_spread_em_pips2; }           // diferença bid-ask do segundo ativo do par
+    double getVolume1(){ return m_volume1; }                              // volume do primeiro ativo do par (qd negociar usarah este volume)
+    double getVolume2(){ return m_volume2; }                              // volume do segundo ativo do par (qd negociar usarah este volume)
+    double getSpreadOperacional1(){ return m_spread_em_pips1; }           // diferença bid-ask do primeiro ativo do par (valor instantaneo)
+    double getSpreadOperacional2(){ return m_spread_em_pips2; }           // diferença bid-ask do segundo ativo do par (valor instantaneo)
+    double getSpreadOperacionalMedio1(){ return m_vet_spread_op_symb1.getMed(); } // media do spread operacional do primeiro ativo do par
+    double getSpreadOperacionalMedio2(){ return m_vet_spread_op_symb2.getMed(); } // media do spread operacional do segundo ativo do par
 
     double getLucroPar(){ return m_lucro_par; }
     bool parCointegrado(){ return m_par_eh_cointegrado; }
@@ -209,7 +215,7 @@ public:
 
         m_inicializado = true;
         processar();
-        Log::info("***** " +  strPar() + " VOL: " + DoubleToString(m_volume1,3) + "/" + DoubleToString(m_volume2,3), __FUNCTION__);
+        Log::info("***** VOL: " + DoubleToString(m_volume1,3) + "/" + DoubleToString(m_volume2,3), FUNCTION);
         return(INIT_SUCCEEDED);
     }
 
@@ -419,8 +425,6 @@ public:
                    " Std do spread/zscore:" + DoubleToString(m_spread_std,5) + "/" + DoubleToString(m_pairs.getSpreadStdZsc(),2)
                    , strPar() + "_"+__FUNCTION__ );
     }
-
-    string strPar(){ return m_nm_symb1 + "_" + m_nm_symb2; }
 
     // fechamento do ativo 2 na barra de data dt. Se o ativo 2 nao tiver barra nessa data
     // exata (nao negociou no periodo), usa o fechamento da barra imediatamente anterior.

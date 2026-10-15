@@ -287,8 +287,10 @@ void showTela(){
 
 string linhaTela(Par &par){
     return par.strategy.getNmSymbol1() + "_" + par.strategy.getNmSymbol2() +
-           " Spread :" + DoubleToString(par.strategy.getSpreadOperacional1(), 2) + "_" +
-                         DoubleToString(par.strategy.getSpreadOperacional2(), 2) +
+           " SpreadOp :" + DoubleToString(par.strategy.getSpreadOperacional1(), 1) + "_" +
+                           DoubleToString(par.strategy.getSpreadOperacional2(), 1) + "/" +
+                           DoubleToString(par.strategy.getSpreadOperacionalMedio1(), 1) + "_" +
+                           DoubleToString(par.strategy.getSpreadOperacionalMedio2(), 1) +
 
            " Corr:"  + DoubleToString(par.strategy.getCoefCorrelacao(), 2) +
 

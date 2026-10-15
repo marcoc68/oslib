@@ -121,6 +121,9 @@ public:
         return set(m_len_calc-1, val, calc_var);
     }
 
+    double atLast() { return m_vet.atLast(); }
+    double at(uint ind) { return m_vet.at(ind); }
+
     // metodo print util para debug;
     void print(string nome=""){
         Print(__FUNCTION__, " :-| Logando vetor ", nome, ": media:", DoubleToString(m_mean, 4), " var:", DoubleToString(getVar(), 4), " ind=", m_ind, " len_calc=",m_len_calc, " tot=", DoubleToString(m_tot, 4) );
