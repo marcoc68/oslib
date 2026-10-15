@@ -71,8 +71,9 @@ struct ParametrosC0701StrategyPairsTrading{
     ulong          ea_magic             ; //= 260908001000; //MAGIC numero magico do EA. yy-mm-vv-vvv-vvv-vv
     ulong          ea_desvio_pontos     ; //= 20          ; //DESVIO_PONTOS desvio maximo aceito do preco nas ordens a mercado
     bool           ea_show_tela         ; //= true        ; //SHOW_TELA mostra o estado do EA no grafico
-    int            ea_qtd_miliseg_timer ; //= 250       ; //QTD_MILISEG_TIMER tempo de acionamento do timer
+    int            ea_qtd_miliseg_timer ; //= 250         ; //QTD_MILISEG_TIMER tempo de acionamento do timer
     string         ea_name              ;
+    double         ea_tarifa_transacao  ;                   //TARIFA_TRANSACAO valor da tarifa de uma transacao
 
     // parametros com o estado da operacao, que podem ser lido de fora deste objeto.
 };
@@ -103,7 +104,6 @@ public:
     double        m_spread_atu           ; // spread instantaneo
     double        m_spread_med           ; // media do spread na janela
     double        m_spread_std           ; // desvio padrao do spread na janela
-    double        m_zscore               ; // (spread - media)/desvio
 
     double        m_coef_correlacao      ; // coeficiente de correlacao entre os dois ativos
     bool          m_par_eh_cointegrado   ; // indica se o par eh cointegrado (teste de Engle-Granger)
@@ -130,14 +130,14 @@ public:
 
     string getNmSymbol1(){ return m_nm_symb1;}
     string getNmSymbol2(){ return m_nm_symb2;}
-    double getCoefCorrelacao(){ return m_coef_correlacao; }
-    double getZscore(){ return m_zscore; }
+    double getCoefCorrelacao(){ return m_coef_correlacao; }               // coeficiente de correlacao do par
+    double getZscore(){ return m_pairs.getSpreadZsc(); }                  // z-score do spread do par
+    double getZscoreDoDesvioPadrao(){ return m_pairs.getSpreadStdZsc(); } // z-score da desvio padrao do spread do par
 
-    double getVolume1(){ return m_volume1; }
-    double getVolume2(){ return m_volume2; }
-    double getSpreadOperacional1(){ return m_spread_em_pips1; }
-    double getSpreadOperacional2(){ return m_spread_em_pips2; }
-    double getSpreadStdZsc(){ return m_pairs.getSpreadStdZsc(); } // z-score da desvio padrao medio do spread
+    double getVolume1(){ return m_volume1; }                              // volume do primeiro ativo do par
+    double getVolume2(){ return m_volume2; }                              // volume do segundo ativo do par
+    double getSpreadOperacional1(){ return m_spread_em_pips1; }           // diferença bid-ask do primeiro ativo do par
+    double getSpreadOperacional2(){ return m_spread_em_pips2; }           // diferença bid-ask do segundo ativo do par
 
     double getLucroPar(){ return m_lucro_par; }
     bool parCointegrado(){ return m_par_eh_cointegrado; }
@@ -160,7 +160,6 @@ public:
         m_spread_atu       = 0       ; // spread instantaneo
         m_spread_med       = 0       ; // media do spread na janela
         m_spread_std       = 0       ; // desvio padrao do spread na janela
-        m_zscore           = 0       ; // (spread - media)/desvio
         m_coef_correlacao  = 0       ; // coeficiente de correlacao entre os dois ativos
         m_par_eh_cointegrado = false   ; // indica se o par eh cointegrado (teste de Engle-Granger)
         m_banda_sup        = 0       ; // media + k*desvio
@@ -203,14 +202,14 @@ public:
         logarModoOperacao();
         sugerirVolumeEquilibrio();
 
-        carregarHistorico();
+        carregarHist();
         reconhecerPosicoes(); // o EA pode estar sendo iniciado no meio de uma operacao
 
         criarTimer(m_param.ea_qtd_miliseg_timer);
 
         m_inicializado = true;
         processar();
-        Log::info("****** " +  m_param.ea_symbol_1 + "_" + m_param.ea_symbol_2 + " VOL: " + DoubleToString(m_volume1,3) + "/" + DoubleToString(m_volume2,3), __FUNCTION__);
+        Log::info("***** " +  strPar() + " VOL: " + DoubleToString(m_volume1,3) + "/" + DoubleToString(m_volume2,3), __FUNCTION__);
         return(INIT_SUCCEEDED);
     }
 
@@ -391,7 +390,7 @@ public:
     //+------------------------------------------------------------------+
     //| Carga inicial da janela com as ultimas barras fechadas           |
     //+------------------------------------------------------------------+
-    void carregarHistorico(){
+    void carregarHist(){
 
         MqlRates rates1[];
         ArrayResize(rates1, m_param.ea_qtd_periodos);
@@ -405,7 +404,7 @@ public:
 
         // forcando o carregamento do historico do ativo 2...
         for(int i=0; i<qtd; i++){
-            double preco2 = 0, spread2 = 0;
+            double preco2 = 0; int spread2 = 0;
             if( !getFechamentoAtivo2( rates1[i].time, preco2, spread2 ) ) continue;
             adicionarAmostra( rates1[i].close, preco2 , rates1[i].time );
             adicionarSpreadOperacional( rates1[i].spread, spread2, rates1[i].time );
@@ -414,16 +413,18 @@ public:
 
         m_dt_ult_barra = rates1[qtd-1].time;
 
-        Log::info(IntegerToString(m_qtd_amostras) + "/" + IntegerToString(m_param.ea_qtd_periodos) +
-                      " amostras. ult barra:" + TimeToString(m_dt_ult_barra) +
-                      " spread:"+DoubleToString(m_spread_atu,5) + " spread medio:" + DoubleToString(m_spread_med,5) + " Std do spread:" + DoubleToString(m_spread_std,5) + " zsore do spread:" + DoubleToString(m_zscore,5) +"/" +DoubleToString(m_pairs.getSpreadZsc(),5)+"\n"+
-                      " Std medio do spread:" + DoubleToString(m_pairs.getSpreadStdMed(),5) + " zscore do Std medio do spread:" + DoubleToString(m_pairs.getSpreadStdZsc(),5)
-                      , __FUNCTION__ );
+        Log::info( IntegerToString(m_qtd_amostras) + "/" + IntegerToString(m_param.ea_qtd_periodos) +
+                   " amostras. ult barra:" + TimeToString(m_dt_ult_barra) +
+                   " spread/std/zscore:"+DoubleToString(m_spread_atu,5) + "/" + DoubleToString(m_spread_std,5) + "/" + DoubleToString(getZscore(),2)+
+                   " Std do spread/zscore:" + DoubleToString(m_spread_std,5) + "/" + DoubleToString(m_pairs.getSpreadStdZsc(),2)
+                   , strPar() + "_"+__FUNCTION__ );
     }
+
+    string strPar(){ return m_nm_symb1 + "_" + m_nm_symb2; }
 
     // fechamento do ativo 2 na barra de data dt. Se o ativo 2 nao tiver barra nessa data
     // exata (nao negociou no periodo), usa o fechamento da barra imediatamente anterior.
-    bool getFechamentoAtivo2(const datetime dt, double &preco, double &spread){
+    bool getFechamentoAtivo2(const datetime dt, double &preco, int &spread){
         preco = 0;
 
         MqlRates rates2[];
@@ -445,7 +446,10 @@ public:
     // adiciona uma amostra de spread a janela e atualiza media e desvio.
     // usado no processamento do historico.
     void adicionarAmostra(const double p1, const double p2, const datetime dt){
-        if( p1 <= 0 || p2 <= 0 ) return;
+        if( p1 <= 0 || p2 <= 0 ) {
+            Log::warn("Um dos precos eh invalido p1: "+DoubleToString(p1,5)+" p2: "+DoubleToString(p2,5)+", dt: "+TimeToString(dt), __FUNCTION__+"_"+strPar());
+            return;
+        }
 
         m_pairs.calcSpread( p1, p2, dt );
         if( m_qtd_amostras < m_param.ea_qtd_periodos ) m_qtd_amostras++;
@@ -457,21 +461,18 @@ public:
         // bandas calculadas pela propria classe: media + shift*desvio
         m_banda_sup  = m_pairs.getSpreadStd(  m_param.ea_desvios_entrada );
         m_banda_inf  = m_pairs.getSpreadStd( -m_param.ea_desvios_entrada );
-        m_zscore     = (m_spread_std > 0) ? (m_spread_atu-m_spread_med)/m_spread_std : 0;
     }
 
     void calcularCoeficenteCorrelacao(){
-        if( TimeCurrent() - m_dt_ult_calc_coef_corr < PeriodSeconds(m_param.ea_timeframe) ) return; // ja calculamos nesta barra
-        m_dt_ult_calc_coef_corr = TimeCurrent();
+        datetime agora = TimeCurrent();
+        uint diff = (uint)(agora - m_dt_ult_calc_coef_corr);
+        uint timeFrameInSeconds = PeriodSeconds(m_param.ea_timeframe);
+
+        if( diff < timeFrameInSeconds ) return; // ja calculamos nesta barra
+
+        m_dt_ult_calc_coef_corr = agora;
         m_coef_correlacao = m_pairs.calcCoefCorr();
         m_par_eh_cointegrado = m_pairs.parEhCointegrado();
-    }
-
-    // spread medio usado pra saber se vale a pena negociar o ativo.
-    void adicionarSpreadOperacional(const double s1, const double s2, const datetime dt){
-        if( s1 <= 0 || s2 <= 0 ) return;
-        m_media_spread_symb1.add( s1, dt );
-        m_media_spread_symb2.add( s2, dt );
     }
 
     //+------------------------------------------------------------------+
@@ -485,7 +486,7 @@ public:
 
         if( rates1[0].time <= m_dt_ult_barra ) return; // barra ja contabilizada
 
-        double preco2 = 0, spread2 = 0;
+        double preco2 = 0; int spread2 = 0;
         if( getFechamentoAtivo2( rates1[0].time, preco2, spread2 ) ){
             adicionarAmostra( rates1[0].close, preco2, rates1[0].time );
             adicionarSpreadOperacional ( rates1[0].spread, spread2, rates1[0].time );
@@ -502,9 +503,15 @@ public:
     //+------------------------------------------------------------------+
     string processar(){
 
-        if( !m_inicializado ) return status();
+        if( !m_inicializado ) {
+            Log::warn("Processamento chamado antes da inicializacao...", __FUNCTION__+"_"+strPar());
+            return status();
+        }
 
-        if( !atualizarPrecos() ) return status();
+        if( !atualizarPrecos() ) {
+            Log::warn("Falha ao atualizar precos...", __FUNCTION__+"_"+strPar());
+            return status();
+        }
 
         atualizarEstatistica();
 
@@ -512,7 +519,10 @@ public:
 
         // pernas abertas que nao formam um spread e que o EA nao pode desmontar (operacao
         // manual): nao dah para avaliar entrada nem saida enquanto isso nao for resolvido.
-        if( m_pos_invalida    ){ return status(); }
+        if( m_pos_invalida    ) {
+            Log::warn("Posicao invalida.", __FUNCTION__+"_"+strPar());
+            return status();
+        }
 
         if( !janelaCompleta() ){ return status(); }
 
@@ -527,27 +537,49 @@ public:
     
     string status(){ showTela(); return "Status em construcao...";}
 
-    // atualiza o spread instantaneo e as bandas de operacao. Retorna falso se nao
-    // foi possivel obter cotacao dos dois ativos.
-    MqlTick m_tick1, m_tick2;
     int m_spread_em_pips1, m_spread_em_pips2;
-    bool atualizarPrecos(){
-
-        // spread instantaneo em pips. Usado para saber se podemos operar...
+    void atualizar_spread_operacional() {
+        // spread operacional instantaneo em pips. Usado para saber se podemos operar...
         m_spread_em_pips1 = m_symb1.Spread();
         m_spread_em_pips2 = m_symb2.Spread();
         adicionarSpreadOperacional( m_spread_em_pips1, m_spread_em_pips2, TimeCurrent() );
+    }
 
+    // spread medio usado pra saber se vale a pena negociar o ativo.
+    void adicionarSpreadOperacional(const int s1, const int s2, const datetime dt){
+        if( s1 <= 0 || s2 <= 0 ) {
+            Log::warn("Spread operacional invalido spd1:" + IntegerToString(s1)+" spd2:"+IntegerToString(s2), __FUNCTION__+"_"+strPar());
+            return;
+        }
+        m_media_spread_symb1.add( s1, dt );
+        m_media_spread_symb2.add( s2, dt );
+    }
+
+    // atualiza o spread instantaneo e as bandas de operacao. Retorna falso se nao
+    // foi possivel obter cotacao dos dois ativos.
+    MqlTick m_tick1, m_tick2;
+    bool atualizarPrecos(){
+
+        // spread instantaneo em pips. Usado para saber se podemos operar...
+        atualizar_spread_operacional();
+
+        //todo: eliminar o uso de SymbolInfoTick. Use m_symb*
         if( !SymbolInfoTick(m_nm_symb1,m_tick1) ) return false;
         if( !SymbolInfoTick(m_nm_symb2,m_tick2) ) return false;
 
        // spread instantaneo entre os ativos do par que queremos negociar.
         double p1 = m_pairs.getLast(m_tick1);
         double p2 = m_pairs.getLast(m_tick2);
-        if( p1 <= 0 || p2 <= 0 ) return false;
+        if( p1 <= 0 || p2 <= 0 ) {
+            Log::warn( "Preco do par, invalido p1:"+DoubleToString(p1,5)+", p2:"+DoubleToString(p2,5), __FUNCTION__+"_"+strPar() );
+            return false;
+        }
 
         m_spread_atu = m_pairs.calcSpread( p1, p2, TimeCurrent() );
-        if( !MathIsValidNumber(m_spread_atu) ) return false;
+        if( !MathIsValidNumber(m_spread_atu) ) {
+            Log::warn( "Spread do par, invalido:"+DoubleToString(m_spread_atu,5), __FUNCTION__+"_"+strPar() );
+            return false;
+        }
 
         m_spread_med = m_pairs.getSpreadMed();
         m_spread_std = m_pairs.getSpreadStd();
@@ -555,14 +587,17 @@ public:
         // bandas calculadas pela propria classe: media + shift*desvio
         m_banda_sup  = m_pairs.getSpreadStd(  m_param.ea_desvios_entrada );
         m_banda_inf  = m_pairs.getSpreadStd( -m_param.ea_desvios_entrada );
-        m_zscore     = (m_spread_std > 0) ? (m_spread_atu-m_spread_med)/m_spread_std : 0;
 
         return true;
     }
 
     // a janela precisa estar cheia e com dispersao valida para operar.
     bool janelaCompleta(){
-        return ( m_qtd_amostras >= m_param.ea_qtd_periodos && m_spread_std > 0 );
+        if (m_qtd_amostras >= m_param.ea_qtd_periodos && m_spread_std > 0) {
+            return true;
+        }
+        Log::warn("Janela nao completa. qtd_amostras:"+IntegerToString(m_qtd_amostras)+" desvio padrao do spread:"+DoubleToString(m_spread_std,5), __FUNCTION__+"_"+strPar());
+        return false;
     }
 
     //+------------------------------------------------------------------+
@@ -573,7 +608,7 @@ public:
         if( m_spread_atu > m_banda_sup && coef_correlacao_ok() && spread_operacional_ok() ){
             // ativo1 caro em relacao ao ativo2: vende o caro e compra o barato.
             string motivo = "spread " + DoubleToString(m_spread_atu,8) + " acima da banda " +
-                            DoubleToString(m_banda_sup,8) + " (z_spread=" + DoubleToString(m_zscore,2) + ")" +
+                            DoubleToString(m_banda_sup,8) + " (z_spread=" + DoubleToString(getZscore(),2) + ")" +
                             // zscore do desvio padrao do spread
                             " (z_spread_std=" + DoubleToString(m_pairs.getSpreadStdZsc(),2) + ")"    ;
             solicitarAbertura( PAR_SHORT_SPREAD, motivo, false );
@@ -583,7 +618,7 @@ public:
         if( m_spread_atu < m_banda_inf && coef_correlacao_ok() && spread_operacional_ok() ){
             // ativo1 barato em relacao ao ativo2: compra o barato e vende o caro.
             string motivo = "spread " + DoubleToString(m_spread_atu,8) + " abaixo da banda " +
-                            DoubleToString(m_banda_inf,8) + " (z=" + DoubleToString(m_zscore,2) + ")" +
+                            DoubleToString(m_banda_inf,8) + " (z=" + DoubleToString(getZscore(),2) + ")" +
                             // zscore do desvio padrao do spread
                             " (z_spread_std=" + DoubleToString(m_pairs.getSpreadStdZsc(),2) + ")"    ;
             solicitarAbertura( PAR_LONG_SPREAD, motivo, false );
@@ -1016,7 +1051,7 @@ public:
             "Spread in PIPs : [instataneo  ", m_spread_em_pips1, " / ", m_spread_em_pips2,"  ]  [ ",
             "Medio  ", DoubleToString(m_media_spread_symb1.getMed(), 2), " / ", DoubleToString(m_media_spread_symb2.getMed(), 2),"  ]\n",
 
-            "Z-score        : ", DoubleToString(m_zscore      , 2), "\n",
+            "Z-score        : ", DoubleToString(getZscore()   , 2), "\n",
             "Alvo de saida  : ", DoubleToString(alvoDeSaida() , 8),
                                  (m_param.ea_desvios_saida>0 ? "  ("+DoubleToString(m_param.ea_desvios_saida,2)+" dp da media)"
                                                      : "  (na media)"), "\n",

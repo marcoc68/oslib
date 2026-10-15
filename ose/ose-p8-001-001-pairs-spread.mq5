@@ -300,7 +300,7 @@ string linhaTela(Par &par){
                        DoubleToString(par.strategy.getVolume2(), 2) +
 
            " Zscor " + DoubleToString(par.strategy.getZscore(), 2) + "_" +
-                       DoubleToString(par.strategy.getSpreadStdZsc(), 2) +
+                       DoubleToString(par.strategy.getZscoreDoDesvioPadrao(), 2) +
 
            " Result " + DoubleToString(par.strategy.getLucroPar(), 2);
 }
