@@ -465,6 +465,7 @@ public:
             return (preco > 0);
         }
 
+        // nao encontrou cotacao na data especificada, busca a anterior mais proxima...
         int shift = iBarShift( m_nm_symb2, m_param.ea_timeframe, dt, false );
         if( shift < 0 ) return false;
 
@@ -506,9 +507,9 @@ public:
     //+------------------------------------------------------------------+
     void atualizarEstatistica(){
 
-        MqlRates rates1[];
-        ArraySetAsSeries(rates1,false);
-        if( CopyRates( m_nm_symb1, m_param.ea_timeframe, 1, 1, rates1 ) != 1 ) return;
+        MqlRates rates1[1], rates2[1];
+        if( CopyRates( m_nm_symb1, m_param.ea_timeframe, 0, 1, rates1 ) != 1 ) { Log::warn("Erro ao buscar ultima cotacao do ativo 1", __myfunction__);  return;}
+        if( CopyRates( m_nm_symb2, m_param.ea_timeframe, 0, 1, rates2 ) != 1 ) { Log::warn("Erro ao buscar ultima cotacao do ativo 2", __myfunction__);  return;}
 
         if( rates1[0].time <= m_dt_ult_barra ) return; // barra ja contabilizada
 
@@ -779,8 +780,8 @@ public:
         m_estado = direcao;
         registrarAbertura( direcao, false );
 
-        Log::info("Par aberto. estado=" + estadoStr() + " spread=" + DoubleToString(m_spread_atu,2) +
-                      " media=" + DoubleToString(m_spread_med,2) + " desvio=" + DoubleToString(m_spread_std,2), __myfunction__ );
+        Log::info("Par aberto. estado=" + estadoStr() + " spread=" + DoubleToString(m_spread_atu,5) +
+                      " media=" + DoubleToString(m_spread_med,5) + " desvio=" + DoubleToString(m_spread_std,5), __myfunction__ );
         return true;
     }
 

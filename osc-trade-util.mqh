@@ -9,6 +9,8 @@
 
 #include <Trade/Trade.mqh>
 #include <Trade/SymbolInfo.mqh>
+#include <oslib/osc/Log.mqh>
+
 //+-----------------------------------------------------------------------------------------------+
 //| Metodos utilitarios de negociacao, reaproveitaveis por qualquer EA.                           |
 //|                                                                                               |
@@ -27,8 +29,7 @@ public:
     // coloca o ativo na Observacao de Mercado, se ainda nao estiver.
     static bool selecionarSimbolo(const string symb){
         if( !SymbolSelect(symb,true) ){
-            Print(":-( ", __FUNCTION__, " nao foi possivel selecionar o ativo ", symb,
-                          ". erro=", GetLastError() );
+            Log::error(" nao foi possivel selecionar o ativo " + symb + ". erro=" + (string)GetLastError(), __FUNCTION__ );
             return false;
         }
         return true;
@@ -201,8 +202,8 @@ public:
             ulong ticket = PositionGetInteger(POSITION_TICKET);
             trade.SetTypeFillingBySymbol( symb );
             if( !trade.PositionClose( ticket, desvio ) ){
-                Print(":-( ", __FUNCTION__, " falha ao fechar ", symb, " ticket:", ticket,
-                              " retcode:", trade.ResultRetcode(), " ", trade.ResultRetcodeDescription() );
+                Log::error("falha ao fechar "+ symb+ " ticket:"+ (string)ticket+
+                              " retcode:"+ (string)trade.ResultRetcode()+ " "+ trade.ResultRetcodeDescription(), __FUNCTION__ );
                 ok = false;
             }
         }
@@ -222,13 +223,12 @@ public:
         }
 
         if( !ok ){
-            Print(":-( ", __FUNCTION__, " ", symb, " ", EnumToString(tipo), " vol:", volume,
-                          " retcode:", trade.ResultRetcode(), " ", trade.ResultRetcodeDescription() );
+            Log::error(symb+ " "+ EnumToString(tipo)+ " vol:"+ DoubleToString(volume,5)+
+                          " retcode:"+ (string)trade.ResultRetcode()+ " "+ trade.ResultRetcodeDescription(), __FUNCTION__ );
             return false;
         }
 
-        Print(":-) ", __FUNCTION__, " ", symb, " ", EnumToString(tipo), " vol:", volume,
-                      " preco:", trade.ResultPrice() );
+        Log::info(symb+ " "+ EnumToString(tipo)+ " vol:"+ DoubleToString(volume,3)+" preco:"+ DoubleToString(trade.ResultPrice(),5), __FUNCTION__, true );
         return true;
     }
 
