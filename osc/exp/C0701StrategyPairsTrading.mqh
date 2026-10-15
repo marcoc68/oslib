@@ -31,7 +31,8 @@
 #define SIMBOLO_VENDIDO  -1
 #define SIMBOLO_FLAT      0
 
-#define FUNCTION __FUNCTION__+"_"+
+#define __myfunction__ strPar()+"_"+__FUNCTION__
+
 
 struct ParametrosC0701StrategyPairsTrading{
 
@@ -215,7 +216,7 @@ public:
 
         m_inicializado = true;
         processar();
-        Log::info("***** VOL: " + DoubleToString(m_volume1,3) + "/" + DoubleToString(m_volume2,3), FUNCTION);
+        Log::info("***** VOL: " + DoubleToString(m_volume1,3) + "/" + DoubleToString(m_volume2,3), __myfunction__);
         return(INIT_SUCCEEDED);
     }
 
@@ -248,7 +249,7 @@ public:
         if( m_nm_symb2 == BUSCAR_PAR ) m_nm_symb2 = buscarParAdequado( m_nm_symb1 );
 
         if( m_nm_symb1 == m_nm_symb2 ){
-            Log::error("SYMBOL_1 e SYMBOL_2 devem ser ativos diferentes.", __FUNCTION__);
+            Log::error("SYMBOL_1 e SYMBOL_2 devem ser ativos diferentes.", __myfunction__);
             return false;
         }
 
@@ -262,10 +263,10 @@ public:
 
         // Log::info(" ativo1:" + m_nm_symb1 +
         //               " digits:"   + IntegerToString(m_symb1.Digits()) +
-        //               " lots min/step/max:" + DoubleToString(m_symb1.LotsMin()) + "/" + DoubleToString(m_symb1.LotsStep()) + "/" + DoubleToString(m_symb1.LotsMax()), __FUNCTION__);
+        //               " lots min/step/max:" + DoubleToString(m_symb1.LotsMin()) + "/" + DoubleToString(m_symb1.LotsStep()) + "/" + DoubleToString(m_symb1.LotsMax()), __myfunction__);
         // Log::info(" ativo2:" + m_symb2.Name() +
         //               " digits:"   + IntegerToString(m_symb2.Digits()) +
-        //               " lots min/step/max:" + DoubleToString(m_symb2.LotsMin()) + "/" + DoubleToString(m_symb2.LotsStep()) + "/" + DoubleToString(m_symb2.LotsMax()), __FUNCTION__);
+        //               " lots min/step/max:" + DoubleToString(m_symb2.LotsMin()) + "/" + DoubleToString(m_symb2.LotsStep()) + "/" + DoubleToString(m_symb2.LotsMax()), __myfunction__);
         return true;
     }
 
@@ -280,28 +281,28 @@ public:
     bool inicializarParametros(){
 
         if( m_param.ea_qtd_periodos < 2 ){
-            Log::error("QTD_PERIODOS deve ser no minimo 2. informado:" + IntegerToString(m_param.ea_qtd_periodos), __FUNCTION__);
+            Log::error("QTD_PERIODOS deve ser no minimo 2. informado:" + IntegerToString(m_param.ea_qtd_periodos), __myfunction__);
             return false;
         }
 
         if( m_param.ea_desvios_entrada <= 0 ){
-            Log::error("DESVIOS_ENTRADA deve ser maior que zero. informado:" + DoubleToString(m_param.ea_desvios_entrada,2), __FUNCTION__);
+            Log::error("DESVIOS_ENTRADA deve ser maior que zero. informado:" + DoubleToString(m_param.ea_desvios_entrada,2), __myfunction__);
             return false;
         }
 
         if( m_param.ea_desvios_saida < 0 ){
-            Log::error("DESVIOS_SAIDA nao pode ser negativo. informado:" + DoubleToString(m_param.ea_desvios_saida,2), __FUNCTION__);
+            Log::error("DESVIOS_SAIDA nao pode ser negativo. informado:" + DoubleToString(m_param.ea_desvios_saida,2), __myfunction__);
             return false;
         }
 
         if( m_param.ea_desvios_saida >= m_param.ea_desvios_entrada ){
             Log::error("DESVIOS_SAIDA (" + DoubleToString(m_param.ea_desvios_saida,2) + ") deve ser menor que "
-                          "DESVIOS_ENTRADA (" + DoubleToString(m_param.ea_desvios_entrada,2) + "), senao a posicao fecharia na propria abertura.", __FUNCTION__);
+                          "DESVIOS_ENTRADA (" + DoubleToString(m_param.ea_desvios_entrada,2) + "), senao a posicao fecharia na propria abertura.", __myfunction__);
             return false;
         }
 
         if( m_param.ea_volume_1 <= 0 || m_param.ea_volume_2 <= 0 ){
-            Log::error("VOLUME_1 e VOLUME_2 devem ser maiores que zero. informados:" + DoubleToString(m_param.ea_volume_1,2) + " e " + DoubleToString(m_param.ea_volume_2,2), __FUNCTION__ );
+            Log::error("VOLUME_1 e VOLUME_2 devem ser maiores que zero. informados:" + DoubleToString(m_param.ea_volume_1,2) + " e " + DoubleToString(m_param.ea_volume_2,2), __myfunction__ );
             return false;
         }
 
@@ -309,7 +310,7 @@ public:
         m_volume2 = osc_trade_util::normalizarVolume( m_symb2, m_param.ea_volume_2 );
 
         if( m_volume1 != m_param.ea_volume_1 || m_volume2 != m_param.ea_volume_2 ){
-            Log::info("VOLUMES de " + m_nm_symb1 + ":" + DoubleToString(m_param.ea_volume_1,2) + " e de" + m_nm_symb2 + ":" + DoubleToString(m_param.ea_volume_2,2) + " foram ajustados aos limites dos ativos.", __FUNCTION__ );
+            Log::info("VOLUMES de " + m_nm_symb1 + ":" + DoubleToString(m_param.ea_volume_1,2) + " e de" + m_nm_symb2 + ":" + DoubleToString(m_param.ea_volume_2,2) + " foram ajustados aos limites dos ativos.", __myfunction__ );
         }
         return true;
     }
@@ -321,11 +322,11 @@ public:
 
         if( !m_param.ea_operacao_automatica ){
             Log::info("OPERACAO AUTOMATICA DESLIGADA: o EA nao abre nem fecha posicao " +
-                          "sozinho. Apenas loga [SIMULADO] o que faria. As teclas continuam valendo.", __FUNCTION__ );
+                          "sozinho. Apenas loga [SIMULADO] o que faria. As teclas continuam valendo.", __myfunction__ );
         }
 
         if( !m_param.ea_teclas_habilitadas ){
-            Log::info("Teclas de atalho desabilitadas.", __FUNCTION__ );
+            Log::info("Teclas de atalho desabilitadas.", __myfunction__ );
         }
 
     }
@@ -355,41 +356,41 @@ public:
         double val1_atu = osc_trade_util::valorPorPercentual( m_nm_symb1, m_volume1, 0.01 );
         double val2_atu = osc_trade_util::valorPorPercentual( m_nm_symb2, m_volume2, 0.01 );
 
-        // Log::info("--- equilibrio financeiro das pernas (1% de variacao) ---", __FUNCTION__ );
+        // Log::info("--- equilibrio financeiro das pernas (1% de variacao) ---", __myfunction__ );
         // Log::info(" " + m_nm_symb1 + " vol:" + DoubleToString(m_volume1,3) +
         //               " preco:" + DoubleToString(osc_trade_util::precoReferencia(m_nm_symb1),2) +
-        //               " valor de 1%:" + DoubleToString(val1_atu,2) + " " + AccountInfoString(ACCOUNT_CURRENCY), __FUNCTION__ );
+        //               " valor de 1%:" + DoubleToString(val1_atu,2) + " " + AccountInfoString(ACCOUNT_CURRENCY), __myfunction__ );
         // Log::info(" " + m_nm_symb2 + " vol:" + DoubleToString(m_volume2,3) +
         //               " preco:" + DoubleToString(osc_trade_util::precoReferencia(m_nm_symb2),2) +
-        //               " valor de 1%:" + DoubleToString(val2_atu,2) + " " + AccountInfoString(ACCOUNT_CURRENCY), __FUNCTION__ );
+        //               " valor de 1%:" + DoubleToString(val2_atu,2) + " " + AccountInfoString(ACCOUNT_CURRENCY), __myfunction__ );
 
         if( val1_atu > 0 && val2_atu > 0 ){
             double desequil = MathAbs(val1_atu-val2_atu)/MathMax(val1_atu,val2_atu);
-            // Log::info("desequilibrio do volume configurado: " + DoubleToString(desequil*100,2) + "%", __FUNCTION__ );
+            // Log::info("desequilibrio do volume configurado: " + DoubleToString(desequil*100,2) + "%", __myfunction__ );
         }
 
         double erro=0;
         if( !osc_trade_util::calcVolumesEquilibrio( m_nm_symb1, m_nm_symb2, m_volume_sugerido1, m_volume_sugerido2, erro,
                                                     m_param.ea_tolerancia_equil ) ){
-            Log::warn("Nao foi possivel calcular o volume de equilibrio. Verifique cotacao e tick value dos ativos.", __FUNCTION__ );
+            Log::warn("Nao foi possivel calcular o volume de equilibrio. Verifique cotacao e tick value dos ativos.", __myfunction__ );
             return;
         }
 
         double val1_sug = osc_trade_util::valorPorPercentual( m_nm_symb1, m_volume_sugerido1, 0.01 );
         double val2_sug = osc_trade_util::valorPorPercentual( m_nm_symb2, m_volume_sugerido2, 0.01 );
 
-        // Log::info("SUGESTAO de volume minimo para equilibrio: " + m_nm_symb1 + ":" + DoubleToString(m_volume_sugerido1,2) + " (1% = " + DoubleToString(val1_sug,2) + ") " + m_nm_symb2 + ":" + DoubleToString(m_volume_sugerido2,2) + " (1% = " + DoubleToString(val2_sug,2) + ") " + "desequilibrio residual:" + DoubleToString(erro*100,2) + "%", __FUNCTION__ );
+        // Log::info("SUGESTAO de volume minimo para equilibrio: " + m_nm_symb1 + ":" + DoubleToString(m_volume_sugerido1,2) + " (1% = " + DoubleToString(val1_sug,2) + ") " + m_nm_symb2 + ":" + DoubleToString(m_volume_sugerido2,2) + " (1% = " + DoubleToString(val2_sug,2) + ") " + "desequilibrio residual:" + DoubleToString(erro*100,2) + "%", __myfunction__ );
 
         if( erro > m_param.ea_tolerancia_equil ){
-            Log::warn("o melhor par encontrado ainda ficou acima da tolerancia de " + DoubleToString(m_param.ea_tolerancia_equil*100,2) + "%. Os lotes minimos dos dois ativos " + "nao permitem um casamento melhor nesta faixa de volume.", __FUNCTION__ );
+            Log::warn("o melhor par encontrado ainda ficou acima da tolerancia de " + DoubleToString(m_param.ea_tolerancia_equil*100,2) + "%. Os lotes minimos dos dois ativos " + "nao permitem um casamento melhor nesta faixa de volume.", __myfunction__ );
         }
 
         if( m_param.ea_aplicar_sugestao_de_volume  && erro <= m_param.ea_tolerancia_equil ){
             m_volume1 = m_volume_sugerido1;
             m_volume2 = m_volume_sugerido2;
-        //     Log::info("aplicada sugestao de volume de lotes: VOLUME1=" + DoubleToString(m_volume1,2) + " e VOLUME2=" + DoubleToString(m_volume2,2), __FUNCTION__ );
+        //     Log::info("aplicada sugestao de volume de lotes: VOLUME1=" + DoubleToString(m_volume1,2) + " e VOLUME2=" + DoubleToString(m_volume2,2), __myfunction__ );
         // }else{
-        //     Log::info("a sugestao nao altera o EA: ele continua operando com VOLUME1=" + DoubleToString(m_param.ea_volume_1,2) + " e VOLUME2=" + DoubleToString(m_param.ea_volume_2,2), __FUNCTION__ );
+        //     Log::info("a sugestao nao altera o EA: ele continua operando com VOLUME1=" + DoubleToString(m_param.ea_volume_1,2) + " e VOLUME2=" + DoubleToString(m_param.ea_volume_2,2), __myfunction__ );
         }
     }
 
@@ -404,7 +405,7 @@ public:
 
         int qtd = CopyRates( m_nm_symb1, m_param.ea_timeframe, 0, m_param.ea_qtd_periodos, rates1 );
         if( qtd <= 0 ){
-            Log::warn("Sem historico de " + m_nm_symb1 + " ainda. A janela serah preenchida barra a barra. erro="  + (string)GetLastError(), __FUNCTION__ );
+            Log::warn("Sem historico de " + m_nm_symb1 + " ainda. A janela serah preenchida barra a barra. erro="  + (string)GetLastError(), __myfunction__ );
             return;
         }
 
@@ -423,7 +424,7 @@ public:
                    " amostras. ult barra:" + TimeToString(m_dt_ult_barra) +
                    " spread/std/zscore:"+DoubleToString(m_spread_atu,5) + "/" + DoubleToString(m_spread_std,5) + "/" + DoubleToString(getZscore(),2)+
                    " Std do spread/zscore:" + DoubleToString(m_spread_std,5) + "/" + DoubleToString(m_pairs.getSpreadStdZsc(),2)
-                   , strPar() + "_"+__FUNCTION__ );
+                   , __myfunction__ );
     }
 
     // fechamento do ativo 2 na barra de data dt. Se o ativo 2 nao tiver barra nessa data
@@ -451,7 +452,7 @@ public:
     // usado no processamento do historico.
     void adicionarAmostra(const double p1, const double p2, const datetime dt){
         if( p1 <= 0 || p2 <= 0 ) {
-            Log::warn("Um dos precos eh invalido p1: "+DoubleToString(p1,5)+" p2: "+DoubleToString(p2,5)+", dt: "+TimeToString(dt), __FUNCTION__+"_"+strPar());
+            Log::warn("Um dos precos eh invalido p1: "+DoubleToString(p1,5)+" p2: "+DoubleToString(p2,5)+", dt: "+TimeToString(dt), __myfunction__);
             return;
         }
 
@@ -508,12 +509,12 @@ public:
     string processar(){
 
         if( !m_inicializado ) {
-            Log::warn("Processamento chamado antes da inicializacao...", __FUNCTION__+"_"+strPar());
+            Log::warn("Processamento chamado antes da inicializacao...", __myfunction__);
             return status();
         }
 
         if( !atualizarPrecos() ) {
-            Log::warn("Falha ao atualizar precos...", __FUNCTION__+"_"+strPar());
+            Log::warn("Falha ao atualizar precos...", __myfunction__);
             return status();
         }
 
@@ -524,7 +525,7 @@ public:
         // pernas abertas que nao formam um spread e que o EA nao pode desmontar (operacao
         // manual): nao dah para avaliar entrada nem saida enquanto isso nao for resolvido.
         if( m_pos_invalida    ) {
-            Log::warn("Posicao invalida.", __FUNCTION__+"_"+strPar());
+            Log::warn("Posicao invalida.", __myfunction__);
             return status();
         }
 
@@ -552,7 +553,7 @@ public:
     // spread medio usado pra saber se vale a pena negociar o ativo.
     void adicionarSpreadOperacional(const int s1, const int s2, const datetime dt){
         if( s1 < 0 || s2 < 0 ) {
-            Log::warn("Spread operacional invalido spd1:" + IntegerToString(s1)+" spd2:"+IntegerToString(s2), __FUNCTION__+"_"+strPar());
+            Log::warn("Spread operacional invalido spd1:" + IntegerToString(s1)+" spd2:"+IntegerToString(s2), __myfunction__);
             return;
         }
         m_vet_spread_op_symb1.add( s1, dt );
@@ -575,13 +576,13 @@ public:
         double p1 = m_pairs.getLast(m_tick1);
         double p2 = m_pairs.getLast(m_tick2);
         if( p1 <= 0 || p2 <= 0 ) {
-            Log::warn( "Preco do par, invalido p1:"+DoubleToString(p1,5)+", p2:"+DoubleToString(p2,5), __FUNCTION__+"_"+strPar() );
+            Log::warn( "Preco do par, invalido p1:"+DoubleToString(p1,5)+", p2:"+DoubleToString(p2,5), __myfunction__ );
             return false;
         }
 
         m_spread_atu = m_pairs.calcSpread( p1, p2, TimeCurrent() );
         if( !MathIsValidNumber(m_spread_atu) ) {
-            Log::warn( "Spread do par, invalido:"+DoubleToString(m_spread_atu,5), __FUNCTION__+"_"+strPar() );
+            Log::warn( "Spread do par, invalido:"+DoubleToString(m_spread_atu,5), __myfunction__ );
             return false;
         }
 
@@ -600,7 +601,7 @@ public:
         if (m_qtd_amostras >= m_param.ea_qtd_periodos && m_spread_std > 0) {
             return true;
         }
-        Log::warn("Janela nao completa. qtd_amostras:"+IntegerToString(m_qtd_amostras)+" desvio padrao do spread:"+DoubleToString(m_spread_std,5), __FUNCTION__+"_"+strPar());
+        Log::warn("Janela nao completa. qtd_amostras:"+IntegerToString(m_qtd_amostras)+" desvio padrao do spread:"+DoubleToString(m_spread_std,5), __myfunction__);
         return false;
     }
 
@@ -678,7 +679,7 @@ public:
             return false;
         }
 
-        // Log::info((manual?" [TECLA] ":" ") + "abrindo " + descreverDirecao(direcao) + ". motivo: " + motivo, __FUNCTION__ );
+        // Log::info((manual?" [TECLA] ":" ") + "abrindo " + descreverDirecao(direcao) + ". motivo: " + motivo, __myfunction__ );
         return abrirPar( direcao );
     }
 
@@ -730,12 +731,12 @@ public:
         }
 
         if( !enviarMercado( m_nm_symb1, tipo1, m_volume1 ) ){
-            Log::error("Falha na perna 1 (" + m_nm_symb1 + "). operacao abortada.", __FUNCTION__ );
+            Log::error("Falha na perna 1 (" + m_nm_symb1 + "). operacao abortada.", __myfunction__ );
             return false;
         }
 
         if( !enviarMercado( m_nm_symb2, tipo2, m_volume2 ) ){
-            Log::error("Falha na perna 2 (" + m_nm_symb2 + "). desfazendo a perna 1 (" + m_nm_symb1 + ")...", __FUNCTION__ );
+            Log::error("Falha na perna 2 (" + m_nm_symb2 + "). desfazendo a perna 1 (" + m_nm_symb1 + ")...", __myfunction__ );
             fecharSimbolo( m_nm_symb1 );
             return false;
         }
@@ -744,7 +745,7 @@ public:
         registrarAbertura( direcao, false );
 
         Log::info("Par aberto. estado=" + estadoStr() + " spread=" + DoubleToString(m_spread_atu,2) +
-                      " media=" + DoubleToString(m_spread_med,2) + " desvio=" + DoubleToString(m_spread_std,2), __FUNCTION__ );
+                      " media=" + DoubleToString(m_spread_med,2) + " desvio=" + DoubleToString(m_spread_std,2), __myfunction__ );
         return true;
     }
 
@@ -764,7 +765,7 @@ public:
                       " media:" + DoubleToString(m_med_abert,2) + " desvio:" + DoubleToString(m_std_abert,2) +
                       // o stop eh acionado quando a media se desloca ateh o spread de abertura.
                       (m_param.ea_stop_media_abertura ? "  stop se spread medio atingir:"+DoubleToString(m_spread_abert,8)
-                                              : "  (stop da media desligado)"), __FUNCTION__ );
+                                              : "  (stop da media desligado)"), __myfunction__ );
     }
 
     void limparAbertura(){
@@ -796,7 +797,7 @@ public:
     void logarSimulado(const string chave, const string acao){
         if( chave == m_ult_simulado ) return;
         m_ult_simulado = chave;
-        Log::info("[SIMULADO] " + acao, __FUNCTION__ );
+        Log::info("[SIMULADO] " + acao, __myfunction__ );
     }
 
     // nenhuma condicao de acao ativa neste ciclo: a proxima que aparecer volta a ser logada.
@@ -880,7 +881,7 @@ public:
     void fecharPar(const string motivo){
 
         Log::info("(" + motivo + ") fechando " + m_nm_symb1 + " e " + m_nm_symb2 +
-                      ". resultado do par: " + DoubleToString(m_lucro_par,2), __FUNCTION__ );
+                      ". resultado do par: " + DoubleToString(m_lucro_par,2), __myfunction__ );
 
         bool ok1 = fecharSimbolo( m_nm_symb1 );
         bool ok2 = fecharSimbolo( m_nm_symb2 );
@@ -888,7 +889,7 @@ public:
         if( ok1 && ok2 ){
             m_estado = PAR_FLAT;
             limparAbertura();
-            Log::info("(" + motivo + ") par fechado.", __FUNCTION__ );
+            Log::info("(" + motivo + ") par fechado.", __myfunction__ );
         }else{
             Log::warn("("+ motivo + ") fechamento incompleto. ",
                           m_nm_symb1 + ":" + toString(ok1) + " " + m_nm_symb2 + ":" + toString(ok2) +
@@ -919,8 +920,7 @@ public:
             return;
         }
 
-        // perna orfa: uma das pontas ficou aberta sozinha. Nao eh operacao de spread,
-        // eh exposicao direcional. Desmonta.
+        // perna orfa: uma das pontas ficou aberta sozinha. Nao eh operacao de spread, eh exposicao direcional. Desmonta.
         if( dir1 == SIMBOLO_FLAT || dir2 == SIMBOLO_FLAT ){
             desmontarPosicaoInvalida( "perna orfa detectada. " + m_nm_symb1 + ":" + IntegerToString(dir1) +
                                       " " + m_nm_symb2 + ":" + IntegerToString(dir2) );
@@ -954,7 +954,7 @@ public:
             return;
         }
 
-        Log::warn(motivo + ". desmontando...", __FUNCTION__);
+        Log::warn(motivo + ". desmontando...", __myfunction__);
         fecharSimbolo( m_nm_symb1 );
         fecharSimbolo( m_nm_symb2 );
         m_estado = PAR_FLAT;
@@ -1023,17 +1023,17 @@ public:
     // fechamento manual das duas pernas.
     void fecharPorTecla(){
 
-        Log::info("tecla " + strTeclaFechar() + " pressionada.", __FUNCTION__ );
+        Log::info("tecla " + strTeclaFechar() + " pressionada.", __myfunction__ );
 
         atualizarPrecos();
         reconhecerPosicoes();
 
         if( m_estado == PAR_FLAT ){
-            Log::info("nao ha posicao aberta. nada a fazer.", __FUNCTION__ );
+            Log::info("nao ha posicao aberta. nada a fazer.", __myfunction__ );
             return;
         }
 
-        Log::info("fechamento manual por tecla. resultado do par: " + DoubleToString(m_lucro_par,2), __FUNCTION__ );
+        Log::info("fechamento manual por tecla. resultado do par: " + DoubleToString(m_lucro_par,2), __myfunction__ );
         solicitarFechamento( "FECHAR_TECLA",
                              "fechamento manual por tecla. resultado do par:" +
                              DoubleToString(m_lucro_par,2), true );
