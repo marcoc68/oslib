@@ -112,9 +112,6 @@ public:
     bool          m_par_eh_cointegrado   ; // indica se o par eh cointegrado (teste de Engle-Granger)
     datetime      m_dt_ult_calc_coef_corr; // data da ultima vez que calculamos o coeficiente de correlacao e cointegracao
 
-    double        m_banda_sup            ; // media + k*desvio
-    double        m_banda_inf            ; // media - k*desvio
-
     int           m_estado               ; // situacao atual do par
     double        m_lucro_par            ; // resultado somado das duas pernas
 
@@ -135,8 +132,12 @@ public:
     string getNmSymbol2(){ return m_nm_symb2;}
     string strPar(){ return m_nm_symb1 + "_" + m_nm_symb2; }
 
-    double getCoefCorrelacao(){ return m_coef_correlacao; }               // coeficiente de correlacao do par
-    double getZscore(){ return m_pairs.getSpreadZsc(); }                  // z-score do spread do par
+    double getCoefCorrelacao(){ return m_coef_correlacao; }                                    // coeficiente de correlacao do par
+    string getCoefCorrelacaoStr(){ return DoubleToString(getCoefCorrelacao(),2); } // coeficiente de correlacao do par
+
+    double getZscore(){ return m_pairs.getSpreadZsc(); }                       // z-score do spread do par
+    string getZscoreStr(){ return DoubleToString(getZscore(),2); } // z-score do spread do par
+
     double getZscoreDoDesvioPadrao(){ return m_pairs.getSpreadStdZsc(); } // z-score da desvio padrao do spread do par
 
     double getVolume1(){ return m_volume1; }                              // volume do primeiro ativo do par (qd negociar usarah este volume)
@@ -169,8 +170,6 @@ public:
         m_spread_std       = 0       ; // desvio padrao do spread na janela
         m_coef_correlacao  = 0       ; // coeficiente de correlacao entre os dois ativos
         m_par_eh_cointegrado = false   ; // indica se o par eh cointegrado (teste de Engle-Granger)
-        m_banda_sup        = 0       ; // media + k*desvio
-        m_banda_inf        = 0       ; // media - k*desvio
 
         m_estado           = PAR_FLAT; // situacao atual do par
         m_lucro_par        = 0       ; // resultado somado das duas pernas
@@ -216,7 +215,10 @@ public:
 
         m_inicializado = true;
         processar();
-        Log::info("***** VOL: " + DoubleToString(m_volume1,3) + "/" + DoubleToString(m_volume2,3), __myfunction__);
+        Log::info("***** VOL: " + DoubleToString(m_volume1,3) + "/" + DoubleToString(m_volume2,3)+
+                    " corr:"+getCoefCorrelacaoStr()+
+                    " zscor:"+getZscoreStr()
+                  , __myfunction__);
         return(INIT_SUCCEEDED);
     }
 
@@ -462,10 +464,6 @@ public:
         m_spread_med = m_pairs.getSpreadMed();
         m_spread_std = m_pairs.getSpreadStd();
         m_spread_atu = m_pairs.getSpread();
-
-        // bandas calculadas pela propria classe: media + shift*desvio
-        m_banda_sup  = m_pairs.getSpreadStd(  m_param.ea_desvios_entrada );
-        m_banda_inf  = m_pairs.getSpreadStd( -m_param.ea_desvios_entrada );
     }
 
     void calcularCoeficenteCorrelacao(){
@@ -589,12 +587,13 @@ public:
         m_spread_med = m_pairs.getSpreadMed();
         m_spread_std = m_pairs.getSpreadStd();
 
-        // bandas calculadas pela propria classe: media + shift*desvio
-        m_banda_sup  = m_pairs.getSpreadStd(  m_param.ea_desvios_entrada );
-        m_banda_inf  = m_pairs.getSpreadStd( -m_param.ea_desvios_entrada );
-
         return true;
     }
+
+    // ponto de entrada na posicao. Entra se o spread for maior que a banda superior.
+    double bandaSup(){ return m_pairs.getSpreadStd(  m_param.ea_desvios_entrada );}
+    // ponto de entrada na posicao. Entra se o spread for menor que a banda inferior.
+    double bandaInf(){ return m_pairs.getSpreadStd( -m_param.ea_desvios_entrada );}
 
     // a janela precisa estar cheia e com dispersao valida para operar.
     bool janelaCompleta(){
@@ -605,25 +604,39 @@ public:
         return false;
     }
 
+    string strVerificarEntrada() {
+        return "spread:"+DoubleToString(m_spread_atu,5)+
+               " banda:"+DoubleToString(bandaSup(),5)+"/"+DoubleToString(bandaInf(),5)+
+               " corr:"+DoubleToString(m_coef_correlacao,2)+
+               " std:"+DoubleToString(m_spread_std,5)+
+               " zsc:"+DoubleToString(getZscore(),2)+
+               " banda_ok: " + (m_spread_atu > bandaSup() ||
+                             m_spread_atu < bandaInf()) +
+               " corr_ok:" + coef_correlacao_ok()+
+               " spreadOp_ok:" + spread_operacional_ok() ;
+    }
     //+------------------------------------------------------------------+
     //| Entrada                                                          |
     //+------------------------------------------------------------------+
     void verificarEntrada(){
 
-        if( m_spread_atu > m_banda_sup && coef_correlacao_ok() && spread_operacional_ok() ){
+        // Log::info(strVerificarEntrada(), __myfunction__);
+        if( m_spread_atu > bandaSup() && coef_correlacao_ok() && spread_operacional_ok() ){
+            Log::info("Passou na verif acima banda sup. "+ strVerificarEntrada(), __myfunction__, true);
             // ativo1 caro em relacao ao ativo2: vende o caro e compra o barato.
             string motivo = "spread " + DoubleToString(m_spread_atu,8) + " acima da banda " +
-                            DoubleToString(m_banda_sup,8) + " (z_spread=" + DoubleToString(getZscore(),2) + ")" +
+                            DoubleToString(bandaSup(),8) + " (z_spread=" + DoubleToString(getZscore(),2) + ")" +
                             // zscore do desvio padrao do spread
                             " (z_spread_std=" + DoubleToString(m_pairs.getSpreadStdZsc(),2) + ")"    ;
             solicitarAbertura( PAR_SHORT_SPREAD, motivo, false );
             return;
         }
 
-        if( m_spread_atu < m_banda_inf && coef_correlacao_ok() && spread_operacional_ok() ){
+        if( m_spread_atu < bandaInf() && coef_correlacao_ok() && spread_operacional_ok() ){
+            Log::info("Passou na verif abaixo banda inf. "+ strVerificarEntrada(), __myfunction__, true);
             // ativo1 barato em relacao ao ativo2: compra o barato e vende o caro.
             string motivo = "spread " + DoubleToString(m_spread_atu,8) + " abaixo da banda " +
-                            DoubleToString(m_banda_inf,8) + " (z=" + DoubleToString(getZscore(),2) + ")" +
+                            DoubleToString(bandaInf(),8) + " (z=" + DoubleToString(getZscore(),2) + ")" +
                             // zscore do desvio padrao do spread
                             " (z_spread_std=" + DoubleToString(m_pairs.getSpreadStdZsc(),2) + ")"    ;
             solicitarAbertura( PAR_LONG_SPREAD, motivo, false );
@@ -635,20 +648,21 @@ public:
 
     bool coef_correlacao_ok(){ return ( m_coef_correlacao >= m_param.ea_coef_correlacao_min ); }
 
-    bool spread_operacional_ok(){ return spread_medio_ok() && spread_instantaneo_ok() && tamanho_desvio_padrao_spread_ok(); }
+    bool spread_operacional_ok(){ return spread_operacional_medio_ok() && spread_operacional_instantaneo_ok() && tamanho_desvio_padrao_spread_ok(); }
 
     // desvio padrao do spread deve ter um tamanho minimo para entrar na posicao.
     // Tentando evitar entradas com desvio padrao pequeno, pois quando o desvio padrão
     // aumenta o spread também aumenta e acabamos presos em uma posição desfavoravel.
+    // zscore do desvio padrao do spread deve ser maior que o minimo.
     bool tamanho_desvio_padrao_spread_ok(){ return ( m_pairs.getSpreadStdZsc() >= m_param.ea_spread_std_min ); }
 
-    bool spread_medio_ok(){
+    bool spread_operacional_medio_ok(){
         return ( m_vet_spread_op_symb1.getMed() >= 0 && m_vet_spread_op_symb1.getMed() <= m_param.ea_spread_pips_max_para_abrir_posicao &&
                  m_vet_spread_op_symb2.getMed() >= 0 && m_vet_spread_op_symb2.getMed() <= m_param.ea_spread_pips_max_para_abrir_posicao
                );
     }
 
-    bool spread_instantaneo_ok(){
+    bool spread_operacional_instantaneo_ok(){
         return ( m_spread_em_pips1 >= 0 && m_spread_em_pips1 <= m_param.ea_spread_pips_max_para_abrir_posicao &&
                  m_spread_em_pips2 >= 0 && m_spread_em_pips2 <= m_param.ea_spread_pips_max_para_abrir_posicao
                );
@@ -797,7 +811,7 @@ public:
     void logarSimulado(const string chave, const string acao){
         if( chave == m_ult_simulado ) return;
         m_ult_simulado = chave;
-        Log::info("[SIMULADO] " + acao, __myfunction__ );
+        Log::warn("[SIMULADO] " + acao, __myfunction__ );
     }
 
     // nenhuma condicao de acao ativa neste ciclo: a proxima que aparecer volta a ser logada.
@@ -926,12 +940,6 @@ public:
                                       " " + m_nm_symb2 + ":" + IntegerToString(dir2) );
             return;
         }
-
-        // as duas pernas no mesmo sentido tambem nao formam um spread.
-//        if( dir1 == dir2 ){
-//            desmontarPosicaoInvalida( "as duas pernas estao no mesmo sentido (" + IntegerToString(dir1) + ")" );
-//            return;
-//        }
 
         // esse eh o original, correto
         //m_estado = dir1; // comprado no ativo1 = comprado no spread
