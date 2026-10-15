@@ -89,8 +89,8 @@ public:
     CTrade        m_trade                ; // execucao das ordens
     CSymbolInfo   m_symb1                ; // propriedades do ativo 1
     CSymbolInfo   m_symb2                ; // propriedades do ativo 2
-    osc_media     m_vet_spread_op_symb1  ; // media do spread na janela
-    osc_media     m_vet_spread_op_symb2  ; // media do spread na janela
+    osc_media     m_vet_spread_op_symb1  ; // media do spread operacional na janela
+    osc_media     m_vet_spread_op_symb2  ; // media do spread operacional na janela
     CAccountInfo  m_conta                ; // propriedades da conta
 
     string        m_nm_symb1             ; // nome do ativo 1
@@ -107,6 +107,8 @@ public:
     double        m_spread_atu           ; // spread instantaneo
     double        m_spread_med           ; // media do spread na janela
     double        m_spread_std           ; // desvio padrao do spread na janela
+
+    int           m_spread_em_pips1, m_spread_em_pips2; // spread operacional
 
     double        m_coef_correlacao      ; // coeficiente de correlacao entre os dois ativos
     bool          m_par_eh_cointegrado   ; // indica se o par eh cointegrado (teste de Engle-Granger)
@@ -128,27 +130,47 @@ public:
     bool          m_inicializado         ;
     ulong         m_magic                ;
 
+    // NOMES DOS SIMBOLOS DO PAR
     string getNmSymbol1(){ return m_nm_symb1;}
     string getNmSymbol2(){ return m_nm_symb2;}
     string strPar(){ return m_nm_symb1 + "_" + m_nm_symb2; }
 
-    double getCoefCorrelacao(){ return m_coef_correlacao; }                                    // coeficiente de correlacao do par
+    // COEFICIENTE DE CORRELACAO E COINTEGRACAO
+    double getCoefCorrelacao(){ return m_coef_correlacao; }                        // coeficiente de correlacao do par
     string getCoefCorrelacaoStr(){ return DoubleToString(getCoefCorrelacao(),2); } // coeficiente de correlacao do par
 
-    double getZscore(){ return m_pairs.getSpreadZsc(); }                       // z-score do spread do par
+    bool   parCointegrado(){ return m_par_eh_cointegrado; }
+    string parCointegradoStr(){ return (string)parCointegrado(); }
+
+    // ZSCORE
+    double getZscore(){ return m_pairs.getSpreadZsc(); }           // z-score do spread do par
     string getZscoreStr(){ return DoubleToString(getZscore(),2); } // z-score do spread do par
 
     double getZscoreDoDesvioPadrao(){ return m_pairs.getSpreadStdZsc(); } // z-score da desvio padrao do spread do par
 
+    // VOLUME
     double getVolume1(){ return m_volume1; }                              // volume do primeiro ativo do par (qd negociar usarah este volume)
     double getVolume2(){ return m_volume2; }                              // volume do segundo ativo do par (qd negociar usarah este volume)
-    double getSpreadOperacional1(){ return m_spread_em_pips1; }           // diferença bid-ask do primeiro ativo do par (valor instantaneo)
-    double getSpreadOperacional2(){ return m_spread_em_pips2; }           // diferença bid-ask do segundo ativo do par (valor instantaneo)
-    double getSpreadOperacionalMedio1(){ return m_vet_spread_op_symb1.getMed(); } // media do spread operacional do primeiro ativo do par
-    double getSpreadOperacionalMedio2(){ return m_vet_spread_op_symb2.getMed(); } // media do spread operacional do segundo ativo do par
 
+    // SPREAD OPERACIONAL
+    int    getSpreadOperacional1(){ return m_spread_em_pips1; }                           // diferença bid-ask do primeiro ativo do par (valor instantaneo)
+    string getSpreadOperacional1Str(){ return IntegerToString(getSpreadOperacional1()); } // diferença bid-ask do primeiro ativo do par (valor instantaneo)
+
+    int    getSpreadOperacional2(){ return m_spread_em_pips2; }                           // diferença bid-ask do segundo ativo do par (valor instantaneo)
+    string getSpreadOperacional2Str(){ return IntegerToString(getSpreadOperacional2()); } // diferença bid-ask do segundo ativo do par (valor instantaneo)
+
+    string getSpreadOperacionalStr(){ return getSpreadOperacional1Str()+"_"+getSpreadOperacional2Str(); } // diferença bid-ask do primeiro e do segundo ativo do par (valor instantaneo)
+
+    double getSpreadOperacionalMedio1(){ return m_vet_spread_op_symb1.getMed(); }                  // media do spread operacional do primeiro ativo do par
+    string getSpreadOperacionalMedio1Str(){return DoubleToString(getSpreadOperacionalMedio1(),1);} // media do spread operacional do primeiro ativo do par
+
+    double getSpreadOperacionalMedio2(){ return m_vet_spread_op_symb2.getMed(); }                  // media do spread operacional do segundo ativo do par
+    string getSpreadOperacionalMedio2Str(){return DoubleToString(getSpreadOperacionalMedio2(),1);} // media do spread operacional do segundo ativo do par
+
+    string getSpreadOperacionalMedioStr(){return getSpreadOperacionalMedio1Str()+"_"+getSpreadOperacionalMedio2Str();} // media do spread operacional do primeiro e do segundo ativo do par
+
+    // OUTROS
     double getLucroPar(){ return m_lucro_par; }
-    bool parCointegrado(){ return m_par_eh_cointegrado; }
     int getEstado(){ return m_estado; }
 
     C0701StrategyPairsTrading(ParametrosC0701StrategyPairsTrading &param){
@@ -217,7 +239,8 @@ public:
         processar();
         Log::info("***** VOL: " + DoubleToString(m_volume1,3) + "/" + DoubleToString(m_volume2,3)+
                     " corr:"+getCoefCorrelacaoStr()+
-                    " zscor:"+getZscoreStr()
+                    " zscor:"+getZscoreStr()+
+                    " spreadOp:"+getSpreadOperacionalStr() + "/" + getSpreadOperacionalMedioStr()
                   , __myfunction__);
         return(INIT_SUCCEEDED);
     }
@@ -540,7 +563,6 @@ public:
     
     string status(){ showTela(); return "Status em construcao...";}
 
-    int m_spread_em_pips1, m_spread_em_pips2;
     void atualizar_spread_operacional() {
         // spread operacional instantaneo em pips. Usado para saber se podemos operar...
         m_spread_em_pips1 = m_symb1.Spread();
@@ -607,13 +629,12 @@ public:
     string strVerificarEntrada() {
         return "spread:"+DoubleToString(m_spread_atu,5)+
                " banda:"+DoubleToString(bandaSup(),5)+"/"+DoubleToString(bandaInf(),5)+
-               " corr:"+DoubleToString(m_coef_correlacao,2)+
+               " corr:"+getCoefCorrelacaoStr()+
                " std:"+DoubleToString(m_spread_std,5)+
                " zsc:"+DoubleToString(getZscore(),2)+
-               " banda_ok: " + (m_spread_atu > bandaSup() ||
-                             m_spread_atu < bandaInf()) +
-               " corr_ok:" + coef_correlacao_ok()+
-               " spreadOp_ok:" + spread_operacional_ok() ;
+               " banda_ok: "   + (string)(m_spread_atu > bandaSup() || m_spread_atu < bandaInf()) +
+               " corr_ok:"     + (string)coef_correlacao_ok()+
+               " spreadOp_ok:" + (string)spread_operacional_ok() ;
     }
     //+------------------------------------------------------------------+
     //| Entrada                                                          |
