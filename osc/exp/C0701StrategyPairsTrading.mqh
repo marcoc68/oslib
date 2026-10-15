@@ -86,8 +86,8 @@ public:
     CTrade        m_trade                ; // execucao das ordens
     CSymbolInfo   m_symb1                ; // propriedades do ativo 1
     CSymbolInfo   m_symb2                ; // propriedades do ativo 2
-    osc_media     m_media_spread_symb1   ; // media do spread na janela
-    osc_media     m_media_spread_symb2   ; // media do spread na janela
+    osc_media     m_vet_spread_op_symb1  ; // media do spread na janela
+    osc_media     m_vet_spread_op_symb2  ; // media do spread na janela
     CAccountInfo  m_conta                ; // propriedades da conta
 
     string        m_nm_symb1             ; // nome do ativo 1
@@ -185,8 +185,8 @@ public:
         if( !inicializarSimbolos()  ) return INIT_PARAMETERS_INCORRECT;
         if( !inicializarParametros()) return INIT_PARAMETERS_INCORRECT;
 
-        m_media_spread_symb1.initialize( m_param.ea_qtd_periodos, 1 ); // media do spread operacional coletado a cada 5 segundos.
-        m_media_spread_symb2.initialize( m_param.ea_qtd_periodos, 1 ); // media do spread operacional coletado a cada 5 segundos.
+        m_vet_spread_op_symb1.initialize( m_param.ea_qtd_periodos, 1 ); // media do spread operacional coletado a cada 5 segundos.
+        m_vet_spread_op_symb2.initialize( m_param.ea_qtd_periodos, 1 ); // media do spread operacional coletado a cada 5 segundos.
 
 //        m_magic = criar_magic(m_nm_symb1 + m_nm_symb2); // magic unico para cada par de ativos
         m_magic = gerarMagicDeterministico(m_nm_symb1, m_nm_symb2); // magic unico para cada par de ativos
@@ -547,12 +547,12 @@ public:
 
     // spread medio usado pra saber se vale a pena negociar o ativo.
     void adicionarSpreadOperacional(const int s1, const int s2, const datetime dt){
-        if( s1 <= 0 || s2 <= 0 ) {
+        if( s1 < 0 || s2 < 0 ) {
             Log::warn("Spread operacional invalido spd1:" + IntegerToString(s1)+" spd2:"+IntegerToString(s2), __FUNCTION__+"_"+strPar());
             return;
         }
-        m_media_spread_symb1.add( s1, dt );
-        m_media_spread_symb2.add( s2, dt );
+        m_vet_spread_op_symb1.add( s1, dt );
+        m_vet_spread_op_symb2.add( s2, dt );
     }
 
     // atualiza o spread instantaneo e as bandas de operacao. Retorna falso se nao
@@ -638,8 +638,8 @@ public:
     bool tamanho_desvio_padrao_spread_ok(){ return ( m_pairs.getSpreadStdZsc() >= m_param.ea_spread_std_min ); }
 
     bool spread_medio_ok(){
-        return ( m_media_spread_symb1.getMed() >= 0 && m_media_spread_symb1.getMed() <= m_param.ea_spread_pips_max_para_abrir_posicao &&
-                 m_media_spread_symb2.getMed() >= 0 && m_media_spread_symb2.getMed() <= m_param.ea_spread_pips_max_para_abrir_posicao
+        return ( m_vet_spread_op_symb1.getMed() >= 0 && m_vet_spread_op_symb1.getMed() <= m_param.ea_spread_pips_max_para_abrir_posicao &&
+                 m_vet_spread_op_symb2.getMed() >= 0 && m_vet_spread_op_symb2.getMed() <= m_param.ea_spread_pips_max_para_abrir_posicao
                );
     }
 
@@ -1049,7 +1049,7 @@ public:
                                 "   (", m_qtd_amostras, " amostras", (janelaCompleta()?"":" - AGUARDANDO"), ")\n",
 
             "Spread in PIPs : [instataneo  ", m_spread_em_pips1, " / ", m_spread_em_pips2,"  ]  [ ",
-            "Medio  ", DoubleToString(m_media_spread_symb1.getMed(), 2), " / ", DoubleToString(m_media_spread_symb2.getMed(), 2),"  ]\n",
+            "Medio  ", DoubleToString(m_vet_spread_op_symb1.getMed(), 2), " / ", DoubleToString(m_vet_spread_op_symb2.getMed(), 2),"  ]\n",
 
             "Z-score        : ", DoubleToString(getZscore()   , 2), "\n",
             "Alvo de saida  : ", DoubleToString(alvoDeSaida() , 8),
