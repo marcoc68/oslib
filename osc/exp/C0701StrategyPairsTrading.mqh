@@ -169,6 +169,15 @@ public:
 
     string getSpreadOperacionalMedioStr(){return getSpreadOperacionalMedio1Str()+"_"+getSpreadOperacionalMedio2Str();} // media do spread operacional do primeiro e do segundo ativo do par
 
+    // SPREAD DO PAR
+    double spreadPar()   { return m_spread_atu; } //                  spread do par de ativos
+    double spreadParMed(){ return m_spread_med; } // media         do spread do par de ativos
+    double spreadParStd(){ return m_spread_std; } // desvio padrao do spread do par de ativos
+
+    string spreadParStr()   { return DoubleToString(spreadPar(),5); }
+    string spreadParMedStr(){ return DoubleToString(spreadParMed(),5); }
+    string spreadParStdStr(){ return DoubleToString(spreadParStd(),5); }
+
     // OUTROS
     double getLucroPar(){ return m_lucro_par; }
     int getEstado(){ return m_estado; }
@@ -791,8 +800,8 @@ public:
         m_estado = direcao;
         registrarAbertura( direcao, false );
 
-        Log::info("Par aberto. estado=" + estadoStr() + " spread=" + DoubleToString(m_spread_atu,5) +
-                      " media=" + DoubleToString(m_spread_med,5) + " desvio=" + DoubleToString(m_spread_std,5), __myfunction__ );
+        Log::info("Par aberto. estado=" + estadoStr() + " spread=" + spreadParStr() +
+                      " media=" + spreadParMedStr() + " desvio=" + spreadParStdStr(), __myfunction__ );
         return true;
     }
 
@@ -1069,10 +1078,7 @@ public:
         atualizarPrecos();
         reconhecerPosicoes();
 
-        if( m_estado == PAR_FLAT ){
-            Log::info("nao ha posicao aberta. nada a fazer.", __myfunction__ );
-            return;
-        }
+        if( m_estado == PAR_FLAT ){ return; }
 
         Log::info("fechamento manual por tecla. resultado do par: " + DoubleToString(m_lucro_par,2), __myfunction__ );
         solicitarFechamento( "FECHAR_TECLA",
