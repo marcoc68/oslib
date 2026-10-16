@@ -215,7 +215,15 @@ void OnChartEvent(const int id, const long &lparam, const double &dparam, const 
         return;
     }
 
-    if( tecla == EA_TECLA_FECHAR ){ fecharPorTecla(); return; }
+    if( tecla == EA_TECLA_FECHAR ) {
+        Log::info("tecla " + strTeclaFechar() + " pressionada.", __FUNCTION__ );
+
+        fecharPorTecla(); return;
+    }
+}
+
+string strTeclaFechar(){
+    return osc_trade_util::descreverTecla( m_param.ea_tecla_ctrl, m_param.ea_tecla_alt, m_param.ea_tecla_shift, m_param.ea_tecla_fechar );
 }
 
 
