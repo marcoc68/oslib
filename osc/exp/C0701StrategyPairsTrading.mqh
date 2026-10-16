@@ -76,7 +76,7 @@ struct ParametrosC0701StrategyPairsTrading{
     bool           ea_show_tela         ; //= true        ; //SHOW_TELA mostra o estado do EA no grafico
     int            ea_qtd_miliseg_timer ; //= 250         ; //QTD_MILISEG_TIMER tempo de acionamento do timer
     string         ea_name              ;
-    double         ea_tarifa_transacao  ;                   //TARIFA_TRANSACAO valor da tarifa de uma transacao
+    double         ea_tarifa            ;                   //TARIFA valor da tarifa de uma transacao
 
     // parametros com o estado da operacao, que podem ser lido de fora deste objeto.
 };
@@ -653,7 +653,7 @@ public:
 
         // Log::info(strVerificarEntrada(), __myfunction__);
         if( m_spread_atu > bandaSup() && coef_correlacao_ok() && spread_operacional_ok() ){
-            Log::info("Passou na verif acima banda sup. "+ strVerificarEntrada(), __myfunction__, true);
+            // Log::info("Passou na verif acima banda sup. "+ strVerificarEntrada(), __myfunction__, true);
             // ativo1 caro em relacao ao ativo2: vende o caro e compra o barato.
             string motivo = "spread " + DoubleToString(m_spread_atu,8) + " acima da banda " +
                             DoubleToString(bandaSup(),8) + " (z_spread=" + DoubleToString(getZscore(),2) + ")" +
@@ -664,7 +664,7 @@ public:
         }
 
         if( m_spread_atu < bandaInf() && coef_correlacao_ok() && spread_operacional_ok() ){
-            Log::info("Passou na verif abaixo banda inf. "+ strVerificarEntrada(), __myfunction__, true);
+            // Log::info("Passou na verif abaixo banda inf. "+ strVerificarEntrada(), __myfunction__, true);
             // ativo1 barato em relacao ao ativo2: compra o barato e vende o caro.
             string motivo = "spread " + DoubleToString(m_spread_atu,8) + " abaixo da banda " +
                             DoubleToString(bandaInf(),8) + " (z=" + DoubleToString(getZscore(),2) + ")" +
@@ -1018,8 +1018,15 @@ public:
 
     // resultado nao realizado (lucro + swap) das posicoes do EA no ativo informado.
     double lucroSimbolo(const string symb){
-        return osc_trade_util::lucroPosicao( symb, m_magic );
+        return osc_trade_util::lucroPosicao( symb, m_magic ) - tarifaSimbolo( symb );
     }
+
+    double tarifaSimbolo(string nmsymbol) {
+        if (nmsymbol == m_nm_symb1){ return tarifaSimbolo(m_symb1, m_volume_sugerido1); }
+                                     return tarifaSimbolo(m_symb2, m_volume_sugerido2);
+    }
+
+    double tarifaSimbolo(CSymbolInfo &csymbol, double vol){ return  (vol / csymbol.LotsMin()) * m_param.ea_tarifa;  }
 
     // fecha todas as posicoes do EA no ativo informado. Retorna true se nao restou posicao.
     bool fecharSimbolo(const string symb){

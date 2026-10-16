@@ -43,6 +43,9 @@ input double         EA_VOLUME_2        = 0.01        ; //VOLUME lote aplicado n
 input bool           EA_APLICAR_SUGESTAO_DE_VOLUME = true ; //APLICAR_SUGESTAO_DE_VOLUME aplica a sugestao de volume de lotes
 input double         EA_TOLERANCIA_EQUIL= 0.10        ; //TOLERANCIA_EQUIL desequilibrio aceito entre as pernas no calculo da sugestao. 0.01=1%
 
+input group "=== Tarifas ===";
+input double         EA_TARIFA= 0.08                  ; //TARIFA_TRANSACAO (PRECO DE ENTRADA + SAIDA)
+
 input group "=== Stop ===";
 input double         EA_STOP_FINANCEIRO = 0.0         ; //STOP_FINANCEIRO perda maxima somada das duas pernas, na moeda da conta. 0=desligado
 input bool           EA_STOP_MEDIA_ABERTURA = false   ; //STOP_MEDIA_ABERTURA fecha qd a media alcanca o spread de abertura +- desvios de abertura
@@ -250,6 +253,7 @@ void inicializarParametrosC0701StrategyPairsTrading(){
     m_param.ea_volume_2                           = EA_VOLUME_2                          ;
     m_param.ea_aplicar_sugestao_de_volume         = EA_APLICAR_SUGESTAO_DE_VOLUME        ;
     m_param.ea_tolerancia_equil                   = EA_TOLERANCIA_EQUIL                  ;
+    m_param.ea_tarifa                             = EA_TARIFA                            ;
     m_param.ea_stop_financeiro                    = EA_STOP_FINANCEIRO                   ;
     m_param.ea_stop_media_abertura                = EA_STOP_MEDIA_ABERTURA               ;
     m_param.ea_spread_pips_max_para_abrir_posicao = EA_SPREAD_PIPS_MAX_PARA_ABRIR_POSICAO;
